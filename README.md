@@ -12,14 +12,14 @@ Small helper scripts to create, template, verify, and clean a “Run” workspac
    - `CUSTOMER_ID_WIDTH` – zero-padding width (default 3)
    - `CUSTOMER_IDS` – list of numeric customer codes
    - `SECTIONS` – section names (defaults to `FP RAISED INFORMATIONS DIVERS`)
-   - `TEMPLATE_RELATIVE_ROOT` – relative path to templates (defaults to `_templates\Run`)
-2. Provide templates in `<VAULT_ROOT>/_templates/Run/`:
+   - `TEMPLATE_RELATIVE_ROOT` – relative path to templates (defaults to `_templates/Run`; use your OS path separators)
+2. Provide templates in `<VAULT_ROOT>/_templates/Run/` (POSIX) or `<VAULT_ROOT>\_templates\Run\` (Windows):
    - `CUST-Root-Index.md`
    - `CUST-Section-FP-Index.md`
    - `CUST-Section-RAISED-Index.md`
    - `CUST-Section-INFORMATIONS-Index.md`
    - `CUST-Section-DIVERS-Index.md`
-3. `cust-run-config.json` contains example values if you prefer that format.
+3. `cust-run-config.json` is a sample reference; the scripts read the shell/PowerShell config files.
 
 ## Usage (preferred)
 Run the orchestrator, which exports config and calls the PowerShell scripts:
