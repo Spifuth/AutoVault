@@ -1,0 +1,37 @@
+# AutoVault
+
+Small helper scripts to create, template, verify, and clean a “Run” workspace in an Obsidian vault. Each customer gets a `CUST-XXX` folder with section subfolders, index files, and a global `Run-Hub.md` linking to every customer.
+
+## Requirements
+- PowerShell 7+ (`pwsh`)
+- Bash (for the orchestrator helper)
+
+## Configure
+1. Edit `cust-run-config.sh` (or the `.ps1` equivalent) and set:
+   - `VAULT_ROOT` – path to your vault
+   - `CUSTOMER_ID_WIDTH` – zero-padding width (default 3)
+   - `CUSTOMER_IDS` – list of numeric customer codes
+   - `SECTIONS` – section names (defaults to `FP RAISED INFORMATIONS DIVERS`)
+   - `TEMPLATE_RELATIVE_ROOT` – relative path to templates (defaults to `_templates/Run`; use your OS path separators)
+2. Provide templates in `<VAULT_ROOT>/_templates/Run/` (POSIX) or `<VAULT_ROOT>\_templates\Run\` (Windows):
+   - `CUST-Root-Index.md`
+   - `CUST-Section-FP-Index.md`
+   - `CUST-Section-RAISED-Index.md`
+   - `CUST-Section-INFORMATIONS-Index.md`
+   - `CUST-Section-DIVERS-Index.md`
+3. `cust-run-config.json` is a sample reference; the scripts read the shell/PowerShell config files.
+
+## Usage (preferred)
+Run the orchestrator, which exports config and calls the PowerShell scripts:
+
+```bash
+./cust-run-config.sh structure   # create/refresh folders and Run-Hub.md
+./cust-run-config.sh templates   # apply markdown templates to all indexes
+./cust-run-config.sh test        # verify the structure and hub links
+./cust-run-config.sh cleanup     # delete customer folders (see safety note)
+```
+
+Cleanup is disabled by default. To allow deletions, edit the cleanup script itself and set `$EnableDeletion = $true` in `Cleanup-CustRunStructure.ps1` (or `ENABLE_DELETION=true` in `Cleanup-CustRunStructure.sh`) before running `cleanup`.
+
+## Direct script entry points
+If you do not want to use the orchestrator, you can run the individual Bash scripts (`New-*.sh`, `Apply-*.sh`, `Test-*.sh`, `Cleanup-*.sh`) after updating their inline configuration blocks. Matching PowerShell scripts exist for Windows users.
