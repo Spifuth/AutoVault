@@ -31,7 +31,7 @@ Run the orchestrator, which exports config and calls the PowerShell scripts:
 ./cust-run-config.sh cleanup     # delete customer folders (see safety note)
 ```
 
-Cleanup is disabled by default. To allow deletions, set `$EnableDeletion = $true` in `Cleanup-CustRunStructure.ps1` (or `ENABLE_DELETION=true` in `Cleanup-CustRunStructure.sh`) before running `cleanup`.
+Cleanup is disabled by default. To allow deletions, edit the cleanup script itself and set `$EnableDeletion = $true` in `Cleanup-CustRunStructure.ps1` (or `ENABLE_DELETION=true` in `Cleanup-CustRunStructure.sh`) before running `cleanup`.
 
 ## Direct script entry points
 If you do not want to use the orchestrator, you can run the individual Bash scripts (`New-*.sh`, `Apply-*.sh`, `Test-*.sh`, `Cleanup-*.sh`) after updating their inline configuration blocks. Matching PowerShell scripts exist for Windows users.
