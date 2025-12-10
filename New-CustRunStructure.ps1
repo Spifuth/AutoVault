@@ -187,7 +187,12 @@ foreach ($id in $CustomerIds) {
 $hubPath = Join-Path $VaultRoot 'Run-Hub.md'
 $hubContent = $hubLines -join [Environment]::NewLine
 
-[System.IO.File]::WriteAllText($hubPath, $hubContent, [System.Text.Encoding]::UTF8)
-Write-Log "Hub file written: $hubPath" 'INFO'
+if (Test-Path -LiteralPath $hubPath -PathType Leaf) {
+    Write-Log "Hub file already exists; skipping rewrite to avoid clobbering manual updates: $hubPath" 'INFO'
+}
+else {
+    [System.IO.File]::WriteAllText($hubPath, $hubContent, [System.Text.Encoding]::UTF8)
+    Write-Log "Hub file written: $hubPath" 'INFO'
+}
 
 Write-Log "CUST Run structure creation completed." 'INFO'
