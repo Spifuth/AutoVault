@@ -9,9 +9,22 @@
 # Configuration (MUST MATCH SCRIPT 1)
 #######################################
 
-VAULT_ROOT="/mnt/c/Users/ncaluye/scripts/powershell/Test-vault/Test"
-CUSTOMER_ID_WIDTH=3
-CUSTOMER_IDS=(2 4 5 7 10 11 12 14 15 18 25 27 29 30)  # INTERNE ignoré
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_SH="$SCRIPT_DIR/cust-run-config.sh"
+
+if [[ ! -f "$CONFIG_SH" ]]; then
+    echo "ERROR: cust-run-config.sh not found alongside the cleanup script: $CONFIG_SH" >&2
+    exit 1
+fi
+
+# shellcheck source=/dev/null
+if ! source "$CONFIG_SH"; then
+    echo "ERROR: Failed to load configuration from $CONFIG_SH" >&2
+    exit 1
+fi
+
+# Keep environment exports in sync with PowerShell helpers
+export_cust_env
 
 # Safety flags
 ENABLE_DELETION=false   # MUST be set to true to delete
