@@ -70,8 +70,7 @@ $TemplateRoot = if ($env:CUST_TEMPLATE_RELATIVE_ROOT) {
     Join-Path $VaultRoot '_templates\Run'
 }
 
-# Template locations (relative to VaultRoot)
-$TemplateRoot        = Join-Path $VaultRoot '_templates\Run'
+# Template locations
 $RootTemplatePath    = Join-Path $TemplateRoot 'CUST-Root-Index.md'
 $SectionTemplateMap  = @{
     'FP'           = Join-Path $TemplateRoot 'CUST-Section-FP-Index.md'
