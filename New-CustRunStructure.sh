@@ -2,9 +2,8 @@
 #
 # New-CustRunStructure.sh
 #
-# CONFIGURE ME:
-#   - Set VAULT_ROOT to the root folder of your Obsidian vault.
-#   - Fill the CUSTOMER_IDS array with the list of CUST numbers (integers).
+# CONFIGURATION:
+#   - Configuration is sourced from cust-run-config.sh (or environment overrides).
 #
 # STRUCTURE CREATED:
 #   <VAULT_ROOT>/Run/
@@ -34,20 +33,56 @@
 # Configuration
 #######################################
 
-# Root of your Obsidian vault (EDIT THIS!)
-VAULT_ROOT="/mnt/c/Users/ncaluye/scripts/powershell/Test-vault/Test"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_SCRIPT="$SCRIPT_DIR/cust-run-config.sh"
 
-# CUST configuration
-CUSTOMER_ID_WIDTH=3   # CUST-002, CUST-010, etc.
+#######################################
+# Load shared config / environment
+#######################################
 
-# List of CUST numbers (EDIT THIS!)
-# Example:
-# CUSTOMER_IDS=(2 10 42)
-CUSTOMER_IDS=(2 4 5 7 10 11 12 14 15 18 25 27 29 30)
-# NOTE: non-integer values like "INTERNE" will be ignored with an error log.
+load_config() {
+    if [[ -f "$CONFIG_SCRIPT" ]]; then
+        write_log "INFO" "Loading configuration from $CONFIG_SCRIPT"
+        if ! source "$CONFIG_SCRIPT"; then
+            write_log "ERROR" "Failed to load configuration from $CONFIG_SCRIPT"
+        fi
+    else
+        write_log "WARN" "Configuration script not found at $CONFIG_SCRIPT; falling back to environment variables"
+    fi
 
-# Sub-sections for each CUST
-CUST_SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
+    if declare -F export_cust_env >/dev/null 2>&1; then
+        export_cust_env
+    fi
+
+    if [[ -z "${VAULT_ROOT:-}" && -n "${CUST_VAULT_ROOT:-}" ]]; then
+        VAULT_ROOT="$CUST_VAULT_ROOT"
+    fi
+
+    if [[ -z "${CUSTOMER_ID_WIDTH:-}" && -n "${CUST_CUSTOMER_ID_WIDTH:-}" ]]; then
+        CUSTOMER_ID_WIDTH="$CUST_CUSTOMER_ID_WIDTH"
+    fi
+
+    if [[ ${#CUSTOMER_IDS[@]:-0} -eq 0 && -n "${CUST_CUSTOMER_IDS:-}" ]]; then
+        read -r -a CUSTOMER_IDS <<<"$CUST_CUSTOMER_IDS"
+    fi
+
+    local sections_env="${CUST_SECTIONS:-}"
+    if [[ ${#CUST_SECTIONS[@]:-0} -eq 0 && -n "$sections_env" ]]; then
+        read -r -a CUST_SECTIONS <<<"$sections_env"
+    fi
+
+    if [[ ${#CUST_SECTIONS[@]:-0} -eq 0 && ${#SECTIONS[@]:-0} -gt 0 ]]; then
+        CUST_SECTIONS=("${SECTIONS[@]}")
+    fi
+
+    if [[ -z "${CUSTOMER_ID_WIDTH:-}" ]]; then
+        CUSTOMER_ID_WIDTH=3
+    fi
+
+    if [[ ${#CUST_SECTIONS[@]:-0} -eq 0 ]]; then
+        CUST_SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
+    fi
+}
 
 #######################################
 # Helper functions
@@ -96,11 +131,18 @@ get_cust_code() {
 # Main logic
 #######################################
 
+load_config
+
 write_log "INFO" "Starting CUST Run structure creation"
 write_log "INFO" "Vault root: $VAULT_ROOT"
 
+if [[ -z "${VAULT_ROOT:-}" ]]; then
+    write_log "ERROR" "VAULT_ROOT is not set. Configure cust-run-config.sh or export VAULT_ROOT."
+    exit 1
+fi
+
 if [[ ${#CUSTOMER_IDS[@]} -eq 0 ]]; then
-    write_log "ERROR" "No CUST ids defined in CUSTOMER_IDS. Edit the configuration at the top of the script."
+    write_log "ERROR" "No CUST ids defined in CUSTOMER_IDS. Update cust-run-config.sh or export CUSTOMER_IDS."
     exit 1
 fi
 
