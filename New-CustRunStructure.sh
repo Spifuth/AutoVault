@@ -154,7 +154,11 @@ done
 
 # Write the Run-Hub.md file next to Run
 hub_path="$VAULT_ROOT/Run-Hub.md"
-printf "%s\n" "${hub_lines[@]}" > "$hub_path"
-write_log "INFO" "Hub file written: $hub_path"
+if [[ -f "$hub_path" ]]; then
+    write_log "INFO" "Hub file already exists; preserving current content: $hub_path"
+else
+    printf "%s\n" "${hub_lines[@]}" > "$hub_path"
+    write_log "INFO" "Hub file written: $hub_path"
+fi
 
 write_log "INFO" "CUST Run structure creation completed."
