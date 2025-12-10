@@ -6,17 +6,54 @@
 #
 
 #######################################
-# Configuration (MUST MATCH SCRIPT 1)
+# Configuration (shared with cust-run-config.sh)
 #######################################
 
-VAULT_ROOT="/mnt/c/Users/ncaluye/scripts/powershell/Test-vault/Test"
-CUSTOMER_ID_WIDTH=3
-CUSTOMER_IDS=(2 4 5 7 10 11 12 14 15 18 25 27 29 30)  # INTERNE ignoré
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_SCRIPT="$SCRIPT_DIR/cust-run-config.sh"
 
-CUST_SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
+if [[ -f "$CONFIG_SCRIPT" ]]; then
+    # shellcheck source=/dev/null
+    source "$CONFIG_SCRIPT"
 
-# Template locations (relative to VAULT_ROOT)
-TEMPLATE_ROOT="$VAULT_ROOT/_templates/Run"
+    if declare -F export_cust_env >/dev/null; then
+        export_cust_env
+    fi
+fi
+
+# Prefer values defined in cust-run-config.sh, with fallbacks to exported env vars
+VAULT_ROOT="${VAULT_ROOT:-${CUST_VAULT_ROOT:-}}"
+CUSTOMER_ID_WIDTH="${CUSTOMER_ID_WIDTH:-${CUST_CUSTOMER_ID_WIDTH:-3}}"
+
+if [[ ${#CUSTOMER_IDS[@]:-0} -eq 0 ]] && [[ -n "${CUST_CUSTOMER_IDS:-}" ]]; then
+    IFS=' ' read -r -a CUSTOMER_IDS <<< "$CUST_CUSTOMER_IDS"
+fi
+
+if [[ ${#SECTIONS[@]:-0} -eq 0 ]] && [[ -n "${CUST_SECTIONS:-}" ]]; then
+    IFS=' ' read -r -a SECTIONS <<< "$CUST_SECTIONS"
+fi
+
+if [[ -z "${VAULT_ROOT:-}" ]]; then
+    echo "ERROR: VAULT_ROOT is not set. Run via cust-run-config.sh or update cust-run-config.sh." >&2
+    exit 1
+fi
+
+if [[ ${#SECTIONS[@]:-0} -eq 0 ]]; then
+    SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
+fi
+
+CUST_SECTIONS=("${SECTIONS[@]}")
+
+if [[ ${#CUSTOMER_IDS[@]:-0} -eq 0 ]]; then
+    echo "ERROR: CUSTOMER_IDS is not set. Run via cust-run-config.sh or update cust-run-config.sh." >&2
+    exit 1
+fi
+
+TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT:-${CUST_TEMPLATE_RELATIVE_ROOT:-_templates/Run}}"
+# Normalize Windows-style separators for bash
+TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT//\\//}"
+
+TEMPLATE_ROOT="$VAULT_ROOT/${TEMPLATE_RELATIVE_ROOT#/}"
 ROOT_TEMPLATE_PATH="$TEMPLATE_ROOT/CUST-Root-Index.md"
 
 # Associative array for section templates
