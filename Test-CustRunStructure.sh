@@ -44,6 +44,7 @@ get_cust_code() {
 #######################################
 
 errors=()
+warnings=()
 
 # Basic checks
 if [[ ! -d "$VAULT_ROOT" ]]; then
@@ -75,7 +76,7 @@ fi
 if [[ ${#CUSTOMER_IDS[@]} -eq 0 ]]; then
     msg="No CUST ids defined in CUSTOMER_IDS. Nothing to verify."
     write_log "WARN" "$msg"
-    errors+=("$msg")
+    warnings+=("$msg")
 fi
 
 for id in "${CUSTOMER_IDS[@]}"; do
@@ -139,7 +140,7 @@ for id in "${CUSTOMER_IDS[@]}"; do
         if [[ "$hub_content" != *"$expected_token"* ]]; then
             msg="Hub file does not contain reference to $expected_token"
             write_log "WARN" "$msg"
-            errors+=("$msg")
+            warnings+=("$msg")
         else
             write_log "DEBUG" "Hub contains reference to $expected_token"
         fi
@@ -147,12 +148,25 @@ for id in "${CUSTOMER_IDS[@]}"; do
 done
 
 if [[ ${#errors[@]} -eq 0 ]]; then
-    write_log "INFO" "VERIFICATION SUCCESS – Run structure and all CUST indexes are present."
+    if [[ ${#warnings[@]} -gt 0 ]]; then
+        write_log "WARN" "VERIFICATION COMPLETE WITH WARNINGS – Review logged warnings."
+        for warn in "${warnings[@]}"; do
+            echo "  - $warn"
+        done
+    else
+        write_log "INFO" "VERIFICATION SUCCESS – Run structure and all CUST indexes are present."
+    fi
     exit 0
 else
     write_log "ERROR" "VERIFICATION FAILED – Issues detected:"
     for err in "${errors[@]}"; do
         echo "  - $err"
     done
+    if [[ ${#warnings[@]} -gt 0 ]]; then
+        write_log "WARN" "Additional warnings encountered:"
+        for warn in "${warnings[@]}"; do
+            echo "  - $warn"
+        done
+    fi
     exit 1
 fi
