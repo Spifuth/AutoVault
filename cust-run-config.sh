@@ -2,28 +2,110 @@
 # cust-run-config.sh
 # Orchestrator + config for CUST Run PowerShell scripts.
 
-set -euo pipefail
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  set -euo pipefail
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/cust-run-config.json"}"
 
 #######################################
-# CONFIG (edit here)
+# CONFIGURATION SOURCE
 #######################################
 
-# Root of your Obsidian vault
-VAULT_ROOT="/mnt/c/Users/ncaluye/scripts/powershell/"
+# Base values used to seed cust-run-config.json. Adjust these to match your
+# vault and customer list. Re-running the script will refresh the JSON to match
+# these values (or environment overrides) so Bash and PowerShell stay aligned.
+VAULT_ROOT="${VAULT_ROOT:-"D:\\Obsidian\\Work-Vault"}"
+CUSTOMER_ID_WIDTH="${CUSTOMER_ID_WIDTH:-3}"
 
-# Padding for CUST id (3 -> CUST-002)
-CUSTOMER_ID_WIDTH=3
+if [[ ${#CUSTOMER_IDS[@]:-0} -eq 0 ]]; then
+  CUSTOMER_IDS=(2 4 5 7 10 11 12 14 15 18 25 27 29 30)
+fi
 
-# List of customers (just the numeric IDs)
-CUSTOMER_IDS=(2 4 5 7 10 11 12 14 15 18 25 27 29 30 999)
+if [[ ${#SECTIONS[@]:-0} -eq 0 ]]; then
+  SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
+fi
 
-# Sections inside each CUST Run folder
-SECTIONS=(FP RAISED INFORMATIONS DIVERS)
+TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT:-"_templates\\Run"}"
 
-# Templates root, relative to VAULT_ROOT (used by Apply-CustRunTemplates.ps1)
-TEMPLATE_RELATIVE_ROOT="_templates\Run"
+#######################################
+# CONFIG (written to + loaded from cust-run-config.json)
+#######################################
+
+render_config_json() {
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "ERROR: python3 is required to create $CONFIG_JSON" >&2
+    return 1
+  fi
+
+  CUSTOMER_IDS_LIST="${CUSTOMER_IDS[*]}" \
+  SECTIONS_LIST="${SECTIONS[*]}" \
+  python3 - <<'PY'
+import json
+import os
+
+
+def split_list(name: str):
+    raw = os.environ.get(name, "")
+    return [item for item in raw.split() if item]
+
+
+payload = {
+    "VaultRoot": os.environ.get("VAULT_ROOT", ""),
+    "CustomerIdWidth": int(os.environ.get("CUSTOMER_ID_WIDTH", "3")),
+    "CustomerIds": [int(x) for x in split_list("CUSTOMER_IDS_LIST")],
+    "Sections": split_list("SECTIONS_LIST") or ["FP", "RAISED", "INFORMATIONS", "DIVERS"],
+    "TemplateRelativeRoot": os.environ.get("TEMPLATE_RELATIVE_ROOT", "_templates\\\\Run"),
+}
+
+print(json.dumps(payload, indent=2))
+PY
+}
+
+ensure_config_json() {
+  local tmp
+  tmp="$(mktemp)"
+
+  if ! render_config_json >"$tmp"; then
+    rm -f "$tmp"
+    return 1
+  fi
+
+  if [[ ! -f "$CONFIG_JSON" ]] || ! cmp -s "$tmp" "$CONFIG_JSON"; then
+    echo "INFO: Writing configuration file: $CONFIG_JSON" >&2
+    mv "$tmp" "$CONFIG_JSON"
+  else
+    rm "$tmp"
+  fi
+}
+
+load_config() {
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "ERROR: jq is required to read $CONFIG_JSON" >&2
+    return 1
+  fi
+
+  if ! ensure_config_json; then
+    return 1
+  fi
+
+  if [[ ! -f "$CONFIG_JSON" ]]; then
+    echo "ERROR: Configuration file not found: $CONFIG_JSON" >&2
+    return 1
+  fi
+
+  VAULT_ROOT="$(jq -r '.VaultRoot' "$CONFIG_JSON")"
+  CUSTOMER_ID_WIDTH="$(jq -r '.CustomerIdWidth // 3' "$CONFIG_JSON")"
+  mapfile -t CUSTOMER_IDS < <(jq -r '.CustomerIds[]' "$CONFIG_JSON")
+  mapfile -t SECTIONS < <(jq -r '.Sections[]' "$CONFIG_JSON")
+  TEMPLATE_RELATIVE_ROOT="$(jq -r '.TemplateRelativeRoot' "$CONFIG_JSON")"
+}
+
+if ! load_config; then
+  # When sourced, return non-zero so callers can handle the error
+  return 1 2>/dev/null || exit 1
+fi
 
 #######################################
 # INTERNAL: export env vars for pwsh
@@ -44,10 +126,11 @@ run_pwsh() {
 }
 
 #######################################
-# CLI
+# CLI (only when executed directly)
 #######################################
-usage() {
-  cat <<EOF
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  usage() {
+    cat <<'EOF'
 Usage: $(basename "$0") <command>
 
 Commands:
@@ -62,34 +145,35 @@ Examples:
   $(basename "$0") test
   $(basename "$0") cleanup
 EOF
-}
+  }
 
-cmd="${1:-}"
+  cmd="${1:-}"
 
-if [[ -z "$cmd" ]]; then
-  usage
-  exit 1
-fi
-
-export_cust_env
-
-case "$cmd" in
-  structure|new)
-    run_pwsh "New-CustRunStructure.ps1"
-    ;;
-  templates|apply)
-    run_pwsh "Apply-CustRunTemplates.ps1"
-    ;;
-  test|verify)
-    run_pwsh "Test-CustRunStructure.ps1"
-    ;;
-  cleanup)
-    run_pwsh "Cleanup-CustRunStructure.ps1"
-    ;;
-  *)
-    echo "Unknown command: $cmd" >&2
-    echo
+  if [[ -z "$cmd" ]]; then
     usage
     exit 1
-    ;;
-esac
+  fi
+
+  export_cust_env
+
+  case "$cmd" in
+    structure|new)
+      run_pwsh "New-CustRunStructure.ps1"
+      ;;
+    templates|apply)
+      run_pwsh "Apply-CustRunTemplates.ps1"
+      ;;
+    test|verify)
+      run_pwsh "Test-CustRunStructure.ps1"
+      ;;
+    cleanup)
+      run_pwsh "Cleanup-CustRunStructure.ps1"
+      ;;
+    *)
+      echo "Unknown command: $cmd" >&2
+      echo
+      usage
+      exit 1
+      ;;
+  esac
+fi

@@ -1,7 +1,9 @@
 <#
 Shared config loader for CUST Run scripts.
-Reads cust-run-config.sh (bash-style KEY=VALUE) and exposes:
+Creates and reads cust-run-config.json so Bash and PowerShell runners share
+the same vault settings.
 
+Exposes:
   $VaultRoot
   $CustomerIdWidth
   $CustomerIds
@@ -10,110 +12,61 @@ Reads cust-run-config.sh (bash-style KEY=VALUE) and exposes:
 #>
 
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$configPath = Join-Path $ScriptRoot 'cust-run-config.sh'
+$configJsonPath = Join-Path $ScriptRoot 'cust-run-config.json'
 
-if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) {
-    throw "Config file not found: $configPath"
-}
+# Base values used to seed cust-run-config.json. Re-running the script refreshes
+# the JSON so both shells stay aligned with these values (or env overrides).
+$VaultRoot            = $env:CUST_VAULT_ROOT            ? $env:CUST_VAULT_ROOT            : 'D:\Obsidian\Work-Vault'
+$CustomerIdWidth      = $env:CUST_CUSTOMER_ID_WIDTH     ? [int]$env:CUST_CUSTOMER_ID_WIDTH : 3
+$CustomerIds          = if ($env:CUST_CUSTOMER_IDS) { $env:CUST_CUSTOMER_IDS -split '\s+' | Where-Object { $_ } | ForEach-Object { [int]$_ } } else { @(2,4,5,7,10,11,12,14,15,18,25,27,29,30) }
+$CustSections         = if ($env:CUST_SECTIONS) { $env:CUST_SECTIONS -split '\s+' | Where-Object { $_ } } else { @('FP','RAISED','INFORMATIONS','DIVERS') }
+$TemplateRelativeRoot = $env:CUST_TEMPLATE_RELATIVE_ROOT ? $env:CUST_TEMPLATE_RELATIVE_ROOT : '_templates\Run'
 
-$rawLines = Get-Content -LiteralPath $configPath -ErrorAction Stop
-
-# Simple parser for lines like:
-#   KEY=value
-#   KEY="value"
-#   KEY='value'
-#   KEY=(a b c)
-$kv = @{}
-
-foreach ($line in $rawLines) {
-    $trim = $line.Trim()
-    if (-not $trim) { continue }
-    if ($trim.StartsWith('#')) { continue }
-
-    if ($trim -notmatch '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)\s*$') {
-        continue
-    }
-
-    $key = $matches[1]
-    $raw = $matches[2].Trim()
-
-    # Strip trailing inline comment: foo=bar # comment
-    $commentIdx = $raw.IndexOf('#')
-    if ($commentIdx -ge 0) {
-        $raw = $raw.Substring(0, $commentIdx).Trim()
-    }
-
-    $value = $null
-
-    if ($raw.StartsWith('(') -and $raw.EndsWith(')')) {
-        # Array syntax: (a b c)
-        $inside = $raw.Substring(1, $raw.Length - 2).Trim()
-        $items = @()
-        if ($inside.Length -gt 0) {
-            foreach ($tok in [regex]::Split($inside, '\s+')) {
-                if (-not $tok) { continue }
-                if ($tok.StartsWith('"') -and $tok.EndsWith('"')) {
-                    $items += $tok.Trim('"')
-                }
-                elseif ($tok.StartsWith("'") -and $tok.EndsWith("'")) {
-                    $items += $tok.Trim("'")
-                }
-                else {
-                    $items += $tok
-                }
-            }
-        }
-        $value = $items
-    }
-    elseif (
-        ($raw.StartsWith('"') -and $raw.EndsWith('"')) -or
-        ($raw.StartsWith("'") -and $raw.EndsWith("'"))
-    ) {
-        $value = $raw.Substring(1, $raw.Length - 2)
-    }
-    else {
-        $value = $raw
-    }
-
-    $kv[$key] = $value
-}
-
-if (-not $kv.ContainsKey('VAULT_ROOT')) {
-    throw "Config error: VAULT_ROOT is required in cust-run-config.sh"
-}
-
-# Exposed variables for the scripts
-$VaultRoot       = [string]$kv['VAULT_ROOT']
-$CustomerIdWidth = [int]($kv['CUSTOMER_ID_WIDTH'] ?? 3)
-
-# CustomerIds: int array
-$CustomerIds = @()
-if ($kv.ContainsKey('CUSTOMER_IDS')) {
-    $rawIds = $kv['CUSTOMER_IDS']
-    if ($rawIds -is [array]) {
-        $CustomerIds = $rawIds | ForEach-Object { [int]$_ }
-    }
-    elseif ($rawIds -is [string]) {
-        $CustomerIds = $rawIds.Split(' ,;') | Where-Object { $_ } | ForEach-Object { [int]$_ }
+function Get-ConfigPayload {
+    [ordered]@{
+        VaultRoot            = $VaultRoot
+        CustomerIdWidth      = $CustomerIdWidth
+        CustomerIds          = $CustomerIds
+        Sections             = $CustSections
+        TemplateRelativeRoot = $TemplateRelativeRoot
     }
 }
 
-# Sections
-if ($kv.ContainsKey('SECTIONS')) {
-    $rawSections = $kv['SECTIONS']
-    if ($rawSections -is [array]) {
-        $CustSections = $rawSections
+function Ensure-ConfigJson {
+    param([string]$Path)
+
+    $json = Get-ConfigPayload | ConvertTo-Json -Depth 4
+    $existing = if (Test-Path -LiteralPath $Path -PathType Leaf) {
+        Get-Content -LiteralPath $Path -Raw -ErrorAction SilentlyContinue
+    } else {
+        $null
     }
-    elseif ($rawSections -is [string]) {
-        $CustSections = $rawSections.Split(' ,;') | Where-Object { $_ }
+
+    if ($json -ne $existing) {
+        Write-Output "INFO: Writing configuration file: $Path" | Out-Host
+        Set-Content -Path $Path -Value $json -Encoding UTF8 -NoNewline
     }
-} else {
-    $CustSections = @('FP', 'RAISED', 'INFORMATIONS', 'DIVERS')
+
+    return $json
 }
 
-# TemplateRoot (for Script 2)
-if ($kv.ContainsKey('TEMPLATE_RELATIVE_ROOT')) {
-    $TemplateRoot = Join-Path $VaultRoot ([string]$kv['TEMPLATE_RELATIVE_ROOT'])
-} else {
-    $TemplateRoot = Join-Path $VaultRoot '_templates\Run'
+$jsonText = Ensure-ConfigJson -Path $configJsonPath
+$config = $jsonText | ConvertFrom-Json
+
+if (-not $config.VaultRoot) {
+    throw "Config error: VaultRoot missing from $configJsonPath"
 }
+
+$VaultRoot            = [string]$config.VaultRoot
+$CustomerIdWidth      = [int]$config.CustomerIdWidth
+$CustomerIds          = @($config.CustomerIds)
+$CustSections         = @($config.Sections)
+$TemplateRelativeRoot = [string]$config.TemplateRelativeRoot
+
+$env:CUST_VAULT_ROOT            = $VaultRoot
+$env:CUST_CUSTOMER_ID_WIDTH     = $CustomerIdWidth
+$env:CUST_CUSTOMER_IDS          = ($CustomerIds -join ' ')
+$env:CUST_SECTIONS              = ($CustSections -join ' ')
+$env:CUST_TEMPLATE_RELATIVE_ROOT = $TemplateRelativeRoot
+
+$TemplateRoot = Join-Path $VaultRoot $TemplateRelativeRoot
