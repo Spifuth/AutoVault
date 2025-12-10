@@ -188,7 +188,7 @@ $hubPath = Join-Path $VaultRoot 'Run-Hub.md'
 $hubContent = $hubLines -join [Environment]::NewLine
 
 if (Test-Path -LiteralPath $hubPath -PathType Leaf) {
-    Write-Log "Hub file already exists; skipping rewrite to avoid clobbering manual updates: $hubPath" 'INFO'
+    Write-Log "Hub file already exists; preserving current content: $hubPath" 'INFO'
 }
 else {
     [System.IO.File]::WriteAllText($hubPath, $hubContent, [System.Text.Encoding]::UTF8)
