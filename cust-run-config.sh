@@ -9,6 +9,33 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/cust-run-config.json"}"
 
+#--------------------------------------
+# COLORS + LOGGING HELPERS
+#--------------------------------------
+if [[ -t 2 ]]; then
+  COLOR_BLUE="\033[34m"
+  COLOR_YELLOW="\033[33m"
+  COLOR_RED="\033[31m"
+  COLOR_RESET="\033[0m"
+else
+  COLOR_BLUE=""
+  COLOR_YELLOW=""
+  COLOR_RED=""
+  COLOR_RESET=""
+fi
+
+log_info() {
+  printf "%b[INFO ]%b %s\n" "$COLOR_BLUE" "$COLOR_RESET" "$1" >&2
+}
+
+log_warn() {
+  printf "%b[WARN ]%b %s\n" "$COLOR_YELLOW" "$COLOR_RESET" "$1" >&2
+}
+
+log_error() {
+  printf "%b[ERROR]%b %s\n" "$COLOR_RED" "$COLOR_RESET" "$1" >&2
+}
+
 #######################################
 # CONFIGURATION SOURCE
 #######################################
@@ -35,7 +62,7 @@ TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT:-"_templates\\Run"}"
 
 render_config_json() {
   if ! command -v python3 >/dev/null 2>&1; then
-    echo "ERROR: python3 is required to create $CONFIG_JSON" >&2
+    log_error "python3 is required to create $CONFIG_JSON"
     return 1
   fi
 
@@ -73,7 +100,7 @@ ensure_config_json() {
   fi
 
   if [[ ! -f "$CONFIG_JSON" ]] || ! cmp -s "$tmp" "$CONFIG_JSON"; then
-    echo "INFO: Writing configuration file: $CONFIG_JSON" >&2
+    log_info "Writing configuration file: $CONFIG_JSON"
     mv "$tmp" "$CONFIG_JSON"
   else
     rm "$tmp"
@@ -82,7 +109,7 @@ ensure_config_json() {
 
 load_config() {
   if ! command -v jq >/dev/null 2>&1; then
-    echo "ERROR: jq is required to read $CONFIG_JSON" >&2
+    log_error "jq is required to read $CONFIG_JSON"
     return 1
   fi
 
@@ -91,7 +118,7 @@ load_config() {
   fi
 
   if [[ ! -f "$CONFIG_JSON" ]]; then
-    echo "ERROR: Configuration file not found: $CONFIG_JSON" >&2
+    log_error "Configuration file not found: $CONFIG_JSON"
     return 1
   fi
 
@@ -158,19 +185,27 @@ EOF
 
   case "$cmd" in
     structure|new)
+      log_info "PATH=$PATH"
+      log_info "Using configuration from $CONFIG_JSON"
       run_pwsh "New-CustRunStructure.ps1"
       ;;
     templates|apply)
+      log_info "PATH=$PATH"
+      log_info "Using configuration from $CONFIG_JSON"
       run_pwsh "Apply-CustRunTemplates.ps1"
       ;;
     test|verify)
+      log_info "PATH=$PATH"
+      log_info "Using configuration from $CONFIG_JSON"
       run_pwsh "Test-CustRunStructure.ps1"
       ;;
     cleanup)
+      log_warn "PATH=$PATH"
+      log_warn "Using configuration from $CONFIG_JSON"
       run_pwsh "Cleanup-CustRunStructure.ps1"
       ;;
     *)
-      echo "Unknown command: $cmd" >&2
+      log_error "Unknown command: $cmd"
       echo
       usage
       exit 1
