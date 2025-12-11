@@ -35,4 +35,4 @@ Run the orchestrator, which exports config and calls the PowerShell scripts:
 Cleanup is disabled by default. To allow deletions, edit the cleanup script itself and set `$EnableDeletion = $true` in `Cleanup-CustRunStructure.ps1` (or `ENABLE_DELETION=true` in `Cleanup-CustRunStructure.sh`) before running `cleanup`.
 
 ## Direct script entry points
-If you do not want to use the orchestrator, you can run the individual Bash scripts (`New-*.sh`, `Apply-*.sh`, `Test-*.sh`, `Cleanup-*.sh`) after updating their inline configuration blocks. Matching PowerShell scripts exist for Windows users.
+If you do not want to use the orchestrator, you can run the individual Bash scripts (`New-*.sh`, `Apply-*.sh`, `Test-*.sh`, `Cleanup-*.sh`) after updating their inline configuration blocks. Matching PowerShell scripts exist for Windows users. When editing those inline blocks, keep them in sync with the values emitted to `cust-run-config.json` by `cust-run-config.sh`/`.ps1` so tests and structure generation use the same parameters.
