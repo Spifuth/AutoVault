@@ -7,16 +7,6 @@
 # EXIT CODES:
 #   0 if everything is OK
 #   1 if there are missing elements
-#
-
-#######################################
-# Configuration (MUST MATCH SCRIPT 1)
-#######################################
-
-VAULT_ROOT="/mnt/c/Users/ncaluye/scripts/powershell/Test-vault/Test"
-CUSTOMER_ID_WIDTH=3
-CUSTOMER_IDS=(2 4 5 7 10 11 12 14 15 18 25 27 29 30)  # INTERNE ignoré
-CUST_SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
 
 #######################################
 # Helper functions
@@ -34,9 +24,63 @@ write_log() {
     echo "[$level][UTC:$utc][Local:$localtime] $message"
 }
 
-get_cust_code() {
-    local id="$1"
-    printf "CUST-%0${CUSTOMER_ID_WIDTH}d" "$id"
+#######################################
+# Configuration loading
+#######################################
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_SCRIPT="$SCRIPT_DIR/cust-run-config.sh"
+CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/cust-run-config.json"}"
+
+load_config() {
+    if [[ -f "$CONFIG_SCRIPT" ]]; then
+        write_log "INFO" "Loading configuration from $CONFIG_SCRIPT"
+        if ! source "$CONFIG_SCRIPT"; then
+            write_log "ERROR" "Failed to load configuration from $CONFIG_SCRIPT"
+            return 1
+        fi
+    else
+        write_log "WARN" "Configuration script not found at $CONFIG_SCRIPT; falling back to $CONFIG_JSON"
+
+        if ! command -v jq >/dev/null 2>&1; then
+            write_log "ERROR" "jq is required to read $CONFIG_JSON"
+            return 1
+        fi
+
+        if [[ ! -f "$CONFIG_JSON" ]]; then
+            write_log "ERROR" "Configuration file not found: $CONFIG_JSON"
+            return 1
+        fi
+
+        VAULT_ROOT="$(jq -r '.VaultRoot // empty' "$CONFIG_JSON")"
+        CUSTOMER_ID_WIDTH="$(jq -r '.CustomerIdWidth // empty' "$CONFIG_JSON")"
+        mapfile -t CUSTOMER_IDS < <(jq -r '.CustomerIds[]?' "$CONFIG_JSON")
+        mapfile -t SECTIONS < <(jq -r '.Sections[]?' "$CONFIG_JSON")
+    fi
+
+    if [[ ${#CUST_SECTIONS[@]:-0} -eq 0 && ${#SECTIONS[@]:-0} -gt 0 ]]; then
+        CUST_SECTIONS=("${SECTIONS[@]}")
+    fi
+
+    if [[ -z "${CUSTOMER_ID_WIDTH:-}" ]]; then
+        CUSTOMER_ID_WIDTH=3
+    fi
+
+    if [[ ${#CUST_SECTIONS[@]:-0} -eq 0 ]]; then
+        CUST_SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
+    fi
+
+    if [[ -z "${VAULT_ROOT:-}" ]]; then
+        write_log "ERROR" "VAULT_ROOT is not set. Configure cust-run-config.sh or provide $CONFIG_JSON."
+        return 1
+    fi
+
+    if [[ ${#CUSTOMER_IDS[@]:-0} -eq 0 ]]; then
+        write_log "ERROR" "No CUST ids defined in CUSTOMER_IDS. Update configuration before running tests."
+        return 1
+    fi
+
+    return 0
 }
 
 #######################################
@@ -45,6 +89,11 @@ get_cust_code() {
 
 errors=()
 warnings=()
+
+if ! load_config; then
+    write_log "ERROR" "Unable to load configuration. Aborting verification."
+    exit 1
+fi
 
 # Basic checks
 if [[ ! -d "$VAULT_ROOT" ]]; then
@@ -78,6 +127,11 @@ if [[ ${#CUSTOMER_IDS[@]} -eq 0 ]]; then
     write_log "WARN" "$msg"
     warnings+=("$msg")
 fi
+
+get_cust_code() {
+    local id="$1"
+    printf "CUST-%0${CUSTOMER_ID_WIDTH}d" "$id"
+}
 
 for id in "${CUSTOMER_IDS[@]}"; do
     # En PS ton script planterait sur INTERNE: ici on vérifie proprement.
@@ -128,7 +182,6 @@ for id in "${CUSTOMER_IDS[@]}"; do
         if [[ ! -f "$sub_index_path" ]]; then
             msg="MISSING subfolder index $sub_folder_name for ${code}: $sub_index_path"
             write_log "ERROR" "$msg"
-            errors+=("$msg")
         else
             write_log "DEBUG" "Subfolder index OK: $sub_index_path"
         fi
