@@ -1,6 +1,6 @@
 # AutoVault
 
-Small helper scripts to create, template, verify, and clean a “Run” workspace in an Obsidian vault. Each customer gets a `CUST-XXX` folder with section subfolders, index files, and a global `Run-Hub.md` linking to every customer.
+Small helper scripts to create, template, verify, and clean a “Run” workspace in an Obsidian vault, where each customer gets a `CUST-XXX` folder with section subfolders, index files, and a global `Run-Hub.md` linking to every customer.
 
 ## Requirements
 - PowerShell 7+ (`pwsh`)
