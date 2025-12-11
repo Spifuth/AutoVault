@@ -205,5 +205,11 @@ else {
     foreach ($err in $errors) {
         Write-Host "  - $err"
     }
+    if ($warnings.Count -gt 0) {
+        Write-Log "Warnings also detected:" 'WARN'
+        foreach ($warn in $warnings) {
+            Write-Host "  - $warn"
+        }
+    }
     exit 1
 }
