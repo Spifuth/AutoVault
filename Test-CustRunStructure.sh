@@ -10,12 +10,13 @@
 #
 
 #######################################
-# Configuration (MUST MATCH SCRIPT 1)
+# Configuration (sync with cust-run-config.json or cust-run-config.sh)
 #######################################
 
 VAULT_ROOT="/mnt/c/Users/ncaluye/scripts/powershell/Test-vault/Test"
 CUSTOMER_ID_WIDTH=3
-CUSTOMER_IDS=(2 4 5 7 10 11 12 14 15 18 25 27 29 30)  # INTERNE ignoré
+# CUSTOMER_IDS must be numeric and should mirror cust-run-config.json
+CUSTOMER_IDS=(2 4 5 7 10 11 12 14 15 18 25 27 29 30)
 CUST_SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
 
 #######################################
