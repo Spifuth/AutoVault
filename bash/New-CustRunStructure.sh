@@ -2,9 +2,14 @@
 #
 # New-CustRunStructure.sh
 #
-# CONFIGURE ME:
-#   - Set VAULT_ROOT to the root folder of your Obsidian vault.
-#   - Fill the CUSTOMER_IDS array with the list of CUST numbers (integers).
+set -euo pipefail
+
+# Initialize arrays to avoid unbound variable errors with set -u
+declare -a CUSTOMER_IDS=()
+declare -a SECTIONS=()
+
+# CONFIGURATION:
+#   - Configuration is sourced from cust-run-config.sh (or environment overrides).
 #
 # STRUCTURE CREATED:
 #   <VAULT_ROOT>/Run/
@@ -35,48 +40,36 @@
 #######################################
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_PATH="$SCRIPT_DIR/cust-run-config.sh"
+CONFIG_SCRIPT="$SCRIPT_DIR/../cust-run-config.sh"
 
-if [[ ! -f "$CONFIG_PATH" ]]; then
-    echo "Config file not found: $CONFIG_PATH" >&2
-    exit 1
-fi
+#######################################
+# Load shared config / environment
+#######################################
 
-# shellcheck disable=SC1091
-source "$CONFIG_PATH"
-
-validate_config() {
-    local errors=0
-
-    if [[ -z "${VAULT_ROOT:-}" ]]; then
-        echo "VAULT_ROOT is not set in $CONFIG_PATH" >&2
-        errors=1
+load_config() {
+    if [[ -f "$CONFIG_SCRIPT" ]]; then
+        write_log "INFO" "Loading configuration from $CONFIG_SCRIPT"
+        if ! source "$CONFIG_SCRIPT"; then
+            write_log "ERROR" "Failed to load configuration from $CONFIG_SCRIPT"
+            return 1
+        fi
+    else
+        write_log "WARN" "Configuration script not found at $CONFIG_SCRIPT; falling back to environment variables"
     fi
 
-    if [[ -z "${CUSTOMER_ID_WIDTH:-}" || ! "$CUSTOMER_ID_WIDTH" =~ ^[0-9]+$ ]]; then
-        echo "CUSTOMER_ID_WIDTH must be a numeric value in $CONFIG_PATH" >&2
-        errors=1
+    # Note: We don't call export_cust_env here because it's meant for PowerShell subprocess calls
+    # and it would corrupt our SECTIONS array by exporting it as a string.
+    # The VAULT_ROOT, CUSTOMER_ID_WIDTH, CUSTOMER_IDS, and SECTIONS variables are already
+    # available from sourcing cust-run-config.sh.
+
+    if [[ -z "${CUSTOMER_ID_WIDTH:-}" ]]; then
+        CUSTOMER_ID_WIDTH=3
     fi
 
-    if [[ ${#CUSTOMER_IDS[@]:-0} -eq 0 ]]; then
-        echo "CUSTOMER_IDS is empty in $CONFIG_PATH" >&2
-        errors=1
+    if [[ -z "${SECTIONS[*]:-}" ]]; then
+        SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
     fi
-
-    # Prefer the shared SECTIONS array; fall back to CUST_SECTIONS alias if defined.
-    if [[ ${#SECTIONS[@]:-0} -eq 0 && ${#CUST_SECTIONS[@]:-0} -gt 0 ]]; then
-        SECTIONS=("${CUST_SECTIONS[@]}")
-    fi
-
-    if [[ ${#SECTIONS[@]:-0} -eq 0 ]]; then
-        echo "SECTIONS is empty in $CONFIG_PATH" >&2
-        errors=1
-    fi
-
-    return $errors
 }
-
-validate_config || exit 1
 
 #######################################
 # Helper functions
@@ -125,11 +118,21 @@ get_cust_code() {
 # Main logic
 #######################################
 
+if ! load_config; then
+    write_log "ERROR" "Failed to load configuration. Aborting."
+    exit 1
+fi
+
 write_log "INFO" "Starting CUST Run structure creation"
 write_log "INFO" "Vault root: $VAULT_ROOT"
 
+if [[ -z "${VAULT_ROOT:-}" ]]; then
+    write_log "ERROR" "VAULT_ROOT is not set. Configure cust-run-config.sh or export VAULT_ROOT."
+    exit 1
+fi
+
 if [[ ${#CUSTOMER_IDS[@]} -eq 0 ]]; then
-    write_log "ERROR" "No CUST ids defined in CUSTOMER_IDS. Edit the configuration at the top of the script."
+    write_log "ERROR" "No CUST ids defined in CUSTOMER_IDS. Update cust-run-config.sh or export CUSTOMER_IDS."
     exit 1
 fi
 
@@ -183,7 +186,11 @@ done
 
 # Write the Run-Hub.md file next to Run
 hub_path="$VAULT_ROOT/Run-Hub.md"
-printf "%s\n" "${hub_lines[@]}" > "$hub_path"
-write_log "INFO" "Hub file written: $hub_path"
+if [[ -f "$hub_path" ]]; then
+    write_log "INFO" "Hub file already exists; preserving current content: $hub_path"
+else
+    printf "%s\n" "${hub_lines[@]}" > "$hub_path"
+    write_log "INFO" "Hub file written: $hub_path"
+fi
 
 write_log "INFO" "CUST Run structure creation completed."

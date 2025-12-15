@@ -2,67 +2,61 @@
 #
 # Apply-CustRunTemplates.sh
 #
+set -euo pipefail
+
+# Initialize arrays to avoid unbound variable errors with set -u
+declare -a CUSTOMER_IDS=()
+declare -a SECTIONS=()
+
 # APPLY EXTERNAL MARKDOWN TEMPLATES TO ALL CUST RUN INDEX FILES
 #
 
 #######################################
-# Configuration (shared)
+# Configuration (shared with cust-run-config.sh)
 #######################################
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_PATH="$SCRIPT_DIR/cust-run-config.sh"
+CONFIG_SCRIPT="$SCRIPT_DIR/../cust-run-config.sh"
 
-if [[ ! -f "$CONFIG_PATH" ]]; then
-    echo "Config file not found: $CONFIG_PATH" >&2
+if [[ -f "$CONFIG_SCRIPT" ]]; then
+    # shellcheck source=/dev/null
+    source "$CONFIG_SCRIPT"
+    # Note: We don't call export_cust_env here because it's meant for PowerShell subprocess calls
+    # and it would corrupt our SECTIONS array by exporting it as a string.
+fi
+
+if [[ -z "${VAULT_ROOT:-}" ]]; then
+    echo "ERROR: VAULT_ROOT is not set. Run via cust-run-config.sh or update cust-run-config.sh." >&2
     exit 1
 fi
 
-# shellcheck disable=SC1091
-source "$CONFIG_PATH"
+if [[ -z "${CUSTOMER_ID_WIDTH:-}" ]]; then
+    CUSTOMER_ID_WIDTH=3
+fi
 
-validate_config() {
-    local errors=0
+# Default sections if not set
+if [[ -z "${SECTIONS[*]:-}" ]]; then
+    SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
+fi
 
-    if [[ -z "${VAULT_ROOT:-}" ]]; then
-        echo "VAULT_ROOT is not set in $CONFIG_PATH" >&2
-        errors=1
-    fi
+# Verify CUSTOMER_IDS is set
+if [[ ${#CUSTOMER_IDS[@]} -eq 0 ]]; then
+    echo "ERROR: CUSTOMER_IDS is not set. Run via cust-run-config.sh or update cust-run-config.sh." >&2
+    exit 1
+fi
 
-    if [[ -z "${CUSTOMER_ID_WIDTH:-}" || ! "$CUSTOMER_ID_WIDTH" =~ ^[0-9]+$ ]]; then
-        echo "CUSTOMER_ID_WIDTH must be a numeric value in $CONFIG_PATH" >&2
-        errors=1
-    fi
+TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT:-${CUST_TEMPLATE_RELATIVE_ROOT:-_templates/Run}}"
+# Normalize Windows-style separators for bash
+TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT//\\//}"
 
-    if [[ ${#CUSTOMER_IDS[@]:-0} -eq 0 ]]; then
-        echo "CUSTOMER_IDS is empty in $CONFIG_PATH" >&2
-        errors=1
-    fi
-
-    if [[ ${#SECTIONS[@]:-0} -eq 0 && ${#CUST_SECTIONS[@]:-0} -gt 0 ]]; then
-        SECTIONS=("${CUST_SECTIONS[@]}")
-    fi
-
-    if [[ ${#SECTIONS[@]:-0} -eq 0 ]]; then
-        echo "SECTIONS is empty in $CONFIG_PATH" >&2
-        errors=1
-    fi
-
-    return $errors
-}
-
-validate_config || exit 1
-
-# Template locations (relative to VAULT_ROOT)
-TEMPLATE_ROOT="$VAULT_ROOT/_templates/Run"
+TEMPLATE_ROOT="$VAULT_ROOT/${TEMPLATE_RELATIVE_ROOT#/}"
 ROOT_TEMPLATE_PATH="$TEMPLATE_ROOT/CUST-Root-Index.md"
 
-# Associative array for section templates
-declare -A SECTION_TEMPLATE_PATHS=(
-    ["FP"]="$TEMPLATE_ROOT/CUST-Section-FP-Index.md"
-    ["RAISED"]="$TEMPLATE_ROOT/CUST-Section-RAISED-Index.md"
-    ["INFORMATIONS"]="$TEMPLATE_ROOT/CUST-Section-INFORMATIONS-Index.md"
-    ["DIVERS"]="$TEMPLATE_ROOT/CUST-Section-DIVERS-Index.md"
-)
+# Function to get section template path dynamically
+get_section_template_path() {
+    local section="$1"
+    echo "$TEMPLATE_ROOT/CUST-Section-${section}-Index.md"
+}
 
 #######################################
 # Helper functions
@@ -120,8 +114,7 @@ set_file_content() {
 
 write_log "INFO" "Loading templates from: $TEMPLATE_ROOT"
 
-root_template_content="$(get_template_content "$ROOT_TEMPLATE_PATH" "ROOT")"
-if [[ $? -ne 0 ]]; then
+if ! root_template_content="$(get_template_content "$ROOT_TEMPLATE_PATH" "ROOT")"; then
     write_log "ERROR" "Aborting: root template missing."
     exit 1
 fi
@@ -129,14 +122,9 @@ fi
 declare -A SECTION_TEMPLATE_CONTENT
 
 for section in "${SECTIONS[@]}"; do
-    tmpl_path="${SECTION_TEMPLATE_PATHS[$section]}"
-    if [[ -z "$tmpl_path" ]]; then
-        write_log "ERROR" "No template mapping defined for section '$section'."
-        exit 1
-    fi
+    tmpl_path="$(get_section_template_path "$section")"
 
-    content="$(get_template_content "$tmpl_path" "$section")"
-    if [[ $? -ne 0 ]]; then
+    if ! content="$(get_template_content "$tmpl_path" "$section")"; then
         write_log "ERROR" "Aborting: template missing for section '$section'."
         exit 1
     fi

@@ -2,46 +2,35 @@
 #
 # Cleanup-CustRunStructure.sh
 #
+set -euo pipefail
+
+# Initialize arrays to avoid unbound variable errors with set -u
+declare -a CUSTOMER_IDS=()
+declare -a SECTIONS=()
+
 # DANGEROUS SCRIPT – WILL DELETE CUST STRUCTURE UNDER Run
 #
 
 #######################################
-# Configuration (shared)
+# Configuration (MUST MATCH SCRIPT 1)
 #######################################
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_PATH="$SCRIPT_DIR/cust-run-config.sh"
+CONFIG_SH="$SCRIPT_DIR/../cust-run-config.sh"
 
-if [[ ! -f "$CONFIG_PATH" ]]; then
-    echo "Config file not found: $CONFIG_PATH" >&2
+if [[ ! -f "$CONFIG_SH" ]]; then
+    echo "ERROR: cust-run-config.sh not found alongside the cleanup script: $CONFIG_SH" >&2
     exit 1
 fi
 
-# shellcheck disable=SC1091
-source "$CONFIG_PATH"
+# shellcheck source=/dev/null
+if ! source "$CONFIG_SH"; then
+    echo "ERROR: Failed to load configuration from $CONFIG_SH" >&2
+    exit 1
+fi
 
-validate_config() {
-    local errors=0
-
-    if [[ -z "${VAULT_ROOT:-}" ]]; then
-        echo "VAULT_ROOT is not set in $CONFIG_PATH" >&2
-        errors=1
-    fi
-
-    if [[ -z "${CUSTOMER_ID_WIDTH:-}" || ! "$CUSTOMER_ID_WIDTH" =~ ^[0-9]+$ ]]; then
-        echo "CUSTOMER_ID_WIDTH must be a numeric value in $CONFIG_PATH" >&2
-        errors=1
-    fi
-
-    if [[ ${#CUSTOMER_IDS[@]:-0} -eq 0 ]]; then
-        echo "CUSTOMER_IDS is empty in $CONFIG_PATH" >&2
-        errors=1
-    fi
-
-    return $errors
-}
-
-validate_config || exit 1
+# Keep environment exports in sync with PowerShell helpers
+export_cust_env
 
 # Safety flags
 ENABLE_DELETION=false   # MUST be set to true to delete

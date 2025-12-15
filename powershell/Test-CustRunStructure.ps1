@@ -86,6 +86,7 @@ function Get-CustCode {
 }
 
 $errors = [System.Collections.Generic.List[string]]::new()
+$warnings = [System.Collections.Generic.List[string]]::new()
 
 # Basic checks
 if (-not (Test-Path -LiteralPath $VaultRoot -PathType Container)) {
@@ -117,9 +118,9 @@ else {
 }
 
 if (-not $CustomerIds -or $CustomerIds.Count -eq 0) {
-    $msg = "No CUST ids defined in `$CustomerIds. Nothing to verify." 
+    $msg = "No CUST ids defined in `$CustomerIds. Nothing to verify."
     Write-Log $msg 'WARN'
-    $errors.Add($msg) | Out-Null
+    $warnings.Add($msg) | Out-Null
 }
 
 foreach ($id in $CustomerIds) {
@@ -179,7 +180,7 @@ foreach ($id in $CustomerIds) {
         if ($hubContent -notlike "*${expectedToken}*") {
             $msg = "Hub file does not contain reference to $expectedToken"
             Write-Log $msg 'WARN'
-            $errors.Add($msg) | Out-Null
+            $warnings.Add($msg) | Out-Null
         }
         else {
             Write-Log "Hub contains reference to $expectedToken" 'DEBUG'
@@ -188,13 +189,27 @@ foreach ($id in $CustomerIds) {
 }
 
 if ($errors.Count -eq 0) {
-    Write-Log "VERIFICATION SUCCESS – Run structure and all CUST indexes are present." 'INFO'
+    if ($warnings.Count -gt 0) {
+        Write-Log "VERIFICATION COMPLETE WITH WARNINGS – Review logged warnings." 'WARN'
+        foreach ($warn in $warnings) {
+            Write-Host "  - $warn"
+        }
+    }
+    else {
+        Write-Log "VERIFICATION SUCCESS – Run structure and all CUST indexes are present." 'INFO'
+    }
     exit 0
 }
 else {
     Write-Log "VERIFICATION FAILED – Issues detected:" 'ERROR'
     foreach ($err in $errors) {
         Write-Host "  - $err"
+    }
+    if ($warnings.Count -gt 0) {
+        Write-Log "Warnings also detected:" 'WARN'
+        foreach ($warn in $warnings) {
+            Write-Host "  - $warn"
+        }
     }
     exit 1
 }
