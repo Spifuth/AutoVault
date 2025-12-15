@@ -34,20 +34,49 @@
 # Configuration
 #######################################
 
-# Root of your Obsidian vault (EDIT THIS!)
-VAULT_ROOT="/mnt/c/Users/ncaluye/scripts/powershell/Test-vault/Test"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_PATH="$SCRIPT_DIR/cust-run-config.sh"
 
-# CUST configuration
-CUSTOMER_ID_WIDTH=3   # CUST-002, CUST-010, etc.
+if [[ ! -f "$CONFIG_PATH" ]]; then
+    echo "Config file not found: $CONFIG_PATH" >&2
+    exit 1
+fi
 
-# List of CUST numbers (EDIT THIS!)
-# Example:
-# CUSTOMER_IDS=(2 10 42)
-CUSTOMER_IDS=(2 4 5 7 10 11 12 14 15 18 25 27 29 30)
-# NOTE: non-integer values like "INTERNE" will be ignored with an error log.
+# shellcheck disable=SC1091
+source "$CONFIG_PATH"
 
-# Sub-sections for each CUST
-CUST_SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
+validate_config() {
+    local errors=0
+
+    if [[ -z "${VAULT_ROOT:-}" ]]; then
+        echo "VAULT_ROOT is not set in $CONFIG_PATH" >&2
+        errors=1
+    fi
+
+    if [[ -z "${CUSTOMER_ID_WIDTH:-}" || ! "$CUSTOMER_ID_WIDTH" =~ ^[0-9]+$ ]]; then
+        echo "CUSTOMER_ID_WIDTH must be a numeric value in $CONFIG_PATH" >&2
+        errors=1
+    fi
+
+    if [[ ${#CUSTOMER_IDS[@]:-0} -eq 0 ]]; then
+        echo "CUSTOMER_IDS is empty in $CONFIG_PATH" >&2
+        errors=1
+    fi
+
+    # Prefer the shared SECTIONS array; fall back to CUST_SECTIONS alias if defined.
+    if [[ ${#SECTIONS[@]:-0} -eq 0 && ${#CUST_SECTIONS[@]:-0} -gt 0 ]]; then
+        SECTIONS=("${CUST_SECTIONS[@]}")
+    fi
+
+    if [[ ${#SECTIONS[@]:-0} -eq 0 ]]; then
+        echo "SECTIONS is empty in $CONFIG_PATH" >&2
+        errors=1
+    fi
+
+    return $errors
+}
+
+validate_config || exit 1
 
 #######################################
 # Helper functions
@@ -141,7 +170,7 @@ for id in "${CUSTOMER_IDS[@]}"; do
     hub_lines+=("- [[${relative_target}]]")
 
     # Subfolders and their index files
-    for section in "${CUST_SECTIONS[@]}"; do
+    for section in "${SECTIONS[@]}"; do
         sub_folder_name="${code}-${section}"
         sub_folder_path="$cust_root/$sub_folder_name"
         ensure_directory "$sub_folder_path"
