@@ -38,6 +38,23 @@ Helper scripts to create, template, verify, and clean a "Run" workspace in an Ob
 
 ### Windows
 - PowerShell 5.1+ or PowerShell 7+
+- Git (optional)
+
+### Auto-Install Requirements
+
+Both orchestrators can automatically check and install missing requirements:
+
+```bash
+# Linux / macOS
+./cust-run-config.sh install
+
+# Windows (PowerShell)
+.\cust-run-config.ps1 install
+```
+
+**Linux/macOS**: Detects and uses the available package manager (apt, dnf, yum, pacman, zypper, brew, apk) to install `jq` and `python3`.
+
+**Windows**: Detects and uses the available package manager (winget, chocolatey, scoop) to install optional tools like Git.
 
 ## Configure
 
@@ -53,7 +70,25 @@ The easiest way to configure the project is using the interactive wizard:
 .\cust-run-config.ps1 config
 ```
 
-The wizard prompts for:
+The wizard first displays the current configuration, then prompts for each value:
+
+```
+[INFO ] Interactive configuration mode
+[INFO ] Press Enter to keep current/default values
+
+Current configuration:
+  1. VaultRoot:            D:\Obsidian\Work-Vault
+  2. CustomerIdWidth:      3
+  3. CustomerIds:          2 4 5 7 10 11 12 14 15 18 25 27 29 30
+  4. Sections:             FP RAISED INFORMATIONS DIVERS
+  5. TemplateRelativeRoot: _templates\Run
+
+Vault root path [D:\Obsidian\Work-Vault]: 
+Customer ID width (padding) [3]: 
+...
+```
+
+Configuration parameters:
 - **Vault root path** – path to your Obsidian vault
 - **Customer ID width** – zero-padding width (default 3, e.g., `CUST-002`)
 - **Customer IDs** – space-separated list of numeric customer codes
@@ -77,6 +112,7 @@ Running the orchestrator will generate `config/cust-run-config.json` which is sh
 ### Linux / macOS (Bash)
 
 ```bash
+./cust-run-config.sh install     # Check/install requirements (jq, python3)
 ./cust-run-config.sh config      # Interactive configuration wizard
 ./cust-run-config.sh structure   # Create/refresh folder structure
 ./cust-run-config.sh templates   # Apply markdown templates
@@ -87,6 +123,7 @@ Running the orchestrator will generate `config/cust-run-config.json` which is sh
 ### Windows (PowerShell)
 
 ```powershell
+.\cust-run-config.ps1 install     # Check/install requirements
 .\cust-run-config.ps1 config      # Interactive configuration wizard
 .\cust-run-config.ps1 structure   # Create/refresh folder structure
 .\cust-run-config.ps1 templates   # Apply markdown templates
@@ -153,21 +190,22 @@ Placeholders (`{{CUST_CODE}}`, `{{SECTION}}`, `{{NOW_UTC}}`, `{{NOW_LOCAL}}`) ar
 
 ```
 AutoVault/
-├── cust-run-config.sh          # Linux orchestrator
-├── cust-run-config.ps1         # Windows orchestrator
-├── Generate-CustRunTemplates.sh
-├── Generate-CustRunTemplates.ps1
-├── cust-run-templates.sample.json
+├── cust-run-config.sh              # Linux orchestrator
+├── cust-run-config.ps1             # Windows orchestrator
+├── Generate-CustRunTemplates.sh    # Template generator (Linux)
+├── Generate-CustRunTemplates.ps1   # Template generator (Windows)
+├── cust-run-templates.sample.json  # Template definitions sample
+├── README.md
 ├── config/
-│   └── cust-run-config.json    # Shared configuration (auto-generated)
-├── bash/                       # Linux scripts
-│   ├── New-CustRunStructure.sh
+│   └── cust-run-config.json        # Shared configuration (auto-generated)
+├── bash/                           # Linux scripts
 │   ├── Apply-CustRunTemplates.sh
-│   ├── Test-CustRunStructure.sh
-│   └── Cleanup-CustRunStructure.sh
-└── powershell/                 # Windows scripts
-    ├── New-CustRunStructure.ps1
+│   ├── Cleanup-CustRunStructure.sh
+│   ├── New-CustRunStructure.sh
+│   └── Test-CustRunStructure.sh
+└── powershell/                     # Windows scripts
     ├── Apply-CustRunTemplates.ps1
-    ├── Test-CustRunStructure.ps1
-    └── Cleanup-CustRunStructure.ps1
+    ├── Cleanup-CustRunStructure.ps1
+    ├── New-CustRunStructure.ps1
+    └── Test-CustRunStructure.ps1
 ```
