@@ -64,12 +64,54 @@ write_template() {
     log "INFO" "Template written: $dest_path"
 }
 
+validate_path() {
+    local name="$1"
+    local template_root="$2"
+
+    # Reject absolute paths
+    if [[ "$name" == /* ]]; then
+        log "ERROR" "Rejected absolute path in FileName: $name"
+        return 1
+    fi
+
+    # Reject paths containing ".." segments (path traversal)
+    # Regex matches ".." only as a complete path component (bounded by / or start/end)
+    # This allows legitimate filenames like "file..txt" while blocking "../" or "subdir/../"
+    if [[ "$name" =~ (^|/)\.\.($|/) ]]; then
+        log "ERROR" "Rejected path with '..' segments in FileName: $name"
+        return 1
+    fi
+
+    # Construct the target path
+    local target_path="$template_root/$name"
+
+    # Resolve the real path (canonicalize) and verify it's still within TEMPLATE_ROOT
+    local real_target
+    real_target="$(realpath -m "$target_path")"
+    local real_root
+    real_root="$(realpath -m "$template_root")"
+
+    # Check if the resolved path is under the template root
+    if [[ "$real_target" != "$real_root"/* ]] && [[ "$real_target" != "$real_root" ]]; then
+        log "ERROR" "Rejected path outside template root: $name (resolves to $real_target, expected under $real_root)"
+        return 1
+    fi
+
+    return 0
+}
+
 log "INFO" "Reading template definitions from: $TEMPLATE_SPEC_PATH"
 
 count=0
 while IFS= read -r -d '' name && IFS= read -r -d '' content; do
     if [[ -z "$name" ]]; then
         log "WARN" "Encountered template entry without FileName. Skipping."
+        continue
+    fi
+
+    # Validate the path before using it
+    if ! validate_path "$name" "$TEMPLATE_ROOT"; then
+        log "WARN" "Skipping invalid template path: $name"
         continue
     fi
 
