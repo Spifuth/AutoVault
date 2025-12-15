@@ -1,6 +1,33 @@
 # AutoVault
 
-Small helper scripts to create, template, verify, and clean a “Run” workspace in an Obsidian vault, where each customer gets a `CUST-XXX` folder with section subfolders, index files, and a global `Run-Hub.md` linking to every customer.
+Helper scripts to create, template, verify, and clean a "Run" workspace in an Obsidian vault. Each customer gets a `CUST-XXX` folder with section subfolders, index files, and a global `Run-Hub.md` linking to every customer.
+
+## Features
+
+- **Structure generation** – Creates customer folders (`CUST-001`, `CUST-002`, …) with configurable section subfolders and a central `Run-Hub.md`
+- **Template application** – Applies Markdown templates with placeholder substitution (`{{CUST_CODE}}`, `{{SECTION}}`, `{{NOW_UTC}}`, `{{NOW_LOCAL}}`)
+- **Verification** – Validates folder structure, index files, and hub links
+- **Cleanup** – Removes customer folders (protected by safety flags)
+- **Cross-platform** – Parallel implementations in Bash and PowerShell
+
+## Generated Structure
+
+```
+<VaultRoot>/
+├── Run/
+│   ├── CUST-002/
+│   │   ├── CUST-002-Index.md
+│   │   ├── CUST-002-FP/
+│   │   │   └── CUST-002-FP-Index.md
+│   │   ├── CUST-002-RAISED/
+│   │   │   └── CUST-002-RAISED-Index.md
+│   │   ├── CUST-002-INFORMATIONS/
+│   │   │   └── CUST-002-INFORMATIONS-Index.md
+│   │   └── CUST-002-DIVERS/
+│   │       └── CUST-002-DIVERS-Index.md
+│   └── ...
+└── Run-Hub.md
+```
 
 ## Requirements
 - PowerShell 7+ (`pwsh`)
@@ -27,13 +54,38 @@ Small helper scripts to create, template, verify, and clean a “Run” workspac
 Run the orchestrator, which exports config and calls the PowerShell scripts:
 
 ```bash
-./cust-run-config.sh structure   # create/refresh folders and Run-Hub.md
-./cust-run-config.sh templates   # apply markdown templates to all indexes
-./cust-run-config.sh test        # verify the structure and hub links
-./cust-run-config.sh cleanup     # delete customer folders (see safety note)
+VAULT_ROOT="/path/to/vault" CUSTOMER_IDS="1 2 3" ./cust-run-config.sh structure
 ```
 
-Cleanup is disabled by default. To allow deletions, edit the cleanup script itself and set `$EnableDeletion = $true` in `Cleanup-CustRunStructure.ps1` (or `ENABLE_DELETION=true` in `Cleanup-CustRunStructure.sh`) before running `cleanup`.
+PowerShell equivalents use the `CUST_` prefix:
+
+| Bash | PowerShell |
+|------|------------|
+| `VAULT_ROOT` | `$env:CUST_VAULT_ROOT` |
+| `CUSTOMER_ID_WIDTH` | `$env:CUST_CUSTOMER_ID_WIDTH` |
+| `CUSTOMER_IDS` | `$env:CUST_CUSTOMER_IDS` |
+| `SECTIONS` | `$env:CUST_SECTIONS` |
+| `TEMPLATE_RELATIVE_ROOT` | `$env:CUST_TEMPLATE_RELATIVE_ROOT` |
+
+## Safety Notes
+
+### Cleanup protection
+
+Cleanup is **disabled by default** to prevent accidental data loss. To enable deletions:
+
+- **PowerShell**: Set `$EnableDeletion = $true` in `Cleanup-CustRunStructure.ps1`
+- **Bash**: Set `ENABLE_DELETION=true` in `Cleanup-CustRunStructure.sh`
+
+To also remove `Run-Hub.md`:
+
+- **PowerShell**: Set `$RemoveHub = $true`
+- **Bash**: Set `REMOVE_HUB=true`
+
+### Direct script usage
+
+Individual scripts in `bash/` and `powershell/` can be run directly after setting the required environment variables. The scripts will attempt to source configuration from `cust-run-config.sh` or fall back to `cust-run-config.json`.
+
+## License
 
 ## Direct script entry points
 If you do not want to use the orchestrator, you can run the individual Bash scripts (`New-*.sh`, `Apply-*.sh`, `Test-*.sh`, `Cleanup-*.sh`) after updating their inline configuration blocks. Matching PowerShell scripts exist for Windows users. When editing those inline blocks, keep them in sync with the values emitted to `cust-run-config.json` by `cust-run-config.sh`/`.ps1` so tests and structure generation use the same parameters.
