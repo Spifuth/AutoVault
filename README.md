@@ -149,6 +149,10 @@ Edit this file directly or modify the values in the orchestrator scripts and re-
 
 ## Safety Notes
 
+### Hub file preservation
+
+When running `structure`, if `Run-Hub.md` already exists, it will **not be overwritten**. This preserves any manual edits you've made. To regenerate the hub file, delete it first and re-run the structure command.
+
 ### Cleanup protection
 
 Cleanup is **disabled by default** to prevent accidental data loss. To enable deletions:

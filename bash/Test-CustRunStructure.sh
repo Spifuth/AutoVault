@@ -2,6 +2,12 @@
 #
 # Test-CustRunStructure.sh
 #
+set -euo pipefail
+
+# Initialize arrays to avoid unbound variable errors with set -u
+declare -a CUSTOMER_IDS=()
+declare -a SECTIONS=()
+
 # VERIFICATION SCRIPT – CHECKS Run STRUCTURE AND INDEX FILES
 #
 # EXIT CODES:
@@ -58,16 +64,15 @@ load_config() {
         mapfile -t SECTIONS < <(jq -r '.Sections[]?' "$CONFIG_JSON")
     fi
 
-    if [[ ${#CUST_SECTIONS[@]:-0} -eq 0 && ${#SECTIONS[@]:-0} -gt 0 ]]; then
-        CUST_SECTIONS=("${SECTIONS[@]}")
-    fi
+    # Note: We don't call export_cust_env here because it's meant for PowerShell subprocess calls
+    # and it would corrupt our SECTIONS array by exporting it as a string.
 
     if [[ -z "${CUSTOMER_ID_WIDTH:-}" ]]; then
         CUSTOMER_ID_WIDTH=3
     fi
 
-    if [[ ${#CUST_SECTIONS[@]:-0} -eq 0 ]]; then
-        CUST_SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
+    if [[ -z "${SECTIONS[*]:-}" ]]; then
+        SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
     fi
 
     if [[ -z "${VAULT_ROOT:-}" ]]; then
@@ -75,7 +80,7 @@ load_config() {
         return 1
     fi
 
-    if [[ ${#CUSTOMER_IDS[@]:-0} -eq 0 ]]; then
+    if [[ ${#CUSTOMER_IDS[@]} -eq 0 ]]; then
         write_log "ERROR" "No CUST ids defined in CUSTOMER_IDS. Update configuration before running tests."
         return 1
     fi
@@ -165,7 +170,7 @@ for id in "${CUSTOMER_IDS[@]}"; do
     fi
 
     # Subfolders + indexes
-    for section in "${CUST_SECTIONS[@]}"; do
+    for section in "${SECTIONS[@]}"; do
         sub_folder_name="${code}-${section}"
         sub_folder_path="$cust_root/$sub_folder_name"
 

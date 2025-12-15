@@ -170,6 +170,11 @@ install_requirements() {
 VAULT_ROOT="${VAULT_ROOT:-"D:\\Obsidian\\Work-Vault"}"
 CUSTOMER_ID_WIDTH="${CUSTOMER_ID_WIDTH:-3}"
 
+# Initialize arrays if not already set
+# Use declare -g for global scope when sourced from a function
+declare -ga CUSTOMER_IDS="${CUSTOMER_IDS[@]:-}"
+declare -ga SECTIONS="${SECTIONS[@]:-}"
+
 if [[ -z "${CUSTOMER_IDS[*]:-}" ]]; then
   CUSTOMER_IDS=(2 4 5 7 10 11 12 14 15 18 25 27 29 30)
 fi
@@ -295,8 +300,11 @@ render_config_json() {
     return 1
   fi
 
+  VAULT_ROOT="$VAULT_ROOT" \
+  CUSTOMER_ID_WIDTH="$CUSTOMER_ID_WIDTH" \
   CUSTOMER_IDS_LIST="${CUSTOMER_IDS[*]}" \
   SECTIONS_LIST="${SECTIONS[*]}" \
+  TEMPLATE_RELATIVE_ROOT="$TEMPLATE_RELATIVE_ROOT" \
   python3 - <<'PY'
 import json
 import os
@@ -360,6 +368,9 @@ load_config() {
 
   VAULT_ROOT="$(jq -r '.VaultRoot' "$CONFIG_JSON")"
   CUSTOMER_ID_WIDTH="$(jq -r '.CustomerIdWidth // 3' "$CONFIG_JSON")"
+  # Declare as global before mapfile to avoid local variable creation in function context
+  declare -ga CUSTOMER_IDS
+  declare -ga SECTIONS
   mapfile -t CUSTOMER_IDS < <(jq -r '.CustomerIds[]' "$CONFIG_JSON")
   mapfile -t SECTIONS < <(jq -r '.Sections[]' "$CONFIG_JSON")
   TEMPLATE_RELATIVE_ROOT="$(jq -r '.TemplateRelativeRoot' "$CONFIG_JSON")"

@@ -2,6 +2,12 @@
 #
 # New-CustRunStructure.sh
 #
+set -euo pipefail
+
+# Initialize arrays to avoid unbound variable errors with set -u
+declare -a CUSTOMER_IDS=()
+declare -a SECTIONS=()
+
 # CONFIGURATION:
 #   - Configuration is sourced from cust-run-config.sh (or environment overrides).
 #
@@ -45,42 +51,23 @@ load_config() {
         write_log "INFO" "Loading configuration from $CONFIG_SCRIPT"
         if ! source "$CONFIG_SCRIPT"; then
             write_log "ERROR" "Failed to load configuration from $CONFIG_SCRIPT"
+            return 1
         fi
     else
         write_log "WARN" "Configuration script not found at $CONFIG_SCRIPT; falling back to environment variables"
     fi
 
-    if declare -F export_cust_env >/dev/null 2>&1; then
-        export_cust_env
-    fi
-
-    if [[ -z "${VAULT_ROOT:-}" && -n "${CUST_VAULT_ROOT:-}" ]]; then
-        VAULT_ROOT="$CUST_VAULT_ROOT"
-    fi
-
-    if [[ -z "${CUSTOMER_ID_WIDTH:-}" && -n "${CUST_CUSTOMER_ID_WIDTH:-}" ]]; then
-        CUSTOMER_ID_WIDTH="$CUST_CUSTOMER_ID_WIDTH"
-    fi
-
-    if [[ ${#CUSTOMER_IDS[@]:-0} -eq 0 && -n "${CUST_CUSTOMER_IDS:-}" ]]; then
-        read -r -a CUSTOMER_IDS <<<"$CUST_CUSTOMER_IDS"
-    fi
-
-    local sections_env="${CUST_SECTIONS:-}"
-    if [[ ${#CUST_SECTIONS[@]:-0} -eq 0 && -n "$sections_env" ]]; then
-        read -r -a CUST_SECTIONS <<<"$sections_env"
-    fi
-
-    if [[ ${#CUST_SECTIONS[@]:-0} -eq 0 && ${#SECTIONS[@]:-0} -gt 0 ]]; then
-        CUST_SECTIONS=("${SECTIONS[@]}")
-    fi
+    # Note: We don't call export_cust_env here because it's meant for PowerShell subprocess calls
+    # and it would corrupt our SECTIONS array by exporting it as a string.
+    # The VAULT_ROOT, CUSTOMER_ID_WIDTH, CUSTOMER_IDS, and SECTIONS variables are already
+    # available from sourcing cust-run-config.sh.
 
     if [[ -z "${CUSTOMER_ID_WIDTH:-}" ]]; then
         CUSTOMER_ID_WIDTH=3
     fi
 
-    if [[ ${#CUST_SECTIONS[@]:-0} -eq 0 ]]; then
-        CUST_SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
+    if [[ -z "${SECTIONS[*]:-}" ]]; then
+        SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
     fi
 }
 
@@ -131,7 +118,10 @@ get_cust_code() {
 # Main logic
 #######################################
 
-load_config
+if ! load_config; then
+    write_log "ERROR" "Failed to load configuration. Aborting."
+    exit 1
+fi
 
 write_log "INFO" "Starting CUST Run structure creation"
 write_log "INFO" "Vault root: $VAULT_ROOT"
@@ -183,7 +173,7 @@ for id in "${CUSTOMER_IDS[@]}"; do
     hub_lines+=("- [[${relative_target}]]")
 
     # Subfolders and their index files
-    for section in "${CUST_SECTIONS[@]}"; do
+    for section in "${SECTIONS[@]}"; do
         sub_folder_name="${code}-${section}"
         sub_folder_path="$cust_root/$sub_folder_name"
         ensure_directory "$sub_folder_path"

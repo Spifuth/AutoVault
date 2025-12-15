@@ -2,6 +2,12 @@
 #
 # Apply-CustRunTemplates.sh
 #
+set -euo pipefail
+
+# Initialize arrays to avoid unbound variable errors with set -u
+declare -a CUSTOMER_IDS=()
+declare -a SECTIONS=()
+
 # APPLY EXTERNAL MARKDOWN TEMPLATES TO ALL CUST RUN INDEX FILES
 #
 
@@ -15,22 +21,8 @@ CONFIG_SCRIPT="$SCRIPT_DIR/../cust-run-config.sh"
 if [[ -f "$CONFIG_SCRIPT" ]]; then
     # shellcheck source=/dev/null
     source "$CONFIG_SCRIPT"
-
-    if declare -F export_cust_env >/dev/null; then
-        export_cust_env
-    fi
-fi
-
-# Prefer values defined in cust-run-config.sh, with fallbacks to exported env vars
-VAULT_ROOT="${VAULT_ROOT:-${CUST_VAULT_ROOT:-}}"
-CUSTOMER_ID_WIDTH="${CUSTOMER_ID_WIDTH:-${CUST_CUSTOMER_ID_WIDTH:-3}}"
-
-if [[ ${#CUSTOMER_IDS[@]:-0} -eq 0 ]] && [[ -n "${CUST_CUSTOMER_IDS:-}" ]]; then
-    IFS=' ' read -r -a CUSTOMER_IDS <<< "$CUST_CUSTOMER_IDS"
-fi
-
-if [[ ${#SECTIONS[@]:-0} -eq 0 ]] && [[ -n "${CUST_SECTIONS:-}" ]]; then
-    IFS=' ' read -r -a SECTIONS <<< "$CUST_SECTIONS"
+    # Note: We don't call export_cust_env here because it's meant for PowerShell subprocess calls
+    # and it would corrupt our SECTIONS array by exporting it as a string.
 fi
 
 if [[ -z "${VAULT_ROOT:-}" ]]; then
@@ -38,13 +30,17 @@ if [[ -z "${VAULT_ROOT:-}" ]]; then
     exit 1
 fi
 
-if [[ ${#SECTIONS[@]:-0} -eq 0 ]]; then
+if [[ -z "${CUSTOMER_ID_WIDTH:-}" ]]; then
+    CUSTOMER_ID_WIDTH=3
+fi
+
+# Default sections if not set
+if [[ -z "${SECTIONS[*]:-}" ]]; then
     SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
 fi
 
-CUST_SECTIONS=("${SECTIONS[@]}")
-
-if [[ ${#CUSTOMER_IDS[@]:-0} -eq 0 ]]; then
+# Verify CUSTOMER_IDS is set
+if [[ ${#CUSTOMER_IDS[@]} -eq 0 ]]; then
     echo "ERROR: CUSTOMER_IDS is not set. Run via cust-run-config.sh or update cust-run-config.sh." >&2
     exit 1
 fi
@@ -118,19 +114,17 @@ set_file_content() {
 
 write_log "INFO" "Loading templates from: $TEMPLATE_ROOT"
 
-root_template_content="$(get_template_content "$ROOT_TEMPLATE_PATH" "ROOT")"
-if [[ $? -ne 0 ]]; then
+if ! root_template_content="$(get_template_content "$ROOT_TEMPLATE_PATH" "ROOT")"; then
     write_log "ERROR" "Aborting: root template missing."
     exit 1
 fi
 
 declare -A SECTION_TEMPLATE_CONTENT
 
-for section in "${CUST_SECTIONS[@]}"; do
+for section in "${SECTIONS[@]}"; do
     tmpl_path="$(get_section_template_path "$section")"
 
-    content="$(get_template_content "$tmpl_path" "$section")"
-    if [[ $? -ne 0 ]]; then
+    if ! content="$(get_template_content "$tmpl_path" "$section")"; then
         write_log "ERROR" "Aborting: template missing for section '$section'."
         exit 1
     fi
@@ -188,7 +182,7 @@ for id in "${CUSTOMER_IDS[@]}"; do
     #######################################
     # Section indexes
     #######################################
-    for section in "${CUST_SECTIONS[@]}"; do
+    for section in "${SECTIONS[@]}"; do
         sub_folder_name="${code}-${section}"
         sub_folder_path="$cust_root/$sub_folder_name"
 

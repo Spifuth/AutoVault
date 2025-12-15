@@ -2,6 +2,12 @@
 #
 # Cleanup-CustRunStructure.sh
 #
+set -euo pipefail
+
+# Initialize arrays to avoid unbound variable errors with set -u
+declare -a CUSTOMER_IDS=()
+declare -a SECTIONS=()
+
 # DANGEROUS SCRIPT – WILL DELETE CUST STRUCTURE UNDER Run
 #
 
