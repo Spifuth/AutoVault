@@ -107,14 +107,25 @@ foreach ($tmpl in $templates) {
         continue
     }
 
-    # Validate the path before using it
-    if (-not (Test-SafePath -FileName $fileName -TemplateRoot $TemplateRoot)) {
-        Write-Warning "Skipping invalid template path: $fileName"
+    # Harden $fileName against path traversal and absolute path issues
+    if ([IO.Path]::IsPathRooted($fileName)) {
+        Write-Warning "Template FileName is an absolute path: '$fileName'. Skipping."
+        continue
+    }
+    if ($fileName -split '[\\/]' | Where-Object { $_ -eq '..' }) {
+        Write-Warning "Template FileName contains parent directory traversal '..': '$fileName'. Skipping."
         continue
     }
 
     $content = [string]$tmpl.Content
     $targetPath = Join-Path $TemplateRoot $fileName
+    # Resolve full paths for comparison
+    $resolvedTemplateRoot = [IO.Path]::GetFullPath($TemplateRoot)
+    $resolvedTargetPath = [IO.Path]::GetFullPath($targetPath)
+    if (-not ($resolvedTargetPath.StartsWith($resolvedTemplateRoot, [StringComparison]::OrdinalIgnoreCase))) {
+        Write-Warning "Template FileName escapes template root: '$fileName' -> '$resolvedTargetPath'. Skipping."
+        continue
+    }
     $targetDir = Split-Path -Parent $targetPath
 
     if (-not (Test-Path -LiteralPath $targetDir -PathType Container)) {
