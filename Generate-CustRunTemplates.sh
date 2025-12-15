@@ -74,8 +74,8 @@ validate_path() {
         return 1
     fi
 
-    # Reject paths containing ".." segments
-    if [[ "$name" == *..* ]]; then
+    # Reject paths containing ".." segments (path traversal)
+    if [[ "$name" =~ (^|/)\.\.($|/) ]]; then
         log "ERROR" "Rejected path with '..' segments in FileName: $name"
         return 1
     fi

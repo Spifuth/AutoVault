@@ -64,8 +64,9 @@ function Test-SafePath {
         return $false
     }
 
-    # Reject paths containing ".." segments
-    if ($FileName -match '\.\.') {
+    # Reject paths containing ".." segments (path traversal)
+    # Use regex to match ".." as a complete path component, not just any two dots
+    if ($FileName -match '(^|[\\/])\.\.($|[\\/])') {
         Write-Error "Rejected path with '..' segments in FileName: $FileName"
         return $false
     }
@@ -76,8 +77,13 @@ function Test-SafePath {
         $resolvedTarget = [IO.Path]::GetFullPath($targetPath)
         $resolvedRoot = [IO.Path]::GetFullPath($TemplateRoot)
 
+        # Normalize path separators for comparison
+        $resolvedTarget = $resolvedTarget.Replace('/', [IO.Path]::DirectorySeparatorChar)
+        $resolvedRoot = $resolvedRoot.Replace('/', [IO.Path]::DirectorySeparatorChar)
+
         # Ensure the resolved path is within the template root
-        if (-not $resolvedTarget.StartsWith($resolvedRoot + [IO.Path]::DirectorySeparatorChar) -and $resolvedTarget -ne $resolvedRoot) {
+        $rootWithSep = $resolvedRoot + [IO.Path]::DirectorySeparatorChar
+        if (-not $resolvedTarget.StartsWith($rootWithSep, [StringComparison]::OrdinalIgnoreCase) -and -not $resolvedTarget.Equals($resolvedRoot, [StringComparison]::OrdinalIgnoreCase)) {
             Write-Error "Rejected path outside template root: $FileName (resolves to $resolvedTarget, expected under $resolvedRoot)"
             return $false
         }
