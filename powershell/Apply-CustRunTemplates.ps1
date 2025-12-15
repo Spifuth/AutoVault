@@ -71,12 +71,12 @@ $TemplateRoot = if ($env:CUST_TEMPLATE_RELATIVE_ROOT) {
 }
 
 # Template locations
-$RootTemplatePath    = Join-Path $TemplateRoot 'CUST-Root-Index.md'
-$SectionTemplateMap  = @{
-    'FP'           = Join-Path $TemplateRoot 'CUST-Section-FP-Index.md'
-    'RAISED'       = Join-Path $TemplateRoot 'CUST-Section-RAISED-Index.md'
-    'INFORMATIONS' = Join-Path $TemplateRoot 'CUST-Section-INFORMATIONS-Index.md'
-    'DIVERS'       = Join-Path $TemplateRoot 'CUST-Section-DIVERS-Index.md'
+$RootTemplatePath = Join-Path $TemplateRoot 'CUST-Root-Index.md'
+
+# Function to get section template path dynamically
+function Get-SectionTemplatePath {
+    param([string]$Section)
+    return Join-Path $TemplateRoot "CUST-Section-$Section-Index.md"
 }
 
 # =============================
@@ -164,12 +164,7 @@ catch {
 
 $sectionTemplateContent = @{}
 foreach ($section in $CustSections) {
-    if (-not $SectionTemplateMap.ContainsKey($section)) {
-        Write-Log "No template mapping defined for section '$section'." 'ERROR'
-        exit 1
-    }
-
-    $tmplPath = $SectionTemplateMap[$section]
+    $tmplPath = Get-SectionTemplatePath -Section $section
     try {
         $sectionTemplateContent[$section] = Get-TemplateContent -Path $tmplPath -LogicalName $section
     }

@@ -10,7 +10,7 @@
 #######################################
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_SCRIPT="$SCRIPT_DIR/cust-run-config.sh"
+CONFIG_SCRIPT="$SCRIPT_DIR/../cust-run-config.sh"
 
 if [[ -f "$CONFIG_SCRIPT" ]]; then
     # shellcheck source=/dev/null
@@ -56,13 +56,11 @@ TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT//\\//}"
 TEMPLATE_ROOT="$VAULT_ROOT/${TEMPLATE_RELATIVE_ROOT#/}"
 ROOT_TEMPLATE_PATH="$TEMPLATE_ROOT/CUST-Root-Index.md"
 
-# Associative array for section templates
-declare -A SECTION_TEMPLATE_PATHS=(
-    ["FP"]="$TEMPLATE_ROOT/CUST-Section-FP-Index.md"
-    ["RAISED"]="$TEMPLATE_ROOT/CUST-Section-RAISED-Index.md"
-    ["INFORMATIONS"]="$TEMPLATE_ROOT/CUST-Section-INFORMATIONS-Index.md"
-    ["DIVERS"]="$TEMPLATE_ROOT/CUST-Section-DIVERS-Index.md"
-)
+# Function to get section template path dynamically
+get_section_template_path() {
+    local section="$1"
+    echo "$TEMPLATE_ROOT/CUST-Section-${section}-Index.md"
+}
 
 #######################################
 # Helper functions
@@ -129,11 +127,7 @@ fi
 declare -A SECTION_TEMPLATE_CONTENT
 
 for section in "${CUST_SECTIONS[@]}"; do
-    tmpl_path="${SECTION_TEMPLATE_PATHS[$section]}"
-    if [[ -z "$tmpl_path" ]]; then
-        write_log "ERROR" "No template mapping defined for section '$section'."
-        exit 1
-    fi
+    tmpl_path="$(get_section_template_path "$section")"
 
     content="$(get_template_content "$tmpl_path" "$section")"
     if [[ $? -ne 0 ]]; then

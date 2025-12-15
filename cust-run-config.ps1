@@ -1,26 +1,165 @@
 <#
-Shared config loader for CUST Run scripts.
-Creates and reads cust-run-config.json so Bash and PowerShell runners share
-the same vault settings.
+.SYNOPSIS
+    Orchestrator + config for CUST Run PowerShell scripts (Windows).
 
-Exposes:
-  $VaultRoot
-  $CustomerIdWidth
-  $CustomerIds
-  $CustSections
-  $TemplateRoot
+.DESCRIPTION
+    Creates and reads cust-run-config.json so Bash and PowerShell runners share
+    the same vault settings. When executed directly, provides CLI commands to
+    manage the CUST Run structure.
+
+.PARAMETER Command
+    The command to execute: structure, templates, test, cleanup
+
+.EXAMPLE
+    .\cust-run-config.ps1 structure
+    .\cust-run-config.ps1 templates
+    .\cust-run-config.ps1 test
+    .\cust-run-config.ps1 cleanup
 #>
 
-$ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$configJsonPath = Join-Path $ScriptRoot 'cust-run-config.json'
+[CmdletBinding()]
+param(
+    [Parameter(Position = 0)]
+    [ValidateSet('config', 'setup', 'init', 'structure', 'new', 'templates', 'apply', 'test', 'verify', 'cleanup', '')]
+    [string]$Command
+)
 
-# Base values used to seed cust-run-config.json. Re-running the script refreshes
-# the JSON so both shells stay aligned with these values (or env overrides).
+$ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$configJsonPath = Join-Path $ScriptRoot 'config' 'cust-run-config.json'
+
+#--------------------------------------
+# LOGGING HELPERS
+#--------------------------------------
+
+function Write-LogInfo {
+    param([string]$Message)
+    Write-Host "[INFO ] $Message" -ForegroundColor Blue
+}
+
+function Write-LogWarn {
+    param([string]$Message)
+    Write-Host "[WARN ] $Message" -ForegroundColor Yellow
+}
+
+function Write-LogError {
+    param([string]$Message)
+    Write-Host "[ERROR] $Message" -ForegroundColor Red
+}
+
+#######################################
+# CONFIGURATION SOURCE
+#######################################
+
+# Base values used to seed cust-run-config.json. Adjust these to match your
+# vault and customer list. Re-running the script will refresh the JSON to match
+# these values (or environment overrides) so Bash and PowerShell stay aligned.
 $VaultRoot            = $env:CUST_VAULT_ROOT            ? $env:CUST_VAULT_ROOT            : 'D:\Obsidian\Work-Vault'
 $CustomerIdWidth      = $env:CUST_CUSTOMER_ID_WIDTH     ? [int]$env:CUST_CUSTOMER_ID_WIDTH : 3
 $CustomerIds          = if ($env:CUST_CUSTOMER_IDS) { $env:CUST_CUSTOMER_IDS -split '\s+' | Where-Object { $_ } | ForEach-Object { [int]$_ } } else { @(2,4,5,7,10,11,12,14,15,18,25,27,29,30) }
 $CustSections         = if ($env:CUST_SECTIONS) { $env:CUST_SECTIONS -split '\s+' | Where-Object { $_ } } else { @('FP','RAISED','INFORMATIONS','DIVERS') }
 $TemplateRelativeRoot = $env:CUST_TEMPLATE_RELATIVE_ROOT ? $env:CUST_TEMPLATE_RELATIVE_ROOT : '_templates\Run'
+
+#######################################
+# INTERACTIVE CONFIGURATION
+#######################################
+
+function Prompt-Value {
+    param(
+        [string]$Prompt,
+        [string]$Default
+    )
+    
+    if ($Default) {
+        $result = Read-Host "$Prompt [$Default]"
+    } else {
+        $result = Read-Host "$Prompt"
+    }
+    
+    if ([string]::IsNullOrWhiteSpace($result)) {
+        return $Default
+    }
+    return $result
+}
+
+function Prompt-List {
+    param(
+        [string]$Prompt,
+        [array]$Default
+    )
+    
+    $defaultStr = $Default -join ' '
+    $result = Read-Host "$Prompt (space-separated) [$defaultStr]"
+    
+    if ([string]::IsNullOrWhiteSpace($result)) {
+        return $Default
+    }
+    return ($result -split '\s+' | Where-Object { $_ })
+}
+
+function Invoke-InteractiveConfig {
+    Write-LogInfo "Interactive configuration mode"
+    Write-LogInfo "Press Enter to keep current/default values"
+    Write-Host ""
+    
+    # Display current configuration
+    Write-Host "Current configuration:"
+    Write-Host "  1. VaultRoot:            $VaultRoot"
+    Write-Host "  2. CustomerIdWidth:      $CustomerIdWidth"
+    Write-Host "  3. CustomerIds:          $($CustomerIds -join ' ')"
+    Write-Host "  4. Sections:             $($CustSections -join ' ')"
+    Write-Host "  5. TemplateRelativeRoot: $TemplateRelativeRoot"
+    Write-Host ""
+    
+    # VaultRoot
+    $script:VaultRoot = Prompt-Value -Prompt "Vault root path" -Default $VaultRoot
+    
+    # CustomerIdWidth
+    $widthStr = Prompt-Value -Prompt "Customer ID width (padding)" -Default $CustomerIdWidth.ToString()
+    $script:CustomerIdWidth = [int]$widthStr
+    
+    # CustomerIds
+    $newIds = Prompt-List -Prompt "Customer IDs" -Default $CustomerIds
+    $script:CustomerIds = @($newIds | ForEach-Object { [int]$_ })
+    
+    # Sections
+    $newSections = Prompt-List -Prompt "Sections" -Default $CustSections
+    $script:CustSections = @($newSections)
+    
+    # TemplateRelativeRoot
+    $script:TemplateRelativeRoot = Prompt-Value -Prompt "Template relative root" -Default $TemplateRelativeRoot
+    
+    Write-Host ""
+    Write-LogInfo "Configuration summary:"
+    Write-Host "  VaultRoot:            $VaultRoot"
+    Write-Host "  CustomerIdWidth:      $CustomerIdWidth"
+    Write-Host "  CustomerIds:          $($CustomerIds -join ' ')"
+    Write-Host "  Sections:             $($CustSections -join ' ')"
+    Write-Host "  TemplateRelativeRoot: $TemplateRelativeRoot"
+    Write-Host ""
+    
+    $confirm = Read-Host "Save this configuration? [Y/n]"
+    if ($confirm -match '^[Nn]') {
+        Write-LogWarn "Configuration cancelled"
+        return $false
+    }
+    
+    # Force write the new config
+    $json = Get-ConfigPayload | ConvertTo-Json -Depth 4
+    $parentDir = Split-Path -Parent $configJsonPath
+    if (-not (Test-Path -LiteralPath $parentDir -PathType Container)) {
+        Write-LogInfo "Creating config directory: $parentDir"
+        New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
+    }
+    Write-LogInfo "Writing configuration file: $configJsonPath"
+    Set-Content -Path $configJsonPath -Value $json -Encoding UTF8 -NoNewline
+    
+    Write-LogInfo "Configuration saved to $configJsonPath"
+    return $true
+}
+
+#######################################
+# CONFIG (written to + loaded from cust-run-config.json)
+#######################################
 
 function Get-ConfigPayload {
     [ordered]@{
@@ -43,13 +182,19 @@ function Ensure-ConfigJson {
     }
 
     if ($json -ne $existing) {
-        Write-Output "INFO: Writing configuration file: $Path" | Out-Host
+        $parentDir = Split-Path -Parent $Path
+        if (-not (Test-Path -LiteralPath $parentDir -PathType Container)) {
+            Write-LogInfo "Creating config directory: $parentDir"
+            New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
+        }
+        Write-LogInfo "Writing configuration file: $Path"
         Set-Content -Path $Path -Value $json -Encoding UTF8 -NoNewline
     }
 
     return $json
 }
 
+# Load configuration
 $jsonText = Ensure-ConfigJson -Path $configJsonPath
 $config = $jsonText | ConvertFrom-Json
 
@@ -57,16 +202,93 @@ if (-not $config.VaultRoot) {
     throw "Config error: VaultRoot missing from $configJsonPath"
 }
 
-$VaultRoot            = [string]$config.VaultRoot
-$CustomerIdWidth      = [int]$config.CustomerIdWidth
-$CustomerIds          = @($config.CustomerIds)
-$CustSections         = @($config.Sections)
-$TemplateRelativeRoot = [string]$config.TemplateRelativeRoot
+$script:VaultRoot            = [string]$config.VaultRoot
+$script:CustomerIdWidth      = [int]$config.CustomerIdWidth
+$script:CustomerIds          = @($config.CustomerIds)
+$script:CustSections         = @($config.Sections)
+$script:TemplateRelativeRoot = [string]$config.TemplateRelativeRoot
+$script:TemplateRoot         = Join-Path $VaultRoot $TemplateRelativeRoot
 
-$env:CUST_VAULT_ROOT            = $VaultRoot
-$env:CUST_CUSTOMER_ID_WIDTH     = $CustomerIdWidth
-$env:CUST_CUSTOMER_IDS          = ($CustomerIds -join ' ')
-$env:CUST_SECTIONS              = ($CustSections -join ' ')
+# Export to environment for child scripts
+$env:CUST_VAULT_ROOT             = $VaultRoot
+$env:CUST_CUSTOMER_ID_WIDTH      = $CustomerIdWidth
+$env:CUST_CUSTOMER_IDS           = ($CustomerIds -join ' ')
+$env:CUST_SECTIONS               = ($CustSections -join ' ')
 $env:CUST_TEMPLATE_RELATIVE_ROOT = $TemplateRelativeRoot
 
-$TemplateRoot = Join-Path $VaultRoot $TemplateRelativeRoot
+#######################################
+# INTERNAL: run PowerShell scripts
+#######################################
+
+function Invoke-CustScript {
+    param([string]$ScriptName)
+    
+    $scriptPath = Join-Path $ScriptRoot 'powershell' $ScriptName
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        Write-LogError "Script not found: $scriptPath"
+        exit 1
+    }
+    
+    & $scriptPath
+}
+
+#######################################
+# CLI (only when executed with command)
+#######################################
+
+function Show-Usage {
+    @"
+Usage: .\cust-run-config.ps1 <command>
+
+Commands:
+  config      Interactive configuration wizard
+  structure   Create / refresh CUST Run folder structure
+  templates   Apply markdown templates to indexes
+  test        Verify structure & indexes
+  cleanup     Remove CUST folders (uses Cleanup script safety flags)
+
+Examples:
+  .\cust-run-config.ps1 config
+  .\cust-run-config.ps1 structure
+  .\cust-run-config.ps1 templates
+  .\cust-run-config.ps1 test
+  .\cust-run-config.ps1 cleanup
+"@
+}
+
+if ($Command) {
+    switch ($Command) {
+        { $_ -in 'config', 'setup', 'init' } {
+            Invoke-InteractiveConfig
+        }
+        { $_ -in 'structure', 'new' } {
+            Write-LogInfo "Using configuration from $configJsonPath"
+            Invoke-CustScript 'New-CustRunStructure.ps1'
+        }
+        { $_ -in 'templates', 'apply' } {
+            Write-LogInfo "Using configuration from $configJsonPath"
+            Invoke-CustScript 'Apply-CustRunTemplates.ps1'
+        }
+        { $_ -in 'test', 'verify' } {
+            Write-LogInfo "Using configuration from $configJsonPath"
+            Invoke-CustScript 'Test-CustRunStructure.ps1'
+        }
+        'cleanup' {
+            Write-LogWarn "Using configuration from $configJsonPath"
+            Invoke-CustScript 'Cleanup-CustRunStructure.ps1'
+        }
+        default {
+            Write-LogError "Unknown command: $Command"
+            Show-Usage
+            exit 1
+        }
+    }
+}
+elseif ($MyInvocation.InvocationName -ne '.') {
+    # Script was executed directly without command (not dot-sourced)
+    Show-Usage
+    exit 1
+}
+
+# When dot-sourced, variables are available to the caller:
+# $VaultRoot, $CustomerIdWidth, $CustomerIds, $CustSections, $TemplateRoot

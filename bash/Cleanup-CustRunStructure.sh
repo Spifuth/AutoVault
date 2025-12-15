@@ -10,7 +10,7 @@
 #######################################
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_SH="$SCRIPT_DIR/cust-run-config.sh"
+CONFIG_SH="$SCRIPT_DIR/../cust-run-config.sh"
 
 if [[ ! -f "$CONFIG_SH" ]]; then
     echo "ERROR: cust-run-config.sh not found alongside the cleanup script: $CONFIG_SH" >&2

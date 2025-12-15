@@ -29,8 +29,8 @@ write_log() {
 #######################################
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_SCRIPT="$SCRIPT_DIR/cust-run-config.sh"
-CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/cust-run-config.json"}"
+CONFIG_SCRIPT="$SCRIPT_DIR/../cust-run-config.sh"
+CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/../config/cust-run-config.json"}"
 
 load_config() {
     if [[ -f "$CONFIG_SCRIPT" ]]; then

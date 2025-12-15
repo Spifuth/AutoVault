@@ -7,7 +7,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/cust-run-config.json"}"
+CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/config/cust-run-config.json"}"
 
 #--------------------------------------
 # COLORS + LOGGING HELPERS
@@ -42,19 +42,124 @@ log_error() {
 
 # Base values used to seed cust-run-config.json. Adjust these to match your
 # vault and customer list. Re-running the script will refresh the JSON to match
-# these values (or environment overrides) so Bash and PowerShell stay aligned.
+# these values (or environment overrides) so Bash and PowerShell stays aligned.
 VAULT_ROOT="${VAULT_ROOT:-"D:\\Obsidian\\Work-Vault"}"
 CUSTOMER_ID_WIDTH="${CUSTOMER_ID_WIDTH:-3}"
 
-if [[ ${#CUSTOMER_IDS[@]:-0} -eq 0 ]]; then
+if [[ -z "${CUSTOMER_IDS[*]:-}" ]]; then
   CUSTOMER_IDS=(2 4 5 7 10 11 12 14 15 18 25 27 29 30)
 fi
 
-if [[ ${#SECTIONS[@]:-0} -eq 0 ]]; then
+if [[ -z "${SECTIONS[*]:-}" ]]; then
   SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
 fi
 
 TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT:-"_templates\\Run"}"
+
+#######################################
+# INTERACTIVE CONFIGURATION
+#######################################
+
+prompt_value() {
+  local prompt="$1"
+  local default="$2"
+  local result
+
+  if [[ -n "$default" ]]; then
+    printf "%s [%s]: " "$prompt" "$default" >&2
+  else
+    printf "%s: " "$prompt" >&2
+  fi
+
+  read -r result
+  if [[ -z "$result" ]]; then
+    echo "$default"
+  else
+    echo "$result"
+  fi
+}
+
+prompt_list() {
+  local prompt="$1"
+  shift
+  local -a defaults=("$@")
+  local default_str="${defaults[*]}"
+  local result
+
+  printf "%s (space-separated) [%s]: " "$prompt" "$default_str" >&2
+  read -r result
+
+  if [[ -z "$result" ]]; then
+    echo "$default_str"
+  else
+    echo "$result"
+  fi
+}
+
+interactive_config() {
+  log_info "Interactive configuration mode"
+  log_info "Press Enter to keep current/default values"
+  echo >&2
+
+  # Display current configuration
+  echo "Current configuration:" >&2
+  echo "  1. VaultRoot:            $VAULT_ROOT" >&2
+  echo "  2. CustomerIdWidth:      $CUSTOMER_ID_WIDTH" >&2
+  echo "  3. CustomerIds:          ${CUSTOMER_IDS[*]}" >&2
+  echo "  4. Sections:             ${SECTIONS[*]}" >&2
+  echo "  5. TemplateRelativeRoot: $TEMPLATE_RELATIVE_ROOT" >&2
+  echo >&2
+
+  # VaultRoot
+  local new_vault_root
+  new_vault_root=$(prompt_value "Vault root path" "$VAULT_ROOT")
+  VAULT_ROOT="$new_vault_root"
+
+  # CustomerIdWidth
+  local new_width
+  new_width=$(prompt_value "Customer ID width (padding)" "$CUSTOMER_ID_WIDTH")
+  CUSTOMER_ID_WIDTH="$new_width"
+
+  # CustomerIds
+  local new_ids_str
+  new_ids_str=$(prompt_list "Customer IDs" "${CUSTOMER_IDS[@]}")
+  read -ra CUSTOMER_IDS <<< "$new_ids_str"
+
+  # Sections
+  local new_sections_str
+  new_sections_str=$(prompt_list "Sections" "${SECTIONS[@]}")
+  read -ra SECTIONS <<< "$new_sections_str"
+
+  # TemplateRelativeRoot
+  local new_template_root
+  new_template_root=$(prompt_value "Template relative root" "$TEMPLATE_RELATIVE_ROOT")
+  TEMPLATE_RELATIVE_ROOT="$new_template_root"
+
+  echo >&2
+  log_info "Configuration summary:"
+  echo "  VaultRoot:            $VAULT_ROOT" >&2
+  echo "  CustomerIdWidth:      $CUSTOMER_ID_WIDTH" >&2
+  echo "  CustomerIds:          ${CUSTOMER_IDS[*]}" >&2
+  echo "  Sections:             ${SECTIONS[*]}" >&2
+  echo "  TemplateRelativeRoot: $TEMPLATE_RELATIVE_ROOT" >&2
+  echo >&2
+
+  local confirm
+  printf "Save this configuration? [Y/n]: " >&2
+  read -r confirm
+  if [[ "$confirm" =~ ^[Nn] ]]; then
+    log_warn "Configuration cancelled"
+    return 1
+  fi
+
+  # Force write the new config
+  if ! ensure_config_json; then
+    log_error "Failed to write configuration"
+    return 1
+  fi
+
+  log_info "Configuration saved to $CONFIG_JSON"
+}
 
 #######################################
 # CONFIG (written to + loaded from cust-run-config.json)
@@ -100,6 +205,13 @@ ensure_config_json() {
   fi
 
   if [[ ! -f "$CONFIG_JSON" ]] || ! cmp -s "$tmp" "$CONFIG_JSON"; then
+    # Ensure config directory exists
+    local config_dir
+    config_dir="$(dirname "$CONFIG_JSON")"
+    if [[ ! -d "$config_dir" ]]; then
+      log_info "Creating config directory: $config_dir"
+      mkdir -p "$config_dir"
+    fi
     log_info "Writing configuration file: $CONFIG_JSON"
     mv "$tmp" "$CONFIG_JSON"
   else
@@ -146,10 +258,10 @@ export_cust_env() {
   export CUST_TEMPLATE_RELATIVE_ROOT="$TEMPLATE_RELATIVE_ROOT"
 }
 
-run_pwsh() {
+run_bash() {
   local script="$1"
   shift || true
-  pwsh -NoLogo -NoProfile -File "$SCRIPT_DIR/$script" "$@"
+  bash "$SCRIPT_DIR/bash/$script" "$@"
 }
 
 #######################################
@@ -158,19 +270,21 @@ run_pwsh() {
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   usage() {
     cat <<'EOF'
-Usage: $(basename "$0") <command>
+Usage: cust-run-config.sh <command>
 
 Commands:
+  config      Interactive configuration wizard
   structure   Create / refresh CUST Run folder structure
   templates   Apply markdown templates to indexes
   test        Verify structure & indexes
   cleanup     Remove CUST folders (uses Cleanup script safety flags)
 
 Examples:
-  $(basename "$0") structure
-  $(basename "$0") templates
-  $(basename "$0") test
-  $(basename "$0") cleanup
+  cust-run-config.sh config
+  cust-run-config.sh structure
+  cust-run-config.sh templates
+  cust-run-config.sh test
+  cust-run-config.sh cleanup
 EOF
   }
 
@@ -184,25 +298,24 @@ EOF
   export_cust_env
 
   case "$cmd" in
+    config|setup|init)
+      interactive_config
+      ;;
     structure|new)
-      log_info "PATH=$PATH"
       log_info "Using configuration from $CONFIG_JSON"
-      run_pwsh "New-CustRunStructure.ps1"
+      run_bash "New-CustRunStructure.sh"
       ;;
     templates|apply)
-      log_info "PATH=$PATH"
       log_info "Using configuration from $CONFIG_JSON"
-      run_pwsh "Apply-CustRunTemplates.ps1"
+      run_bash "Apply-CustRunTemplates.sh"
       ;;
     test|verify)
-      log_info "PATH=$PATH"
       log_info "Using configuration from $CONFIG_JSON"
-      run_pwsh "Test-CustRunStructure.ps1"
+      run_bash "Test-CustRunStructure.sh"
       ;;
     cleanup)
-      log_warn "PATH=$PATH"
       log_warn "Using configuration from $CONFIG_JSON"
-      run_pwsh "Cleanup-CustRunStructure.ps1"
+      run_bash "Cleanup-CustRunStructure.sh"
       ;;
     *)
       log_error "Unknown command: $cmd"

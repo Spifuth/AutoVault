@@ -52,53 +52,6 @@ if (-not $templates -or $templates.Count -eq 0) {
     return
 }
 
-function Test-SafePath {
-    param(
-        [string]$FileName,
-        [string]$TemplateRoot
-    )
-
-    # Reject absolute paths (check for root indicators)
-    if ([IO.Path]::IsPathRooted($FileName)) {
-        Write-Error "Rejected absolute path in FileName: $FileName"
-        return $false
-    }
-
-    # Reject paths containing ".." segments (path traversal)
-    # Regex matches ".." only as a complete path component (bounded by / or \ or start/end)
-    # This allows legitimate filenames like "file..txt" while blocking "../" or "subdir/../"
-    if ($FileName -match '(^|[\\/])\.\.($|[\\/])') {
-        Write-Error "Rejected path with '..' segments in FileName: $FileName"
-        return $false
-    }
-
-    # Construct and resolve the target path
-    $targetPath = Join-Path $TemplateRoot $FileName
-    try {
-        $resolvedTarget = [IO.Path]::GetFullPath($targetPath)
-        $resolvedRoot = [IO.Path]::GetFullPath($TemplateRoot)
-
-        # Normalize path separators for comparison
-        $resolvedTarget = $resolvedTarget.Replace('/', [IO.Path]::DirectorySeparatorChar)
-        $resolvedRoot = $resolvedRoot.Replace('/', [IO.Path]::DirectorySeparatorChar)
-
-        # Ensure the resolved path is within the template root
-        $rootWithSep = $resolvedRoot + [IO.Path]::DirectorySeparatorChar
-        $isUnderRoot = $resolvedTarget.StartsWith($rootWithSep, [StringComparison]::OrdinalIgnoreCase)
-        $isExactRoot = $resolvedTarget.Equals($resolvedRoot, [StringComparison]::OrdinalIgnoreCase)
-        
-        if (-not ($isUnderRoot -or $isExactRoot)) {
-            Write-Error "Rejected path outside template root: $FileName (resolves to $resolvedTarget, expected under $resolvedRoot)"
-            return $false
-        }
-    } catch {
-        Write-Error "Failed to resolve path for: $FileName"
-        return $false
-    }
-
-    return $true
-}
-
 $count = 0
 foreach ($tmpl in $templates) {
     $fileName = [string]$tmpl.FileName
