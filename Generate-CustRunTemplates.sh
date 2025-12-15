@@ -75,6 +75,8 @@ validate_path() {
     fi
 
     # Reject paths containing ".." segments (path traversal)
+    # Regex matches ".." only as a complete path component (bounded by / or start/end)
+    # This allows legitimate filenames like "file..txt" while blocking "../" or "subdir/../"
     if [[ "$name" =~ (^|/)\.\.($|/) ]]; then
         log "ERROR" "Rejected path with '..' segments in FileName: $name"
         return 1
