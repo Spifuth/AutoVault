@@ -53,7 +53,25 @@ The easiest way to configure the project is using the interactive wizard:
 .\cust-run-config.ps1 config
 ```
 
-The wizard prompts for:
+The wizard first displays the current configuration, then prompts for each value:
+
+```
+[INFO ] Interactive configuration mode
+[INFO ] Press Enter to keep current/default values
+
+Current configuration:
+  1. VaultRoot:            D:\Obsidian\Work-Vault
+  2. CustomerIdWidth:      3
+  3. CustomerIds:          2 4 5 7 10 11 12 14 15 18 25 27 29 30
+  4. Sections:             FP RAISED INFORMATIONS DIVERS
+  5. TemplateRelativeRoot: _templates\Run
+
+Vault root path [D:\Obsidian\Work-Vault]: 
+Customer ID width (padding) [3]: 
+...
+```
+
+Configuration parameters:
 - **Vault root path** – path to your Obsidian vault
 - **Customer ID width** – zero-padding width (default 3, e.g., `CUST-002`)
 - **Customer IDs** – space-separated list of numeric customer codes
@@ -153,21 +171,22 @@ Placeholders (`{{CUST_CODE}}`, `{{SECTION}}`, `{{NOW_UTC}}`, `{{NOW_LOCAL}}`) ar
 
 ```
 AutoVault/
-├── cust-run-config.sh          # Linux orchestrator
-├── cust-run-config.ps1         # Windows orchestrator
-├── Generate-CustRunTemplates.sh
-├── Generate-CustRunTemplates.ps1
-├── cust-run-templates.sample.json
+├── cust-run-config.sh              # Linux orchestrator
+├── cust-run-config.ps1             # Windows orchestrator
+├── Generate-CustRunTemplates.sh    # Template generator (Linux)
+├── Generate-CustRunTemplates.ps1   # Template generator (Windows)
+├── cust-run-templates.sample.json  # Template definitions sample
+├── README.md
 ├── config/
-│   └── cust-run-config.json    # Shared configuration (auto-generated)
-├── bash/                       # Linux scripts
-│   ├── New-CustRunStructure.sh
+│   └── cust-run-config.json        # Shared configuration (auto-generated)
+├── bash/                           # Linux scripts
 │   ├── Apply-CustRunTemplates.sh
-│   ├── Test-CustRunStructure.sh
-│   └── Cleanup-CustRunStructure.sh
-└── powershell/                 # Windows scripts
-    ├── New-CustRunStructure.ps1
+│   ├── Cleanup-CustRunStructure.sh
+│   ├── New-CustRunStructure.sh
+│   └── Test-CustRunStructure.sh
+└── powershell/                     # Windows scripts
     ├── Apply-CustRunTemplates.ps1
-    ├── Test-CustRunStructure.ps1
-    └── Cleanup-CustRunStructure.ps1
+    ├── Cleanup-CustRunStructure.ps1
+    ├── New-CustRunStructure.ps1
+    └── Test-CustRunStructure.ps1
 ```
