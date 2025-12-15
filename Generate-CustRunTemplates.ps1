@@ -24,8 +24,8 @@ if (-not $TemplateRelativeRoot) {
     $TemplateRelativeRoot = '_templates\Run'
 }
 
-$normalizedTemplateRoot = $TemplateRelativeRoot -replace '\\', [IO.Path]::DirectorySeparatorChar
-$TemplateRoot = Join-Path $VaultRoot $normalizedTemplateRoot
+$NormalizedTemplateRoot = $TemplateRelativeRoot -replace '\\', [IO.Path]::DirectorySeparatorChar
+$TemplateRoot = Join-Path $VaultRoot $NormalizedTemplateRoot
 
 if (-not $TemplateSpecPath) {
     $TemplateSpecPath = Join-Path $ScriptRoot 'cust-run-templates.json'
