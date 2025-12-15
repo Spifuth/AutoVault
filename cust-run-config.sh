@@ -2,7 +2,10 @@
 # cust-run-config.sh
 # Orchestrator + config for CUST Run PowerShell scripts.
 
-set -euo pipefail
+# When sourced, avoid changing caller shell options; when executed directly, enable safety flags.
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  set -euo pipefail
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -25,6 +28,9 @@ SECTIONS=(FP RAISED INFORMATIONS DIVERS)
 # Templates root, relative to VAULT_ROOT (used by Apply-CustRunTemplates.ps1)
 TEMPLATE_RELATIVE_ROOT="_templates\Run"
 
+# Convenience alias for bash helper scripts
+CUST_SECTIONS=("${SECTIONS[@]}")
+
 #######################################
 # INTERNAL: export env vars for pwsh
 #######################################
@@ -44,10 +50,11 @@ run_pwsh() {
 }
 
 #######################################
-# CLI
+# CLI (only when executed directly)
 #######################################
-usage() {
-  cat <<EOF
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  usage() {
+    cat <<EOF
 Usage: $(basename "$0") <command>
 
 Commands:
@@ -62,34 +69,35 @@ Examples:
   $(basename "$0") test
   $(basename "$0") cleanup
 EOF
-}
+  }
 
-cmd="${1:-}"
+  cmd="${1:-}"
 
-if [[ -z "$cmd" ]]; then
-  usage
-  exit 1
-fi
-
-export_cust_env
-
-case "$cmd" in
-  structure|new)
-    run_pwsh "New-CustRunStructure.ps1"
-    ;;
-  templates|apply)
-    run_pwsh "Apply-CustRunTemplates.ps1"
-    ;;
-  test|verify)
-    run_pwsh "Test-CustRunStructure.ps1"
-    ;;
-  cleanup)
-    run_pwsh "Cleanup-CustRunStructure.ps1"
-    ;;
-  *)
-    echo "Unknown command: $cmd" >&2
-    echo
+  if [[ -z "$cmd" ]]; then
     usage
     exit 1
-    ;;
-esac
+  fi
+
+  export_cust_env
+
+  case "$cmd" in
+    structure|new)
+      run_pwsh "New-CustRunStructure.ps1"
+      ;;
+    templates|apply)
+      run_pwsh "Apply-CustRunTemplates.ps1"
+      ;;
+    test|verify)
+      run_pwsh "Test-CustRunStructure.ps1"
+      ;;
+    cleanup)
+      run_pwsh "Cleanup-CustRunStructure.ps1"
+      ;;
+    *)
+      echo "Unknown command: $cmd" >&2
+      echo
+      usage
+      exit 1
+      ;;
+  esac
+fi

@@ -6,12 +6,42 @@
 #
 
 #######################################
-# Configuration (MUST MATCH SCRIPT 1)
+# Configuration (shared)
 #######################################
 
-VAULT_ROOT="/mnt/c/Users/ncaluye/scripts/powershell/Test-vault/Test"
-CUSTOMER_ID_WIDTH=3
-CUSTOMER_IDS=(2 4 5 7 10 11 12 14 15 18 25 27 29 30)  # INTERNE ignoré
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_PATH="$SCRIPT_DIR/cust-run-config.sh"
+
+if [[ ! -f "$CONFIG_PATH" ]]; then
+    echo "Config file not found: $CONFIG_PATH" >&2
+    exit 1
+fi
+
+# shellcheck disable=SC1091
+source "$CONFIG_PATH"
+
+validate_config() {
+    local errors=0
+
+    if [[ -z "${VAULT_ROOT:-}" ]]; then
+        echo "VAULT_ROOT is not set in $CONFIG_PATH" >&2
+        errors=1
+    fi
+
+    if [[ -z "${CUSTOMER_ID_WIDTH:-}" || ! "$CUSTOMER_ID_WIDTH" =~ ^[0-9]+$ ]]; then
+        echo "CUSTOMER_ID_WIDTH must be a numeric value in $CONFIG_PATH" >&2
+        errors=1
+    fi
+
+    if [[ ${#CUSTOMER_IDS[@]:-0} -eq 0 ]]; then
+        echo "CUSTOMER_IDS is empty in $CONFIG_PATH" >&2
+        errors=1
+    fi
+
+    return $errors
+}
+
+validate_config || exit 1
 
 # Safety flags
 ENABLE_DELETION=false   # MUST be set to true to delete
