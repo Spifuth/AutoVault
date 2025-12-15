@@ -73,7 +73,25 @@ while IFS= read -r -d '' name && IFS= read -r -d '' content; do
         continue
     fi
 
+    # Harden $name against path traversal and absolute path issues
+    if [[ "$name" == /* ]]; then
+        log "WARN" "Template FileName is an absolute path: '$name'. Skipping."
+        continue
+    fi
+    if [[ "$name" == *../* || "$name" == *..\\* || "$name" == ../* || "$name" == ..\\* ]]; then
+        log "WARN" "Template FileName contains parent directory traversal '..': '$name'. Skipping."
+        continue
+    fi
+
     target_path="$TEMPLATE_ROOT/$name"
+    # Resolve full paths for comparison
+    resolved_template_root="$(cd "$TEMPLATE_ROOT" && pwd -P)"
+    resolved_target_path="$(mkdir -p "$(dirname "$target_path")" && cd "$(dirname "$target_path")" && pwd -P)/$(basename "$target_path")"
+    if [[ "$resolved_target_path" != "$resolved_template_root"/* ]]; then
+        log "WARN" "Template FileName escapes template root: '$name' -> '$resolved_target_path'. Skipping."
+        continue
+    fi
+
     write_template "$target_path" "$content"
     count=$((count + 1))
 done < <(python3 - "$TEMPLATE_SPEC_PATH" <<'PY'
