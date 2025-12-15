@@ -37,7 +37,21 @@ Helper scripts to create, template, verify, and clean a "Run" workspace in an Ob
 - `python3` (for JSON generation)
 
 ### Windows
-- PowerShell 5.1+ or PowerShell 7+
+- PowerShell 7+ (pwsh)
+
+### Quick Install
+
+Run the appropriate install script to check and install dependencies:
+
+```bash
+# Linux / macOS
+./install-requirements.sh
+
+# Windows (PowerShell)
+.\Install-Requirements.ps1
+```
+
+The scripts will detect your package manager and install any missing dependencies.
 
 ## Configure
 
@@ -112,6 +126,10 @@ Edit this file directly or modify the values in the orchestrator scripts and re-
 
 ## Safety Notes
 
+### Hub file preservation
+
+When running `structure`, if `Run-Hub.md` already exists, it will **not be overwritten**. This preserves any manual edits you've made. To regenerate the hub file, delete it first and re-run the structure command.
+
 ### Cleanup protection
 
 Cleanup is **disabled by default** to prevent accidental data loss. To enable deletions:
@@ -155,6 +173,8 @@ Placeholders (`{{CUST_CODE}}`, `{{SECTION}}`, `{{NOW_UTC}}`, `{{NOW_LOCAL}}`) ar
 AutoVault/
 ├── cust-run-config.sh          # Linux orchestrator
 ├── cust-run-config.ps1         # Windows orchestrator
+├── install-requirements.sh     # Linux/macOS dependency installer
+├── Install-Requirements.ps1    # Windows dependency installer
 ├── Generate-CustRunTemplates.sh
 ├── Generate-CustRunTemplates.ps1
 ├── cust-run-templates.sample.json
