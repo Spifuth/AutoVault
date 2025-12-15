@@ -94,7 +94,7 @@ if ($kv.ContainsKey('CUSTOMER_IDS')) {
         $CustomerIds = $rawIds | ForEach-Object { [int]$_ }
     }
     elseif ($rawIds -is [string]) {
-        $CustomerIds = $rawIds.Split(' ,;') | Where-Object { $_ } | ForEach-Object { [int]$_ }
+        $CustomerIds = $rawIds -split '[\s,;]+' | Where-Object { $_ } | ForEach-Object { [int]$_ }
     }
 }
 
@@ -105,7 +105,7 @@ if ($kv.ContainsKey('SECTIONS')) {
         $CustSections = $rawSections
     }
     elseif ($rawSections -is [string]) {
-        $CustSections = $rawSections.Split(' ,;') | Where-Object { $_ }
+        $CustSections = $rawSections -split '[\s,;]+' | Where-Object { $_ }
     }
 } else {
     $CustSections = @('FP', 'RAISED', 'INFORMATIONS', 'DIVERS')
