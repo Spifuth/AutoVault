@@ -17,7 +17,7 @@ if (Test-Path -LiteralPath $configScript -PathType Leaf) {
 }
 
 if (-not $VaultRoot) {
-    throw 'VAULT_ROOT is not set. Run via cust-run-config.ps1 or update cust-run-config.ps1.'
+    throw "VaultRoot is not set. Please run via cust-run-config.ps1 or update cust-run-config.ps1 to set VaultRoot."
 }
 
 if (-not $TemplateRelativeRoot) {
