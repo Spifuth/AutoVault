@@ -43,7 +43,7 @@ Write-Host "INFO: Reading template definitions from: $TemplateSpecPath"
 try {
     $spec = Get-Content -LiteralPath $TemplateSpecPath -Raw -Encoding UTF8 | ConvertFrom-Json
 } catch {
-    throw "Failed to parse JSON from $TemplateSpecPath: $_"
+    throw "Failed to parse JSON from ${TemplateSpecPath}: $_"
 }
 
 $templates = @($spec.Templates)
@@ -52,11 +52,54 @@ if (-not $templates -or $templates.Count -eq 0) {
     return
 }
 
+function Test-SafePath {
+    param(
+        [string]$FileName,
+        [string]$TemplateRoot
+    )
+
+    # Reject absolute paths (check for root indicators)
+    if ([IO.Path]::IsPathRooted($FileName)) {
+        Write-Error "Rejected absolute path in FileName: $FileName"
+        return $false
+    }
+
+    # Reject paths containing ".." segments
+    if ($FileName -match '\.\.') {
+        Write-Error "Rejected path with '..' segments in FileName: $FileName"
+        return $false
+    }
+
+    # Construct and resolve the target path
+    $targetPath = Join-Path $TemplateRoot $FileName
+    try {
+        $resolvedTarget = [IO.Path]::GetFullPath($targetPath)
+        $resolvedRoot = [IO.Path]::GetFullPath($TemplateRoot)
+
+        # Ensure the resolved path is within the template root
+        if (-not $resolvedTarget.StartsWith($resolvedRoot + [IO.Path]::DirectorySeparatorChar) -and $resolvedTarget -ne $resolvedRoot) {
+            Write-Error "Rejected path outside template root: $FileName (resolves to $resolvedTarget, expected under $resolvedRoot)"
+            return $false
+        }
+    } catch {
+        Write-Error "Failed to resolve path for: $FileName"
+        return $false
+    }
+
+    return $true
+}
+
 $count = 0
 foreach ($tmpl in $templates) {
     $fileName = [string]$tmpl.FileName
     if ([string]::IsNullOrWhiteSpace($fileName)) {
         Write-Warning 'Encountered template entry without FileName. Skipping.'
+        continue
+    }
+
+    # Validate the path before using it
+    if (-not (Test-SafePath -FileName $fileName -TemplateRoot $TemplateRoot)) {
+        Write-Warning "Skipping invalid template path: $fileName"
         continue
     }
 
