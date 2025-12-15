@@ -38,6 +38,23 @@ Helper scripts to create, template, verify, and clean a "Run" workspace in an Ob
 
 ### Windows
 - PowerShell 5.1+ or PowerShell 7+
+- Git (optional)
+
+### Auto-Install Requirements
+
+Both orchestrators can automatically check and install missing requirements:
+
+```bash
+# Linux / macOS
+./cust-run-config.sh install
+
+# Windows (PowerShell)
+.\cust-run-config.ps1 install
+```
+
+**Linux/macOS**: Detects and uses the available package manager (apt, dnf, yum, pacman, zypper, brew, apk) to install `jq` and `python3`.
+
+**Windows**: Detects and uses the available package manager (winget, chocolatey, scoop) to install optional tools like Git.
 
 ## Configure
 
@@ -95,6 +112,7 @@ Running the orchestrator will generate `config/cust-run-config.json` which is sh
 ### Linux / macOS (Bash)
 
 ```bash
+./cust-run-config.sh install     # Check/install requirements (jq, python3)
 ./cust-run-config.sh config      # Interactive configuration wizard
 ./cust-run-config.sh structure   # Create/refresh folder structure
 ./cust-run-config.sh templates   # Apply markdown templates
@@ -105,6 +123,7 @@ Running the orchestrator will generate `config/cust-run-config.json` which is sh
 ### Windows (PowerShell)
 
 ```powershell
+.\cust-run-config.ps1 install     # Check/install requirements
 .\cust-run-config.ps1 config      # Interactive configuration wizard
 .\cust-run-config.ps1 structure   # Create/refresh folder structure
 .\cust-run-config.ps1 templates   # Apply markdown templates

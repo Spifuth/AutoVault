@@ -20,7 +20,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('config', 'setup', 'init', 'structure', 'new', 'templates', 'apply', 'test', 'verify', 'cleanup', '')]
+    [ValidateSet('install', 'requirements', 'config', 'setup', 'init', 'structure', 'new', 'templates', 'apply', 'test', 'verify', 'cleanup', '')]
     [string]$Command
 )
 
@@ -44,6 +44,118 @@ function Write-LogWarn {
 function Write-LogError {
     param([string]$Message)
     Write-Host "[ERROR] $Message" -ForegroundColor Red
+}
+
+#######################################
+# REQUIREMENTS CHECK & AUTO-INSTALL
+#######################################
+
+function Test-Requirements {
+    $missing = @()
+    
+    # Check for Git (optional but useful)
+    if (-not (Get-Command 'git' -ErrorAction SilentlyContinue)) {
+        $missing += 'git'
+    }
+    
+    # Check PowerShell version
+    $psVersion = $PSVersionTable.PSVersion.Major
+    if ($psVersion -lt 5) {
+        Write-LogWarn "PowerShell version $psVersion detected. Version 5.1+ recommended."
+    }
+    
+    return $missing
+}
+
+function Get-PackageManager {
+    # Check for winget (Windows Package Manager)
+    if (Get-Command 'winget' -ErrorAction SilentlyContinue) {
+        return 'winget'
+    }
+    
+    # Check for Chocolatey
+    if (Get-Command 'choco' -ErrorAction SilentlyContinue) {
+        return 'choco'
+    }
+    
+    # Check for Scoop
+    if (Get-Command 'scoop' -ErrorAction SilentlyContinue) {
+        return 'scoop'
+    }
+    
+    return $null
+}
+
+function Install-Requirements {
+    $missing = Test-Requirements
+    
+    if ($missing.Count -eq 0) {
+        Write-LogInfo "All requirements are already installed"
+        Write-LogInfo "PowerShell version: $($PSVersionTable.PSVersion)"
+        return $true
+    }
+    
+    Write-LogWarn "Missing optional tools: $($missing -join ', ')"
+    
+    $pkgManager = Get-PackageManager
+    
+    if (-not $pkgManager) {
+        Write-LogWarn "No supported package manager found (winget, choco, scoop)"
+        Write-LogInfo "You can install winget from the Microsoft Store (App Installer)"
+        Write-LogInfo "Or install Chocolatey: https://chocolatey.org/install"
+        Write-LogInfo "Or install Scoop: https://scoop.sh"
+        Write-Host ""
+        Write-LogInfo "Manual installation commands:"
+        Write-Host "  winget install Git.Git"
+        Write-Host "  choco install git -y"
+        Write-Host "  scoop install git"
+        return $false
+    }
+    
+    Write-LogInfo "Detected package manager: $pkgManager"
+    
+    $confirm = Read-Host "Install missing tools using $pkgManager? [Y/n]"
+    if ($confirm -match '^[Nn]') {
+        Write-LogWarn "Installation cancelled"
+        return $false
+    }
+    
+    foreach ($pkg in $missing) {
+        $installCmd = switch ($pkgManager) {
+            'winget' { "winget install --id $pkg --accept-package-agreements --accept-source-agreements" }
+            'choco'  { "choco install $pkg -y" }
+            'scoop'  { "scoop install $pkg" }
+        }
+        
+        # Map package names
+        $pkgName = switch ($pkg) {
+            'git' { 
+                switch ($pkgManager) {
+                    'winget' { 'Git.Git' }
+                    default  { 'git' }
+                }
+            }
+            default { $pkg }
+        }
+        
+        $installCmd = switch ($pkgManager) {
+            'winget' { "winget install --id $pkgName --accept-package-agreements --accept-source-agreements" }
+            'choco'  { "choco install $pkgName -y" }
+            'scoop'  { "scoop install $pkgName" }
+        }
+        
+        Write-LogInfo "Running: $installCmd"
+        try {
+            Invoke-Expression $installCmd
+            Write-LogInfo "$pkg installed successfully"
+        } catch {
+            Write-LogError "Failed to install $pkg : $_"
+            return $false
+        }
+    }
+    
+    Write-LogInfo "All requirements installed successfully"
+    return $true
 }
 
 #######################################
@@ -241,6 +353,7 @@ function Show-Usage {
 Usage: .\cust-run-config.ps1 <command>
 
 Commands:
+  install     Check and install missing requirements (git, etc.)
   config      Interactive configuration wizard
   structure   Create / refresh CUST Run folder structure
   templates   Apply markdown templates to indexes
@@ -248,6 +361,7 @@ Commands:
   cleanup     Remove CUST folders (uses Cleanup script safety flags)
 
 Examples:
+  .\cust-run-config.ps1 install
   .\cust-run-config.ps1 config
   .\cust-run-config.ps1 structure
   .\cust-run-config.ps1 templates
@@ -258,6 +372,9 @@ Examples:
 
 if ($Command) {
     switch ($Command) {
+        { $_ -in 'install', 'requirements' } {
+            Install-Requirements
+        }
         { $_ -in 'config', 'setup', 'init' } {
             Invoke-InteractiveConfig
         }

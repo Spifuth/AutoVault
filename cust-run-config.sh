@@ -37,6 +37,130 @@ log_error() {
 }
 
 #######################################
+# REQUIREMENTS CHECK & AUTO-INSTALL
+#######################################
+
+check_requirements() {
+  local missing=()
+  
+  if ! command -v jq >/dev/null 2>&1; then
+    missing+=("jq")
+  fi
+  
+  if ! command -v python3 >/dev/null 2>&1; then
+    missing+=("python3")
+  fi
+  
+  if [[ ${#missing[@]} -eq 0 ]]; then
+    return 0
+  fi
+  
+  echo "${missing[*]}"
+  return 1
+}
+
+detect_package_manager() {
+  if command -v apt-get >/dev/null 2>&1; then
+    echo "apt"
+  elif command -v dnf >/dev/null 2>&1; then
+    echo "dnf"
+  elif command -v yum >/dev/null 2>&1; then
+    echo "yum"
+  elif command -v pacman >/dev/null 2>&1; then
+    echo "pacman"
+  elif command -v zypper >/dev/null 2>&1; then
+    echo "zypper"
+  elif command -v brew >/dev/null 2>&1; then
+    echo "brew"
+  elif command -v apk >/dev/null 2>&1; then
+    echo "apk"
+  else
+    echo ""
+  fi
+}
+
+install_requirements() {
+  local missing
+  missing=$(check_requirements) || true
+  
+  if [[ -z "$missing" ]]; then
+    log_info "All requirements are already installed"
+    return 0
+  fi
+  
+  log_warn "Missing requirements: $missing"
+  
+  local pkg_manager
+  pkg_manager=$(detect_package_manager)
+  
+  if [[ -z "$pkg_manager" ]]; then
+    log_error "No supported package manager found"
+    log_error "Please install manually: $missing"
+    return 1
+  fi
+  
+  log_info "Detected package manager: $pkg_manager"
+  
+  local confirm
+  printf "Install missing requirements using %s? [Y/n]: " "$pkg_manager" >&2
+  read -r confirm
+  if [[ "$confirm" =~ ^[Nn] ]]; then
+    log_warn "Installation cancelled"
+    return 1
+  fi
+  
+  local install_cmd
+  case "$pkg_manager" in
+    apt)
+      install_cmd="sudo apt-get update && sudo apt-get install -y"
+      ;;
+    dnf)
+      install_cmd="sudo dnf install -y"
+      ;;
+    yum)
+      install_cmd="sudo yum install -y"
+      ;;
+    pacman)
+      install_cmd="sudo pacman -S --noconfirm"
+      ;;
+    zypper)
+      install_cmd="sudo zypper install -y"
+      ;;
+    brew)
+      install_cmd="brew install"
+      ;;
+    apk)
+      install_cmd="sudo apk add"
+      ;;
+  esac
+  
+  # Map package names for different managers
+  local packages=""
+  for pkg in $missing; do
+    case "$pkg" in
+      python3)
+        case "$pkg_manager" in
+          pacman) packages="$packages python" ;;
+          *) packages="$packages python3" ;;
+        esac
+        ;;
+      *)
+        packages="$packages $pkg"
+        ;;
+    esac
+  done
+  
+  log_info "Running: $install_cmd$packages"
+  if eval "$install_cmd$packages"; then
+    log_info "Requirements installed successfully"
+    return 0
+  else
+    log_error "Failed to install requirements"
+    return 1
+  fi
+}
+
+#######################################
 # CONFIGURATION SOURCE
 #######################################
 
@@ -273,6 +397,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 Usage: cust-run-config.sh <command>
 
 Commands:
+  install     Check and install missing requirements (jq, python3)
   config      Interactive configuration wizard
   structure   Create / refresh CUST Run folder structure
   templates   Apply markdown templates to indexes
@@ -280,6 +405,7 @@ Commands:
   cleanup     Remove CUST folders (uses Cleanup script safety flags)
 
 Examples:
+  cust-run-config.sh install
   cust-run-config.sh config
   cust-run-config.sh structure
   cust-run-config.sh templates
@@ -293,6 +419,12 @@ EOF
   if [[ -z "$cmd" ]]; then
     usage
     exit 1
+  fi
+
+  # Handle install command before loading config (which requires jq/python3)
+  if [[ "$cmd" == "install" || "$cmd" == "requirements" ]]; then
+    install_requirements
+    exit $?
   fi
 
   export_cust_env
