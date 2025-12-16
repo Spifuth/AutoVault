@@ -2,53 +2,25 @@
 #
 # Apply-CustRunTemplates.sh
 #
-set -euo pipefail
-
-# Initialize arrays to avoid unbound variable errors with set -u
-declare -a CUSTOMER_IDS=()
-declare -a SECTIONS=()
-
 # APPLY EXTERNAL MARKDOWN TEMPLATES TO ALL CUST RUN INDEX FILES
 #
 
-#######################################
-# Configuration (shared with cust-run-config.sh)
-#######################################
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_SCRIPT="$SCRIPT_DIR/../cust-run-config.sh"
 
-if [[ -f "$CONFIG_SCRIPT" ]]; then
-    # shellcheck source=/dev/null
-    source "$CONFIG_SCRIPT"
-    # Note: We don't call export_cust_env here because it's meant for PowerShell subprocess calls
-    # and it would corrupt our SECTIONS array by exporting it as a string.
-fi
+# Source shared libraries
+source "$SCRIPT_DIR/lib/logging.sh"
+source "$SCRIPT_DIR/lib/config.sh"
 
-if [[ -z "${VAULT_ROOT:-}" ]]; then
-    echo "ERROR: VAULT_ROOT is not set. Run via cust-run-config.sh or update cust-run-config.sh." >&2
+# Load configuration
+if ! load_config; then
+    write_log "ERROR" "Failed to load configuration"
     exit 1
 fi
 
-if [[ -z "${CUSTOMER_ID_WIDTH:-}" ]]; then
-    CUSTOMER_ID_WIDTH=3
-fi
-
-# Default sections if not set
-if [[ -z "${SECTIONS[*]:-}" ]]; then
-    SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
-fi
-
-# Verify CUSTOMER_IDS is set
-if [[ ${#CUSTOMER_IDS[@]} -eq 0 ]]; then
-    echo "ERROR: CUSTOMER_IDS is not set. Run via cust-run-config.sh or update cust-run-config.sh." >&2
-    exit 1
-fi
-
-TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT:-${CUST_TEMPLATE_RELATIVE_ROOT:-_templates/Run}}"
-# Normalize Windows-style separators for bash
+# Normalize template path (convert Windows-style separators)
 TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT//\\//}"
-
 TEMPLATE_ROOT="$VAULT_ROOT/${TEMPLATE_RELATIVE_ROOT#/}"
 ROOT_TEMPLATE_PATH="$TEMPLATE_ROOT/CUST-Root-Index.md"
 
@@ -61,39 +33,6 @@ get_section_template_path() {
 #######################################
 # Helper functions
 #######################################
-
-write_log() {
-    local level="${1:-INFO}"
-    shift
-    local message="$*"
-
-    # LOG_LEVEL: 0=silent, 1=error, 2=warn, 3=info, 4=debug
-    local log_level="${LOG_LEVEL:-3}"
-    local level_num=3
-
-    case "$level" in
-        DEBUG) level_num=4 ;;
-        INFO)  level_num=3 ;;
-        WARN)  level_num=2 ;;
-        ERROR) level_num=1 ;;
-    esac
-
-    # Skip if message level is higher than configured LOG_LEVEL
-    if (( level_num > log_level )); then
-        return 0
-    fi
-
-    local utc localtime
-    utc="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-    localtime="$(date +"%Y-%m-%dT%H:%M:%S%z")"
-
-    echo "[$level][UTC:$utc][Local:$localtime] $message"
-}
-
-get_cust_code() {
-    local id="$1"
-    printf "CUST-%0${CUSTOMER_ID_WIDTH}d" "$id"
-}
 
 get_template_content() {
     local path="$1"

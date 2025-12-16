@@ -1,5 +1,5 @@
 {
-  "VaultRoot": "",
+  "VaultRoot": "D:\\Obsidian\\Work-Vault",
   "CustomerIdWidth": 3,
   "CustomerIds": [
     2,
@@ -23,5 +23,5 @@
     "INFORMATIONS",
     "DIVERS"
   ],
-  "TemplateRelativeRoot": "_templates\\\\Run"
+  "TemplateRelativeRoot": "_templates\\Run"
 }

@@ -2,106 +2,31 @@
 #
 # New-CustRunStructure.sh
 #
-set -euo pipefail
-
-# Initialize arrays to avoid unbound variable errors with set -u
-declare -a CUSTOMER_IDS=()
-declare -a SECTIONS=()
-
-# CONFIGURATION:
-#   - Configuration is sourced from cust-run-config.sh (or environment overrides).
+# Creates the folder structure for customer runs in the Obsidian vault.
 #
 # STRUCTURE CREATED:
 #   <VAULT_ROOT>/Run/
 #       CUST-002/
+#           CUST-002-Index.md
 #           CUST-002-FP/
 #               CUST-002-FP-Index.md
 #           CUST-002-RAISED/
-#               CUST-002-RAISED-Index.md
-#           CUST-002-INFORMATIONS/
-#               CUST-002-INFORMATIONS-Index.md
-#           CUST-002-DIVERS/
-#               CUST-002-DIVERS-Index.md
+#               ...
 #
-#   And next to the Run folder:
-#   <VAULT_ROOT>/Run-Hub.md
-#       -> contains links to each CUST root index (CUST-002-Index, etc.)
-#
-# NAMING RULES:
-#   - Customer code       : CUST-XXX   (zero-padded with width = CUSTOMER_ID_WIDTH)
-#   - Customer folder     : Run/CUST-XXX
-#   - Root index file     : Run/CUST-XXX/CUST-XXX-Index.md
-#   - Subfolders          : CUST-XXX-FP, CUST-XXX-RAISED, CUST-XXX-INFORMATIONS, CUST-XXX-DIVERS
-#   - Subfolder index file: <SubFolderName>-Index.md
+#   And: <VAULT_ROOT>/Run-Hub.md
 #
 
-#######################################
-# Configuration
-#######################################
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_SCRIPT="$SCRIPT_DIR/../cust-run-config.sh"
 
-#######################################
-# Load shared config / environment
-#######################################
-
-load_config() {
-    if [[ -f "$CONFIG_SCRIPT" ]]; then
-        write_log "INFO" "Loading configuration from $CONFIG_SCRIPT"
-        if ! source "$CONFIG_SCRIPT"; then
-            write_log "ERROR" "Failed to load configuration from $CONFIG_SCRIPT"
-            return 1
-        fi
-    else
-        write_log "WARN" "Configuration script not found at $CONFIG_SCRIPT; falling back to environment variables"
-    fi
-
-    # Note: We don't call export_cust_env here because it's meant for PowerShell subprocess calls
-    # and it would corrupt our SECTIONS array by exporting it as a string.
-    # The VAULT_ROOT, CUSTOMER_ID_WIDTH, CUSTOMER_IDS, and SECTIONS variables are already
-    # available from sourcing cust-run-config.sh.
-
-    if [[ -z "${CUSTOMER_ID_WIDTH:-}" ]]; then
-        CUSTOMER_ID_WIDTH=3
-    fi
-
-    if [[ -z "${SECTIONS[*]:-}" ]]; then
-        SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
-    fi
-}
+# Source shared libraries
+source "$SCRIPT_DIR/lib/logging.sh"
+source "$SCRIPT_DIR/lib/config.sh"
 
 #######################################
 # Helper functions
 #######################################
-
-write_log() {
-    local level="${1:-INFO}"
-    shift
-    local message="$*"
-
-    # LOG_LEVEL: 0=silent, 1=error, 2=warn, 3=info, 4=debug
-    local log_level="${LOG_LEVEL:-3}"
-    local level_num=3
-
-    case "$level" in
-        DEBUG) level_num=4 ;;
-        INFO)  level_num=3 ;;
-        WARN)  level_num=2 ;;
-        ERROR) level_num=1 ;;
-    esac
-
-    # Skip if message level is higher than configured LOG_LEVEL
-    if (( level_num > log_level )); then
-        return 0
-    fi
-
-    local utc localtime
-    utc="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-    localtime="$(date +"%Y-%m-%dT%H:%M:%S%z")"
-
-    echo "[$level][UTC:$utc][Local:$localtime] $message"
-}
 
 ensure_directory() {
     local path="$1"
@@ -124,16 +49,11 @@ new_emptyfile_overwrite() {
     : > "$path"
 }
 
-get_cust_code() {
-    local id="$1"
-    # zero-pad with CUSTOMER_ID_WIDTH
-    printf "CUST-%0${CUSTOMER_ID_WIDTH}d" "$id"
-}
-
 #######################################
 # Main logic
 #######################################
 
+# Load configuration from JSON
 if ! load_config; then
     write_log "ERROR" "Failed to load configuration. Aborting."
     exit 1

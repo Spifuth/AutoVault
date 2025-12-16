@@ -2,78 +2,27 @@
 #
 # Cleanup-CustRunStructure.sh
 #
-set -euo pipefail
-
-# Initialize arrays to avoid unbound variable errors with set -u
-declare -a CUSTOMER_IDS=()
-declare -a SECTIONS=()
-
 # DANGEROUS SCRIPT – WILL DELETE CUST STRUCTURE UNDER Run
 #
 
-#######################################
-# Configuration (MUST MATCH SCRIPT 1)
-#######################################
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_SH="$SCRIPT_DIR/../cust-run-config.sh"
 
-if [[ ! -f "$CONFIG_SH" ]]; then
-    echo "ERROR: cust-run-config.sh not found alongside the cleanup script: $CONFIG_SH" >&2
+# Source shared libraries
+source "$SCRIPT_DIR/lib/logging.sh"
+source "$SCRIPT_DIR/lib/config.sh"
+
+# Load configuration
+if ! load_config; then
+    write_log "ERROR" "Failed to load configuration"
     exit 1
 fi
-
-# shellcheck source=/dev/null
-if ! source "$CONFIG_SH"; then
-    echo "ERROR: Failed to load configuration from $CONFIG_SH" >&2
-    exit 1
-fi
-
-# Keep environment exports in sync with PowerShell helpers
-export_cust_env
 
 # Safety flags
 ENABLE_DELETION=false   # MUST be set to true to delete
 REMOVE_HUB=false        # Set to true if you also want to remove Run-Hub.md
 CREATE_BACKUP=true      # Set to true to create backup before deletion (recommended)
-BACKUP_DIR="${BACKUP_DIR:-"$SCRIPT_DIR/../backups"}"  # Where to store backups
-
-#######################################
-# Helper functions
-#######################################
-
-write_log() {
-    local level="${1:-INFO}"
-    shift
-    local message="$*"
-
-    # LOG_LEVEL: 0=silent, 1=error, 2=warn, 3=info, 4=debug
-    local log_level="${LOG_LEVEL:-3}"
-    local level_num=3
-
-    case "$level" in
-        DEBUG) level_num=4 ;;
-        INFO)  level_num=3 ;;
-        WARN)  level_num=2 ;;
-        ERROR) level_num=1 ;;
-    esac
-
-    # Skip if message level is higher than configured LOG_LEVEL
-    if (( level_num > log_level )); then
-        return 0
-    fi
-
-    local utc localtime
-    utc="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-    localtime="$(date +"%Y-%m-%dT%H:%M:%S%z")"
-
-    echo "[$level][UTC:$utc][Local:$localtime] $message"
-}
-
-get_cust_code() {
-    local id="$1"
-    printf "CUST-%0${CUSTOMER_ID_WIDTH}d" "$id"
-}
 
 #######################################
 # Backup function

@@ -2,107 +2,20 @@
 #
 # Test-CustRunStructure.sh
 #
-set -euo pipefail
-
-# Initialize arrays to avoid unbound variable errors with set -u
-declare -a CUSTOMER_IDS=()
-declare -a SECTIONS=()
-
 # VERIFICATION SCRIPT – CHECKS Run STRUCTURE AND INDEX FILES
 #
 # EXIT CODES:
 #   0 if everything is OK
 #   1 if there are missing elements
+#
 
-#######################################
-# Helper functions
-#######################################
-
-write_log() {
-    local level="${1:-INFO}"
-    shift
-    local message="$*"
-
-    # LOG_LEVEL: 0=silent, 1=error, 2=warn, 3=info, 4=debug
-    local log_level="${LOG_LEVEL:-3}"
-    local level_num=3
-
-    case "$level" in
-        DEBUG) level_num=4 ;;
-        INFO)  level_num=3 ;;
-        WARN)  level_num=2 ;;
-        ERROR) level_num=1 ;;
-    esac
-
-    # Skip if message level is higher than configured LOG_LEVEL
-    if (( level_num > log_level )); then
-        return 0
-    fi
-
-    local utc localtime
-    utc="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-    localtime="$(date +"%Y-%m-%dT%H:%M:%S%z")"
-
-    echo "[$level][UTC:$utc][Local:$localtime] $message"
-}
-
-#######################################
-# Configuration loading
-#######################################
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_SCRIPT="$SCRIPT_DIR/../cust-run-config.sh"
-CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/../config/cust-run-config.json"}"
 
-load_config() {
-    if [[ -f "$CONFIG_SCRIPT" ]]; then
-        write_log "INFO" "Loading configuration from $CONFIG_SCRIPT"
-        if ! source "$CONFIG_SCRIPT"; then
-            write_log "ERROR" "Failed to load configuration from $CONFIG_SCRIPT"
-            return 1
-        fi
-    else
-        write_log "WARN" "Configuration script not found at $CONFIG_SCRIPT; falling back to $CONFIG_JSON"
-
-        if ! command -v jq >/dev/null 2>&1; then
-            write_log "ERROR" "jq is required to read $CONFIG_JSON"
-            return 1
-        fi
-
-        if [[ ! -f "$CONFIG_JSON" ]]; then
-            write_log "ERROR" "Configuration file not found: $CONFIG_JSON"
-            return 1
-        fi
-
-        VAULT_ROOT="$(jq -r '.VaultRoot // empty' "$CONFIG_JSON")"
-        CUSTOMER_ID_WIDTH="$(jq -r '.CustomerIdWidth // empty' "$CONFIG_JSON")"
-        mapfile -t CUSTOMER_IDS < <(jq -r '.CustomerIds[]?' "$CONFIG_JSON")
-        mapfile -t SECTIONS < <(jq -r '.Sections[]?' "$CONFIG_JSON")
-    fi
-
-    # Note: We don't call export_cust_env here because it's meant for PowerShell subprocess calls
-    # and it would corrupt our SECTIONS array by exporting it as a string.
-
-    if [[ -z "${CUSTOMER_ID_WIDTH:-}" ]]; then
-        CUSTOMER_ID_WIDTH=3
-    fi
-
-    if [[ -z "${SECTIONS[*]:-}" ]]; then
-        SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
-    fi
-
-    if [[ -z "${VAULT_ROOT:-}" ]]; then
-        write_log "ERROR" "VAULT_ROOT is not set. Configure cust-run-config.sh or provide $CONFIG_JSON."
-        return 1
-    fi
-
-    if [[ ${#CUSTOMER_IDS[@]} -eq 0 ]]; then
-        write_log "ERROR" "No CUST ids defined in CUSTOMER_IDS. Update configuration before running tests."
-        return 1
-    fi
-
-    return 0
-}
+# Source shared libraries
+source "$SCRIPT_DIR/lib/logging.sh"
+source "$SCRIPT_DIR/lib/config.sh"
 
 #######################################
 # Main
@@ -148,11 +61,6 @@ if [[ ${#CUSTOMER_IDS[@]} -eq 0 ]]; then
     write_log "WARN" "$msg"
     warnings+=("$msg")
 fi
-
-get_cust_code() {
-    local id="$1"
-    printf "CUST-%0${CUSTOMER_ID_WIDTH}d" "$id"
-}
 
 for id in "${CUSTOMER_IDS[@]}"; do
     # En PS ton script planterait sur INTERNE: ici on vérifie proprement.
