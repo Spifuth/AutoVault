@@ -401,6 +401,142 @@ load_config() {
   fi
 }
 
+#######################################
+# CONFIG VALIDATION
+#######################################
+validate_config() {
+  local errors=0
+  local warnings=0
+
+  echo "=== Validating Configuration ==="
+  echo
+
+  # Check config file exists and is valid JSON
+  echo "Checking config file..."
+  if [[ ! -f "$CONFIG_JSON" ]]; then
+    log_error "Config file not found: $CONFIG_JSON"
+    errors=$((errors + 1))
+  elif ! jq empty "$CONFIG_JSON" 2>/dev/null; then
+    log_error "Config file is not valid JSON: $CONFIG_JSON"
+    errors=$((errors + 1))
+  else
+    echo "  ✓ Config file exists and is valid JSON"
+  fi
+
+  # Validate VaultRoot
+  echo "Checking VaultRoot..."
+  if [[ -z "$VAULT_ROOT" ]]; then
+    log_error "VaultRoot is not set"
+    errors=$((errors + 1))
+  elif [[ ! -d "$VAULT_ROOT" ]]; then
+    log_warn "VaultRoot directory does not exist: $VAULT_ROOT"
+    warnings=$((warnings + 1))
+  else
+    echo "  ✓ VaultRoot exists: $VAULT_ROOT"
+  fi
+
+  # Validate CustomerIdWidth
+  echo "Checking CustomerIdWidth..."
+  if [[ -z "$CUSTOMER_ID_WIDTH" ]]; then
+    log_error "CustomerIdWidth is not set"
+    errors=$((errors + 1))
+  elif ! [[ "$CUSTOMER_ID_WIDTH" =~ ^[0-9]+$ ]]; then
+    log_error "CustomerIdWidth must be a positive integer: $CUSTOMER_ID_WIDTH"
+    errors=$((errors + 1))
+  elif [[ "$CUSTOMER_ID_WIDTH" -lt 1 || "$CUSTOMER_ID_WIDTH" -gt 10 ]]; then
+    log_warn "CustomerIdWidth seems unusual (should be 1-10): $CUSTOMER_ID_WIDTH"
+    warnings=$((warnings + 1))
+  else
+    echo "  ✓ CustomerIdWidth is valid: $CUSTOMER_ID_WIDTH"
+  fi
+
+  # Validate CustomerIds
+  echo "Checking CustomerIds..."
+  if [[ ${#CUSTOMER_IDS[@]} -eq 0 ]]; then
+    log_warn "No customer IDs configured"
+    warnings=$((warnings + 1))
+  else
+    local invalid_ids=0
+    for id in "${CUSTOMER_IDS[@]}"; do
+      if ! [[ "$id" =~ ^[0-9]+$ ]]; then
+        log_error "Invalid customer ID (not a number): $id"
+        errors=$((errors + 1))
+        invalid_ids=$((invalid_ids + 1))
+      fi
+    done
+    if [[ $invalid_ids -eq 0 ]]; then
+      echo "  ✓ ${#CUSTOMER_IDS[@]} customer IDs configured (all valid integers)"
+    fi
+  fi
+
+  # Check for duplicate customer IDs
+  local duplicates
+  duplicates=$(printf '%s\n' "${CUSTOMER_IDS[@]}" | sort | uniq -d)
+  if [[ -n "$duplicates" ]]; then
+    log_warn "Duplicate customer IDs found: $duplicates"
+    warnings=$((warnings + 1))
+  fi
+
+  # Validate Sections
+  echo "Checking Sections..."
+  if [[ ${#SECTIONS[@]} -eq 0 ]]; then
+    log_warn "No sections configured"
+    warnings=$((warnings + 1))
+  else
+    local invalid_sections=0
+    for section in "${SECTIONS[@]}"; do
+      # Section names should be alphanumeric with possible hyphens/underscores
+      if ! [[ "$section" =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]]; then
+        log_warn "Section name may cause issues: $section"
+        warnings=$((warnings + 1))
+        invalid_sections=$((invalid_sections + 1))
+      fi
+    done
+    if [[ $invalid_sections -eq 0 ]]; then
+      echo "  ✓ ${#SECTIONS[@]} sections configured"
+    fi
+  fi
+
+  # Check for duplicate sections
+  local dup_sections
+  dup_sections=$(printf '%s\n' "${SECTIONS[@]}" | sort | uniq -d)
+  if [[ -n "$dup_sections" ]]; then
+    log_warn "Duplicate sections found: $dup_sections"
+    warnings=$((warnings + 1))
+  fi
+
+  # Validate TemplateRelativeRoot
+  echo "Checking TemplateRelativeRoot..."
+  if [[ -z "$TEMPLATE_RELATIVE_ROOT" ]]; then
+    log_warn "TemplateRelativeRoot is not set (templates won't work)"
+    warnings=$((warnings + 1))
+  else
+    local template_path="$VAULT_ROOT/$TEMPLATE_RELATIVE_ROOT"
+    # Normalize path separators
+    template_path="${template_path//\\//}"
+    if [[ -n "$VAULT_ROOT" && -d "$VAULT_ROOT" && ! -d "$template_path" ]]; then
+      log_warn "Template directory does not exist: $template_path"
+      warnings=$((warnings + 1))
+    else
+      echo "  ✓ TemplateRelativeRoot: $TEMPLATE_RELATIVE_ROOT"
+    fi
+  fi
+
+  # Summary
+  echo
+  echo "=== Validation Summary ==="
+  if [[ $errors -eq 0 && $warnings -eq 0 ]]; then
+    echo "✓ Configuration is valid with no issues"
+    return 0
+  elif [[ $errors -eq 0 ]]; then
+    echo "⚠ Configuration has $warnings warning(s) but no errors"
+    return 0
+  else
+    echo "✗ Configuration has $errors error(s) and $warnings warning(s)"
+    return 1
+  fi
+}
+
 if ! load_config; then
   # When sourced, return non-zero so callers can handle the error
   return 1 2>/dev/null || exit 1
@@ -501,6 +637,7 @@ Options:
 Commands:
   install     Check and install missing requirements (jq, python3)
   config      Interactive configuration wizard
+  validate    Validate configuration file
   status      Show configuration and structure status
   structure   Create / refresh CUST Run folder structure
   templates   Apply markdown templates to indexes
@@ -567,6 +704,9 @@ EOF
   case "$cmd" in
     config|setup|init)
       interactive_config
+      ;;
+    validate)
+      validate_config
       ;;
     status)
       show_status
