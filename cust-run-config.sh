@@ -10,30 +10,53 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/config/cust-run-config.json"}"
 
 #--------------------------------------
+# GLOBAL FLAGS
+#--------------------------------------
+# Log levels: 0=quiet, 1=error, 2=warn, 3=info (default), 4=debug
+LOG_LEVEL="${LOG_LEVEL:-3}"
+
+#--------------------------------------
 # COLORS + LOGGING HELPERS
 #--------------------------------------
 if [[ -t 2 ]]; then
   COLOR_BLUE="\033[34m"
   COLOR_YELLOW="\033[33m"
   COLOR_RED="\033[31m"
+  COLOR_GREEN="\033[32m"
+  COLOR_GRAY="\033[90m"
   COLOR_RESET="\033[0m"
 else
   COLOR_BLUE=""
   COLOR_YELLOW=""
   COLOR_RED=""
+  COLOR_GREEN=""
+  COLOR_GRAY=""
   COLOR_RESET=""
 fi
 
+log_debug() {
+  [[ "$LOG_LEVEL" -ge 4 ]] && printf "%b[DEBUG]%b %s\n" "$COLOR_GRAY" "$COLOR_RESET" "$1" >&2
+  return 0
+}
+
 log_info() {
-  printf "%b[INFO ]%b %s\n" "$COLOR_BLUE" "$COLOR_RESET" "$1" >&2
+  [[ "$LOG_LEVEL" -ge 3 ]] && printf "%b[INFO ]%b %s\n" "$COLOR_BLUE" "$COLOR_RESET" "$1" >&2
+  return 0
 }
 
 log_warn() {
-  printf "%b[WARN ]%b %s\n" "$COLOR_YELLOW" "$COLOR_RESET" "$1" >&2
+  [[ "$LOG_LEVEL" -ge 2 ]] && printf "%b[WARN ]%b %s\n" "$COLOR_YELLOW" "$COLOR_RESET" "$1" >&2
+  return 0
 }
 
 log_error() {
-  printf "%b[ERROR]%b %s\n" "$COLOR_RED" "$COLOR_RESET" "$1" >&2
+  [[ "$LOG_LEVEL" -ge 1 ]] && printf "%b[ERROR]%b %s\n" "$COLOR_RED" "$COLOR_RESET" "$1" >&2
+  return 0
+}
+
+log_success() {
+  [[ "$LOG_LEVEL" -ge 3 ]] && printf "%b[OK   ]%b %s\n" "$COLOR_GREEN" "$COLOR_RESET" "$1" >&2
+  return 0
 }
 
 #######################################
@@ -393,12 +416,13 @@ export_cust_env() {
   export CUST_CUSTOMER_IDS="${CUSTOMER_IDS[*]}"
   export CUST_SECTIONS="${SECTIONS[*]}"
   export CUST_TEMPLATE_RELATIVE_ROOT="$TEMPLATE_RELATIVE_ROOT"
+  export LOG_LEVEL="$LOG_LEVEL"
 }
 
 run_bash() {
   local script="$1"
   shift || true
-  bash "$SCRIPT_DIR/bash/$script" "$@"
+  LOG_LEVEL="$LOG_LEVEL" bash "$SCRIPT_DIR/bash/$script" "$@"
 }
 
 #######################################
@@ -407,7 +431,12 @@ run_bash() {
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   usage() {
     cat <<'EOF'
-Usage: cust-run-config.sh <command>
+Usage: cust-run-config.sh [options] <command>
+
+Options:
+  -v, --verbose   Show debug output (LOG_LEVEL=4)
+  -q, --quiet     Show only errors (LOG_LEVEL=1)
+  --silent        Show nothing (LOG_LEVEL=0)
 
 Commands:
   install     Check and install missing requirements (jq, python3)
@@ -421,11 +450,40 @@ Examples:
   cust-run-config.sh install
   cust-run-config.sh config
   cust-run-config.sh structure
-  cust-run-config.sh templates
-  cust-run-config.sh test
-  cust-run-config.sh cleanup
+  cust-run-config.sh -v structure    # verbose mode
+  cust-run-config.sh -q cleanup      # quiet mode
 EOF
   }
+
+  # Parse options
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -v|--verbose)
+        LOG_LEVEL=4
+        shift
+        ;;
+      -q|--quiet)
+        LOG_LEVEL=1
+        shift
+        ;;
+      --silent)
+        LOG_LEVEL=0
+        shift
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      -*)
+        log_error "Unknown option: $1"
+        usage
+        exit 1
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
 
   cmd="${1:-}"
 
@@ -433,6 +491,9 @@ EOF
     usage
     exit 1
   fi
+
+  log_debug "Log level: $LOG_LEVEL"
+  log_debug "Command: $cmd"
 
   # Handle install command before loading config (which requires jq/python3)
   if [[ "$cmd" == "install" || "$cmd" == "requirements" ]]; then
