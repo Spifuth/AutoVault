@@ -291,6 +291,116 @@ interactive_config() {
 }
 
 #######################################
+# ADD / REMOVE CUSTOMER
+#######################################
+
+add_customer() {
+  local customer_id="$1"
+  
+  # Validate input is a number
+  if ! [[ "$customer_id" =~ ^[0-9]+$ ]]; then
+    log_error "Customer ID must be a positive integer: $customer_id"
+    return 1
+  fi
+  
+  # Convert to integer (remove leading zeros)
+  customer_id=$((10#$customer_id))
+  
+  # Check if already exists
+  for existing in "${CUSTOMER_IDS[@]}"; do
+    if [[ "$existing" -eq "$customer_id" ]]; then
+      log_warn "Customer ID $customer_id already exists in configuration"
+      return 1
+    fi
+  done
+  
+  # Add to array and sort
+  CUSTOMER_IDS+=("$customer_id")
+  IFS=$'\n' CUSTOMER_IDS=($(sort -n <<<"${CUSTOMER_IDS[*]}")); unset IFS
+  
+  # Save config
+  if ! ensure_config_json; then
+    log_error "Failed to save configuration"
+    return 1
+  fi
+  
+  log_info "Added customer ID $customer_id"
+  log_info "Current customer IDs: ${CUSTOMER_IDS[*]}"
+  
+  # Ask if user wants to create structure now
+  local create_now
+  printf "Create folder structure for CUST-%0${CUSTOMER_ID_WIDTH}d now? [Y/n]: " "$customer_id" >&2
+  read -r create_now
+  if [[ ! "$create_now" =~ ^[Nn] ]]; then
+    export_cust_env
+    run_bash "New-CustRunStructure.sh"
+  fi
+}
+
+remove_customer() {
+  local customer_id="$1"
+  
+  # Validate input is a number
+  if ! [[ "$customer_id" =~ ^[0-9]+$ ]]; then
+    log_error "Customer ID must be a positive integer: $customer_id"
+    return 1
+  fi
+  
+  # Convert to integer (remove leading zeros)
+  customer_id=$((10#$customer_id))
+  
+  # Check if exists
+  local found=false
+  local new_ids=()
+  for existing in "${CUSTOMER_IDS[@]}"; do
+    if [[ "$existing" -eq "$customer_id" ]]; then
+      found=true
+    else
+      new_ids+=("$existing")
+    fi
+  done
+  
+  if [[ "$found" == "false" ]]; then
+    log_error "Customer ID $customer_id not found in configuration"
+    return 1
+  fi
+  
+  # Confirm deletion
+  local cust_code
+  printf -v cust_code "CUST-%0${CUSTOMER_ID_WIDTH}d" "$customer_id"
+  
+  log_warn "This will remove $cust_code from configuration."
+  log_warn "Note: This does NOT delete the folder from disk. Use 'cleanup' for that."
+  
+  local confirm
+  printf "Remove customer ID %d from config? [y/N]: " "$customer_id" >&2
+  read -r confirm
+  if [[ ! "$confirm" =~ ^[Yy] ]]; then
+    log_info "Cancelled"
+    return 1
+  fi
+  
+  # Update array
+  CUSTOMER_IDS=("${new_ids[@]}")
+  
+  # Save config
+  if ! ensure_config_json; then
+    log_error "Failed to save configuration"
+    return 1
+  fi
+  
+  log_info "Removed customer ID $customer_id from configuration"
+  log_info "Current customer IDs: ${CUSTOMER_IDS[*]}"
+}
+
+list_customers() {
+  log_info "Configured customers (${#CUSTOMER_IDS[@]} total):"
+  for id in "${CUSTOMER_IDS[@]}"; do
+    printf "  CUST-%0${CUSTOMER_ID_WIDTH}d\n" "$id" >&2
+  done
+}
+
+#######################################
 # CONFIG (written to + loaded from cust-run-config.json)
 #######################################
 
@@ -407,23 +517,28 @@ run_bash() {
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   usage() {
     cat <<'EOF'
-Usage: cust-run-config.sh <command>
+Usage: cust-run-config.sh <command> [arguments]
 
 Commands:
-  install     Check and install missing requirements (jq, python3)
-  config      Interactive configuration wizard
-  structure   Create / refresh CUST Run folder structure
-  templates   Apply markdown templates to indexes
-  test        Verify structure & indexes
-  cleanup     Remove CUST folders (uses Cleanup script safety flags)
+  install             Check and install missing requirements (jq, python3)
+  config              Interactive configuration wizard
+  structure           Create / refresh CUST Run folder structure
+  templates           Apply markdown templates to indexes
+  test                Verify structure & indexes
+  cleanup             Remove CUST folders (uses Cleanup script safety flags)
+
+Customer Management:
+  add-customer <id>   Add a new customer ID to configuration
+  remove-customer <id> Remove a customer ID from configuration
+  list-customers      List all configured customer IDs
 
 Examples:
   cust-run-config.sh install
   cust-run-config.sh config
   cust-run-config.sh structure
-  cust-run-config.sh templates
-  cust-run-config.sh test
-  cust-run-config.sh cleanup
+  cust-run-config.sh add-customer 31
+  cust-run-config.sh remove-customer 5
+  cust-run-config.sh list-customers
 EOF
   }
 
@@ -461,6 +576,23 @@ EOF
     cleanup)
       log_warn "Using configuration from $CONFIG_JSON"
       run_bash "Cleanup-CustRunStructure.sh"
+      ;;
+    add-customer|add)
+      if [[ -z "${2:-}" ]]; then
+        log_error "Missing customer ID. Usage: cust-run-config.sh add-customer <id>"
+        exit 1
+      fi
+      add_customer "$2"
+      ;;
+    remove-customer|remove)
+      if [[ -z "${2:-}" ]]; then
+        log_error "Missing customer ID. Usage: cust-run-config.sh remove-customer <id>"
+        exit 1
+      fi
+      remove_customer "$2"
+      ;;
+    list-customers|list)
+      list_customers
       ;;
     *)
       log_error "Unknown command: $cmd"
