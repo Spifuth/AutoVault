@@ -18,21 +18,30 @@ LOG_LEVEL="${LOG_LEVEL:-3}"
 #--------------------------------------
 # COLORS + LOGGING HELPERS
 #--------------------------------------
-if [[ -t 2 ]]; then
-  COLOR_BLUE="\033[34m"
-  COLOR_YELLOW="\033[33m"
-  COLOR_RED="\033[31m"
-  COLOR_GREEN="\033[32m"
-  COLOR_GRAY="\033[90m"
-  COLOR_RESET="\033[0m"
-else
-  COLOR_BLUE=""
-  COLOR_YELLOW=""
-  COLOR_RED=""
-  COLOR_GREEN=""
-  COLOR_GRAY=""
-  COLOR_RESET=""
-fi
+# NO_COLOR environment variable support (https://no-color.org/)
+# Can also be set via --no-color flag
+NO_COLOR="${NO_COLOR:-}"
+
+setup_colors() {
+  if [[ -n "$NO_COLOR" ]] || [[ ! -t 2 ]]; then
+    COLOR_BLUE=""
+    COLOR_YELLOW=""
+    COLOR_RED=""
+    COLOR_GREEN=""
+    COLOR_GRAY=""
+    COLOR_RESET=""
+  else
+    COLOR_BLUE="\033[34m"
+    COLOR_YELLOW="\033[33m"
+    COLOR_RED="\033[31m"
+    COLOR_GREEN="\033[32m"
+    COLOR_GRAY="\033[90m"
+    COLOR_RESET="\033[0m"
+  fi
+}
+
+# Initialize colors (may be re-called after parsing --no-color flag)
+setup_colors
 
 log_debug() {
   [[ "$LOG_LEVEL" -ge 4 ]] && printf "%b[DEBUG]%b %s\n" "$COLOR_GRAY" "$COLOR_RESET" "$1" >&2
@@ -57,6 +66,10 @@ log_error() {
 log_success() {
   [[ "$LOG_LEVEL" -ge 3 ]] && printf "%b[OK   ]%b %s\n" "$COLOR_GREEN" "$COLOR_RESET" "$1" >&2
   return 0
+}
+
+log_success() {
+  printf "%b[OK   ]%b %s\n" "$COLOR_GREEN" "$COLOR_RESET" "$1" >&2
 }
 
 #######################################
@@ -633,6 +646,8 @@ Options:
   -v, --verbose   Show debug output (LOG_LEVEL=4)
   -q, --quiet     Show only errors (LOG_LEVEL=1)
   --silent        Show nothing (LOG_LEVEL=0)
+  --no-color      Disable colored output (also respects NO_COLOR env var)
+  -h, --help      Show this help message
 
 Commands:
   install     Check and install missing requirements (jq, python3)
@@ -650,6 +665,7 @@ Examples:
   cust-run-config.sh structure
   cust-run-config.sh -v structure    # verbose mode
   cust-run-config.sh -q cleanup      # quiet mode
+  cust-run-config.sh --no-color test
 EOF
   }
 
@@ -666,6 +682,11 @@ EOF
         ;;
       --silent)
         LOG_LEVEL=0
+        shift
+        ;;
+      --no-color)
+        NO_COLOR=1
+        setup_colors
         shift
         ;;
       -h|--help)
