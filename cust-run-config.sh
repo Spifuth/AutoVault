@@ -68,10 +68,6 @@ log_success() {
   return 0
 }
 
-log_success() {
-  printf "%b[OK   ]%b %s\n" "$COLOR_GREEN" "$COLOR_RESET" "$1" >&2
-}
-
 #######################################
 # REQUIREMENTS CHECK & AUTO-INSTALL
 #######################################
