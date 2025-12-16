@@ -402,6 +402,66 @@ run_bash() {
 }
 
 #######################################
+# STATUS COMMAND
+#######################################
+show_status() {
+  echo "=== AutoVault Configuration Status ==="
+  echo
+  echo "Configuration file: $CONFIG_JSON"
+  if [[ -f "$CONFIG_JSON" ]]; then
+    echo "  Status: ✓ exists"
+  else
+    echo "  Status: ✗ not found"
+    return 1
+  fi
+  echo
+  echo "Vault Root: $VAULT_ROOT"
+  if [[ -d "$VAULT_ROOT" ]]; then
+    echo "  Status: ✓ directory exists"
+  else
+    echo "  Status: ✗ directory not found"
+  fi
+  echo
+  echo "Customer ID Width: $CUSTOMER_ID_WIDTH"
+  echo "Template Root: $TEMPLATE_RELATIVE_ROOT"
+  echo
+  echo "Sections (${#SECTIONS[@]}):"
+  for section in "${SECTIONS[@]}"; do
+    echo "  - $section"
+  done
+  echo
+  echo "Customers (${#CUSTOMER_IDS[@]}):"
+  local run_path="$VAULT_ROOT/Run"
+  for id in "${CUSTOMER_IDS[@]}"; do
+    local code
+    code=$(printf "CUST-%0${CUSTOMER_ID_WIDTH}d" "$id")
+    local cust_path="$run_path/$code"
+    if [[ -d "$cust_path" ]]; then
+      echo "  ✓ $code"
+    else
+      echo "  ✗ $code (not created)"
+    fi
+  done
+  echo
+  echo "Run folder: $run_path"
+  if [[ -d "$run_path" ]]; then
+    echo "  Status: ✓ exists"
+    local folder_count
+    folder_count=$(find "$run_path" -maxdepth 1 -type d -name "CUST-*" 2>/dev/null | wc -l)
+    echo "  CUST folders: $folder_count"
+  else
+    echo "  Status: ✗ not created"
+  fi
+  echo
+  echo "Hub file: $VAULT_ROOT/Run-Hub.md"
+  if [[ -f "$VAULT_ROOT/Run-Hub.md" ]]; then
+    echo "  Status: ✓ exists"
+  else
+    echo "  Status: ✗ not created"
+  fi
+}
+
+#######################################
 # CLI (only when executed directly)
 #######################################
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -412,6 +472,7 @@ Usage: cust-run-config.sh <command>
 Commands:
   install     Check and install missing requirements (jq, python3)
   config      Interactive configuration wizard
+  status      Show configuration and structure status
   structure   Create / refresh CUST Run folder structure
   templates   Apply markdown templates to indexes
   test        Verify structure & indexes
@@ -445,6 +506,9 @@ EOF
   case "$cmd" in
     config|setup|init)
       interactive_config
+      ;;
+    status)
+      show_status
       ;;
     structure|new)
       log_info "Using configuration from $CONFIG_JSON"
