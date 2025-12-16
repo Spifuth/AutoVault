@@ -12,17 +12,28 @@ CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/config/cust-run-config.json"}"
 #--------------------------------------
 # COLORS + LOGGING HELPERS
 #--------------------------------------
-if [[ -t 2 ]]; then
-  COLOR_BLUE="\033[34m"
-  COLOR_YELLOW="\033[33m"
-  COLOR_RED="\033[31m"
-  COLOR_RESET="\033[0m"
-else
-  COLOR_BLUE=""
-  COLOR_YELLOW=""
-  COLOR_RED=""
-  COLOR_RESET=""
-fi
+# NO_COLOR environment variable support (https://no-color.org/)
+# Can also be set via --no-color flag
+NO_COLOR="${NO_COLOR:-}"
+
+setup_colors() {
+  if [[ -n "$NO_COLOR" ]] || [[ ! -t 2 ]]; then
+    COLOR_BLUE=""
+    COLOR_YELLOW=""
+    COLOR_RED=""
+    COLOR_GREEN=""
+    COLOR_RESET=""
+  else
+    COLOR_BLUE="\033[34m"
+    COLOR_YELLOW="\033[33m"
+    COLOR_RED="\033[31m"
+    COLOR_GREEN="\033[32m"
+    COLOR_RESET="\033[0m"
+  fi
+}
+
+# Initialize colors (may be re-called after parsing --no-color flag)
+setup_colors
 
 log_info() {
   printf "%b[INFO ]%b %s\n" "$COLOR_BLUE" "$COLOR_RESET" "$1" >&2
@@ -34,6 +45,10 @@ log_warn() {
 
 log_error() {
   printf "%b[ERROR]%b %s\n" "$COLOR_RED" "$COLOR_RESET" "$1" >&2
+}
+
+log_success() {
+  printf "%b[OK   ]%b %s\n" "$COLOR_GREEN" "$COLOR_RESET" "$1" >&2
 }
 
 #######################################
@@ -407,7 +422,11 @@ run_bash() {
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   usage() {
     cat <<'EOF'
-Usage: cust-run-config.sh <command>
+Usage: cust-run-config.sh [options] <command>
+
+Options:
+  --no-color  Disable colored output (also respects NO_COLOR env var)
+  -h, --help  Show this help message
 
 Commands:
   install     Check and install missing requirements (jq, python3)
@@ -421,11 +440,33 @@ Examples:
   cust-run-config.sh install
   cust-run-config.sh config
   cust-run-config.sh structure
-  cust-run-config.sh templates
-  cust-run-config.sh test
-  cust-run-config.sh cleanup
+  cust-run-config.sh --no-color structure
+  NO_COLOR=1 cust-run-config.sh test
 EOF
   }
+
+  # Parse options
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --no-color)
+        NO_COLOR=1
+        setup_colors
+        shift
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      -*)
+        log_error "Unknown option: $1"
+        usage
+        exit 1
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
 
   cmd="${1:-}"
 
