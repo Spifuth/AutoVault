@@ -512,6 +512,113 @@ list_sections() {
 }
 
 #######################################
+# BACKUP MANAGEMENT
+#######################################
+
+BACKUP_DIR="${BACKUP_DIR:-"$SCRIPT_DIR/backups"}"
+
+list_backups() {
+  if [[ ! -d "$BACKUP_DIR" ]]; then
+    log_info "No backups found (backup directory does not exist)"
+    return 0
+  fi
+  
+  local backups
+  backups=($(find "$BACKUP_DIR" -maxdepth 1 -name "autovault_backup_*.tar.gz" -type f 2>/dev/null | sort -r))
+  
+  if [[ ${#backups[@]} -eq 0 ]]; then
+    log_info "No backups found in $BACKUP_DIR"
+    return 0
+  fi
+  
+  log_info "Available backups (${#backups[@]} total):"
+  local i=1
+  for backup in "${backups[@]}"; do
+    local filename size date_str
+    filename="$(basename "$backup")"
+    size="$(du -h "$backup" | cut -f1)"
+    # Extract date from filename: autovault_backup_YYYYMMDD_HHMMSS.tar.gz
+    date_str="$(echo "$filename" | sed -E 's/autovault_backup_([0-9]{4})([0-9]{2})([0-9]{2})_([0-9]{2})([0-9]{2})([0-9]{2})\.tar\.gz/\1-\2-\3 \4:\5:\6/')"
+    printf "  %2d. %s (%s) - %s\n" "$i" "$filename" "$size" "$date_str" >&2
+    ((i++))
+  done
+}
+
+restore_backup() {
+  local backup_arg="$1"
+  
+  if [[ ! -d "$BACKUP_DIR" ]]; then
+    log_error "Backup directory does not exist: $BACKUP_DIR"
+    return 1
+  fi
+  
+  local backup_path
+  
+  # If argument is a number, use it as index
+  if [[ "$backup_arg" =~ ^[0-9]+$ ]]; then
+    local backups
+    backups=($(find "$BACKUP_DIR" -maxdepth 1 -name "autovault_backup_*.tar.gz" -type f 2>/dev/null | sort -r))
+    
+    if [[ ${#backups[@]} -eq 0 ]]; then
+      log_error "No backups found"
+      return 1
+    fi
+    
+    local index=$((backup_arg - 1))
+    if [[ $index -lt 0 || $index -ge ${#backups[@]} ]]; then
+      log_error "Invalid backup number: $backup_arg (valid range: 1-${#backups[@]})"
+      return 1
+    fi
+    
+    backup_path="${backups[$index]}"
+  else
+    # Treat as filename
+    if [[ -f "$backup_arg" ]]; then
+      backup_path="$backup_arg"
+    elif [[ -f "$BACKUP_DIR/$backup_arg" ]]; then
+      backup_path="$BACKUP_DIR/$backup_arg"
+    else
+      log_error "Backup file not found: $backup_arg"
+      return 1
+    fi
+  fi
+  
+  log_info "Selected backup: $(basename "$backup_path")"
+  
+  # Show what will be restored
+  log_info "Contents of backup:"
+  tar -tzf "$backup_path" | head -20 | while read -r line; do
+    printf "  %s\n" "$line" >&2
+  done
+  
+  local total_files
+  total_files=$(tar -tzf "$backup_path" | wc -l)
+  if [[ $total_files -gt 20 ]]; then
+    printf "  ... and %d more files\n" "$((total_files - 20))" >&2
+  fi
+  
+  log_warn "This will extract the backup to the original location."
+  log_warn "Existing files may be overwritten!"
+  
+  local confirm
+  printf "Proceed with restore? [y/N]: " >&2
+  read -r confirm
+  if [[ ! "$confirm" =~ ^[Yy] ]]; then
+    log_info "Restore cancelled"
+    return 1
+  fi
+  
+  # Extract to root (paths in archive are absolute or relative to vault)
+  log_info "Restoring backup..."
+  if tar -xzf "$backup_path" -C / 2>/dev/null || tar -xzf "$backup_path" 2>/dev/null; then
+    log_info "Backup restored successfully"
+  else
+    log_error "Failed to restore backup"
+    return 1
+  fi
+}
+
+#######################################
 # CONFIG (written to + loaded from cust-run-config.json)
 #######################################
 
@@ -636,7 +743,7 @@ Commands:
   structure           Create / refresh CUST Run folder structure
   templates           Apply markdown templates to indexes
   test                Verify structure & indexes
-  cleanup             Remove CUST folders (uses Cleanup script safety flags)
+  cleanup             Remove CUST folders (creates backup first by default)
 
 Customer Management:
   add-customer <id>   Add a new customer ID to configuration
@@ -648,6 +755,10 @@ Section Management:
   remove-section <name> Remove a section from configuration
   list-sections       List all configured sections
 
+Backup Management:
+  list-backups        List available backups
+  restore-backup <n>  Restore backup by number (from list-backups) or filename
+
 Examples:
   cust-run-config.sh install
   cust-run-config.sh config
@@ -655,7 +766,8 @@ Examples:
   cust-run-config.sh add-customer 31
   cust-run-config.sh remove-customer 5
   cust-run-config.sh add-section URGENT
-  cust-run-config.sh list-sections
+  cust-run-config.sh list-backups
+  cust-run-config.sh restore-backup 1
 EOF
   }
 
@@ -727,6 +839,17 @@ EOF
       ;;
     list-sections)
       list_sections
+      ;;
+    list-backups|backups)
+      list_backups
+      ;;
+    restore-backup|restore)
+      if [[ -z "${2:-}" ]]; then
+        log_error "Missing backup identifier. Usage: cust-run-config.sh restore-backup <number|filename>"
+        log_info "Use 'list-backups' to see available backups"
+        exit 1
+      fi
+      restore_backup "$2"
       ;;
     *)
       log_error "Unknown command: $cmd"
