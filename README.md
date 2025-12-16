@@ -8,7 +8,11 @@ Helper scripts to create, template, verify, and clean a "Run" workspace in an Ob
 - **Template application** – Applies Markdown templates with placeholder substitution (`{{CUST_CODE}}`, `{{SECTION}}`, `{{NOW_UTC}}`, `{{NOW_LOCAL}}`)
 - **Verification** – Validates folder structure, index files, and hub links
 - **Cleanup** – Removes customer folders (protected by safety flags)
+- **Customer & Section Management** – Add/remove customers and sections dynamically
+- **Backup Management** – List, create, and restore configuration backups
+- **Configuration Validation** – Validate JSON config with automatic fixes
 - **Cross-platform** – Independent implementations in Bash (Linux/macOS) and PowerShell (Windows)
+- **Modular Architecture** – Shared libraries for logging and config management
 
 ## Generated Structure
 
@@ -112,12 +116,44 @@ Running the orchestrator will generate `config/cust-run-config.json` which is sh
 ### Linux / macOS (Bash)
 
 ```bash
-./cust-run-config.sh install     # Check/install requirements (jq, python3)
-./cust-run-config.sh config      # Interactive configuration wizard
-./cust-run-config.sh structure   # Create/refresh folder structure
-./cust-run-config.sh templates   # Apply markdown templates
-./cust-run-config.sh test        # Verify structure & indexes
-./cust-run-config.sh cleanup     # Remove CUST folders (protected)
+# Global options (can be combined with any command)
+./cust-run-config.sh -v <command>      # Verbose/debug output
+./cust-run-config.sh -q <command>      # Quiet mode (errors only)
+./cust-run-config.sh --silent <command> # Silent mode (no output)
+./cust-run-config.sh --no-color <command> # Disable colored output
+./cust-run-config.sh --dry-run <command>  # Preview without changes
+./cust-run-config.sh -h                # Show help
+
+# Configuration
+./cust-run-config.sh config            # Interactive configuration wizard
+./cust-run-config.sh validate          # Validate configuration file
+./cust-run-config.sh status            # Show comprehensive status report
+
+# Structure Management
+./cust-run-config.sh structure         # Create/refresh folder structure
+./cust-run-config.sh templates         # Apply markdown templates
+./cust-run-config.sh test              # Verify structure & indexes
+./cust-run-config.sh cleanup           # Remove CUST folders (protected)
+
+# Customer Management
+./cust-run-config.sh customer add 31   # Add customer ID 31
+./cust-run-config.sh customer remove 5 # Remove customer ID 5
+./cust-run-config.sh customer list     # List all customers
+
+# Section Management
+./cust-run-config.sh section add URGENT    # Add new section
+./cust-run-config.sh section remove DIVERS # Remove section
+./cust-run-config.sh section list          # List all sections
+
+# Backup Management
+./cust-run-config.sh backup list       # List available backups
+./cust-run-config.sh backup restore 1  # Restore backup #1
+./cust-run-config.sh backup create     # Create manual backup
+./cust-run-config.sh backup cleanup 10 # Keep only 10 most recent
+
+# Requirements
+./cust-run-config.sh requirements check   # Check dependencies
+./cust-run-config.sh requirements install # Install missing deps
 ```
 
 ### Windows (PowerShell)
@@ -194,22 +230,42 @@ Placeholders (`{{CUST_CODE}}`, `{{SECTION}}`, `{{NOW_UTC}}`, `{{NOW_LOCAL}}`) ar
 
 ```
 AutoVault/
-├── cust-run-config.sh              # Linux orchestrator
+├── cust-run-config.sh              # Linux CLI orchestrator (main entry point)
 ├── cust-run-config.ps1             # Windows orchestrator
+├── install-requirements.sh         # Standalone requirements installer
 ├── Generate-CustRunTemplates.sh    # Template generator (Linux)
 ├── Generate-CustRunTemplates.ps1   # Template generator (Windows)
 ├── cust-run-templates.sample.json  # Template definitions sample
 ├── README.md
 ├── config/
 │   └── cust-run-config.json        # Shared configuration (auto-generated)
-├── bash/                           # Linux scripts
-│   ├── Apply-CustRunTemplates.sh
-│   ├── Cleanup-CustRunStructure.sh
-│   ├── New-CustRunStructure.sh
-│   └── Test-CustRunStructure.sh
+├── backups/                        # Configuration backups (auto-created)
+├── bash/
+│   ├── lib/                        # Shared libraries
+│   │   ├── logging.sh              # Logging utilities (colors, log levels)
+│   │   └── config.sh               # Config loading/saving functions
+│   ├── Manage-Customers.sh         # Customer add/remove/list
+│   ├── Manage-Sections.sh          # Section add/remove/list
+│   ├── Manage-Backups.sh           # Backup list/restore/create/cleanup
+│   ├── Show-Status.sh              # Status report display
+│   ├── Validate-Config.sh          # Configuration validation
+│   ├── Install-Requirements.sh     # Dependency management
+│   ├── New-CustRunStructure.sh     # Create folder structure
+│   ├── Apply-CustRunTemplates.sh   # Apply markdown templates
+│   ├── Test-CustRunStructure.sh    # Verify structure
+│   └── Cleanup-CustRunStructure.sh # Remove structure (protected)
 └── powershell/                     # Windows scripts
     ├── Apply-CustRunTemplates.ps1
     ├── Cleanup-CustRunStructure.ps1
     ├── New-CustRunStructure.ps1
     └── Test-CustRunStructure.ps1
 ```
+
+## Architecture
+
+The Bash implementation uses a modular architecture:
+
+- **`cust-run-config.sh`** - Main CLI orchestrator (~350 lines). Parses arguments and dispatches to feature scripts.
+- **`bash/lib/logging.sh`** - Shared logging with LOG_LEVEL support (0=silent, 1=error, 2=warn, 3=info, 4=debug) and NO_COLOR support.
+- **`bash/lib/config.sh`** - Configuration management: load/save JSON config, default values, helper functions.
+- **Feature scripts** - Each command has its own script that sources the shared libraries.
