@@ -361,6 +361,8 @@ load_config() {
   # This prevents overwriting saved config with defaults
   if [[ -f "$CONFIG_JSON" ]]; then
     VAULT_ROOT="$(jq -r '.VaultRoot' "$CONFIG_JSON")"
+    # Expand tilde to home directory (~ is not expanded when read from JSON)
+    VAULT_ROOT="${VAULT_ROOT/#\~/$HOME}"
     CUSTOMER_ID_WIDTH="$(jq -r '.CustomerIdWidth // 3' "$CONFIG_JSON")"
     # Declare as global before mapfile to avoid local variable creation in function context
     declare -ga CUSTOMER_IDS
