@@ -80,6 +80,22 @@ write_log() {
     shift
     local message="$*"
 
+    # LOG_LEVEL: 0=silent, 1=error, 2=warn, 3=info, 4=debug
+    local log_level="${LOG_LEVEL:-3}"
+    local level_num=3
+
+    case "$level" in
+        DEBUG) level_num=4 ;;
+        INFO)  level_num=3 ;;
+        WARN)  level_num=2 ;;
+        ERROR) level_num=1 ;;
+    esac
+
+    # Skip if message level is higher than configured LOG_LEVEL
+    if (( level_num > log_level )); then
+        return 0
+    fi
+
     local utc localtime
     utc="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
     localtime="$(date +"%Y-%m-%dT%H:%M:%S%z")"
