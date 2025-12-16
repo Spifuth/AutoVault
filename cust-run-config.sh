@@ -401,6 +401,117 @@ list_customers() {
 }
 
 #######################################
+# ADD / REMOVE SECTION
+#######################################
+
+add_section() {
+  local section_name="$1"
+  
+  # Validate input - must be non-empty and alphanumeric (with underscores/hyphens)
+  if [[ -z "$section_name" ]]; then
+    log_error "Section name cannot be empty"
+    return 1
+  fi
+  
+  if ! [[ "$section_name" =~ ^[A-Za-z][A-Za-z0-9_-]*$ ]]; then
+    log_error "Section name must start with a letter and contain only letters, numbers, underscores, or hyphens"
+    return 1
+  fi
+  
+  # Convert to uppercase for consistency
+  section_name="${section_name^^}"
+  
+  # Check if already exists
+  for existing in "${SECTIONS[@]}"; do
+    if [[ "$existing" == "$section_name" ]]; then
+      log_warn "Section '$section_name' already exists in configuration"
+      return 1
+    fi
+  done
+  
+  # Add to array
+  SECTIONS+=("$section_name")
+  
+  # Save config
+  if ! ensure_config_json; then
+    log_error "Failed to save configuration"
+    return 1
+  fi
+  
+  log_info "Added section '$section_name'"
+  log_info "Current sections: ${SECTIONS[*]}"
+  
+  # Ask if user wants to update structure now
+  local update_now
+  printf "Update folder structure to add new section to all customers? [Y/n]: " >&2
+  read -r update_now
+  if [[ ! "$update_now" =~ ^[Nn] ]]; then
+    export_cust_env
+    run_bash "New-CustRunStructure.sh"
+  fi
+}
+
+remove_section() {
+  local section_name="$1"
+  
+  # Convert to uppercase for matching
+  section_name="${section_name^^}"
+  
+  # Check if exists
+  local found=false
+  local new_sections=()
+  for existing in "${SECTIONS[@]}"; do
+    if [[ "$existing" == "$section_name" ]]; then
+      found=true
+    else
+      new_sections+=("$existing")
+    fi
+  done
+  
+  if [[ "$found" == "false" ]]; then
+    log_error "Section '$section_name' not found in configuration"
+    log_info "Available sections: ${SECTIONS[*]}"
+    return 1
+  fi
+  
+  # Prevent removing last section
+  if [[ ${#new_sections[@]} -eq 0 ]]; then
+    log_error "Cannot remove the last section. At least one section is required."
+    return 1
+  fi
+  
+  log_warn "This will remove section '$section_name' from configuration."
+  log_warn "Note: This does NOT delete existing folders from disk."
+  
+  local confirm
+  printf "Remove section '%s' from config? [y/N]: " "$section_name" >&2
+  read -r confirm
+  if [[ ! "$confirm" =~ ^[Yy] ]]; then
+    log_info "Cancelled"
+    return 1
+  fi
+  
+  # Update array
+  SECTIONS=("${new_sections[@]}")
+  
+  # Save config
+  if ! ensure_config_json; then
+    log_error "Failed to save configuration"
+    return 1
+  fi
+  
+  log_info "Removed section '$section_name' from configuration"
+  log_info "Current sections: ${SECTIONS[*]}"
+}
+
+list_sections() {
+  log_info "Configured sections (${#SECTIONS[@]} total):"
+  for section in "${SECTIONS[@]}"; do
+    printf "  %s\n" "$section" >&2
+  done
+}
+
+#######################################
 # CONFIG (written to + loaded from cust-run-config.json)
 #######################################
 
@@ -532,13 +643,19 @@ Customer Management:
   remove-customer <id> Remove a customer ID from configuration
   list-customers      List all configured customer IDs
 
+Section Management:
+  add-section <name>  Add a new section to configuration
+  remove-section <name> Remove a section from configuration
+  list-sections       List all configured sections
+
 Examples:
   cust-run-config.sh install
   cust-run-config.sh config
   cust-run-config.sh structure
   cust-run-config.sh add-customer 31
   cust-run-config.sh remove-customer 5
-  cust-run-config.sh list-customers
+  cust-run-config.sh add-section URGENT
+  cust-run-config.sh list-sections
 EOF
   }
 
@@ -593,6 +710,23 @@ EOF
       ;;
     list-customers|list)
       list_customers
+      ;;
+    add-section)
+      if [[ -z "${2:-}" ]]; then
+        log_error "Missing section name. Usage: cust-run-config.sh add-section <name>"
+        exit 1
+      fi
+      add_section "$2"
+      ;;
+    remove-section)
+      if [[ -z "${2:-}" ]]; then
+        log_error "Missing section name. Usage: cust-run-config.sh remove-section <name>"
+        exit 1
+      fi
+      remove_section "$2"
+      ;;
+    list-sections)
+      list_sections
       ;;
     *)
       log_error "Unknown command: $cmd"
