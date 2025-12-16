@@ -291,6 +291,227 @@ interactive_config() {
 }
 
 #######################################
+# ADD / REMOVE CUSTOMER
+#######################################
+
+add_customer() {
+  local customer_id="$1"
+  
+  # Validate input is a number
+  if ! [[ "$customer_id" =~ ^[0-9]+$ ]]; then
+    log_error "Customer ID must be a positive integer: $customer_id"
+    return 1
+  fi
+  
+  # Convert to integer (remove leading zeros)
+  customer_id=$((10#$customer_id))
+  
+  # Check if already exists
+  for existing in "${CUSTOMER_IDS[@]}"; do
+    if [[ "$existing" -eq "$customer_id" ]]; then
+      log_warn "Customer ID $customer_id already exists in configuration"
+      return 1
+    fi
+  done
+  
+  # Add to array and sort
+  CUSTOMER_IDS+=("$customer_id")
+  IFS=$'\n' CUSTOMER_IDS=($(sort -n <<<"${CUSTOMER_IDS[*]}")); unset IFS
+  
+  # Save config
+  if ! ensure_config_json; then
+    log_error "Failed to save configuration"
+    return 1
+  fi
+  
+  log_info "Added customer ID $customer_id"
+  log_info "Current customer IDs: ${CUSTOMER_IDS[*]}"
+  
+  # Ask if user wants to create structure now
+  local create_now
+  printf "Create folder structure for CUST-%0${CUSTOMER_ID_WIDTH}d now? [Y/n]: " "$customer_id" >&2
+  read -r create_now
+  if [[ ! "$create_now" =~ ^[Nn] ]]; then
+    export_cust_env
+    run_bash "New-CustRunStructure.sh"
+  fi
+}
+
+remove_customer() {
+  local customer_id="$1"
+  
+  # Validate input is a number
+  if ! [[ "$customer_id" =~ ^[0-9]+$ ]]; then
+    log_error "Customer ID must be a positive integer: $customer_id"
+    return 1
+  fi
+  
+  # Convert to integer (remove leading zeros)
+  customer_id=$((10#$customer_id))
+  
+  # Check if exists
+  local found=false
+  local new_ids=()
+  for existing in "${CUSTOMER_IDS[@]}"; do
+    if [[ "$existing" -eq "$customer_id" ]]; then
+      found=true
+    else
+      new_ids+=("$existing")
+    fi
+  done
+  
+  if [[ "$found" == "false" ]]; then
+    log_error "Customer ID $customer_id not found in configuration"
+    return 1
+  fi
+  
+  # Confirm deletion
+  local cust_code
+  printf -v cust_code "CUST-%0${CUSTOMER_ID_WIDTH}d" "$customer_id"
+  
+  log_warn "This will remove $cust_code from configuration."
+  log_warn "Note: This does NOT delete the folder from disk. Use 'cleanup' for that."
+  
+  local confirm
+  printf "Remove customer ID %d from config? [y/N]: " "$customer_id" >&2
+  read -r confirm
+  if [[ ! "$confirm" =~ ^[Yy] ]]; then
+    log_info "Cancelled"
+    return 1
+  fi
+  
+  # Update array
+  CUSTOMER_IDS=("${new_ids[@]}")
+  
+  # Save config
+  if ! ensure_config_json; then
+    log_error "Failed to save configuration"
+    return 1
+  fi
+  
+  log_info "Removed customer ID $customer_id from configuration"
+  log_info "Current customer IDs: ${CUSTOMER_IDS[*]}"
+}
+
+list_customers() {
+  log_info "Configured customers (${#CUSTOMER_IDS[@]} total):"
+  for id in "${CUSTOMER_IDS[@]}"; do
+    printf "  CUST-%0${CUSTOMER_ID_WIDTH}d\n" "$id" >&2
+  done
+}
+
+#######################################
+# ADD / REMOVE SECTION
+#######################################
+
+add_section() {
+  local section_name="$1"
+  
+  # Validate input - must be non-empty and alphanumeric (with underscores/hyphens)
+  if [[ -z "$section_name" ]]; then
+    log_error "Section name cannot be empty"
+    return 1
+  fi
+  
+  if ! [[ "$section_name" =~ ^[A-Za-z][A-Za-z0-9_-]*$ ]]; then
+    log_error "Section name must start with a letter and contain only letters, numbers, underscores, or hyphens"
+    return 1
+  fi
+  
+  # Convert to uppercase for consistency
+  section_name="${section_name^^}"
+  
+  # Check if already exists
+  for existing in "${SECTIONS[@]}"; do
+    if [[ "$existing" == "$section_name" ]]; then
+      log_warn "Section '$section_name' already exists in configuration"
+      return 1
+    fi
+  done
+  
+  # Add to array
+  SECTIONS+=("$section_name")
+  
+  # Save config
+  if ! ensure_config_json; then
+    log_error "Failed to save configuration"
+    return 1
+  fi
+  
+  log_info "Added section '$section_name'"
+  log_info "Current sections: ${SECTIONS[*]}"
+  
+  # Ask if user wants to update structure now
+  local update_now
+  printf "Update folder structure to add new section to all customers? [Y/n]: " >&2
+  read -r update_now
+  if [[ ! "$update_now" =~ ^[Nn] ]]; then
+    export_cust_env
+    run_bash "New-CustRunStructure.sh"
+  fi
+}
+
+remove_section() {
+  local section_name="$1"
+  
+  # Convert to uppercase for matching
+  section_name="${section_name^^}"
+  
+  # Check if exists
+  local found=false
+  local new_sections=()
+  for existing in "${SECTIONS[@]}"; do
+    if [[ "$existing" == "$section_name" ]]; then
+      found=true
+    else
+      new_sections+=("$existing")
+    fi
+  done
+  
+  if [[ "$found" == "false" ]]; then
+    log_error "Section '$section_name' not found in configuration"
+    log_info "Available sections: ${SECTIONS[*]}"
+    return 1
+  fi
+  
+  # Prevent removing last section
+  if [[ ${#new_sections[@]} -eq 0 ]]; then
+    log_error "Cannot remove the last section. At least one section is required."
+    return 1
+  fi
+  
+  log_warn "This will remove section '$section_name' from configuration."
+  log_warn "Note: This does NOT delete existing folders from disk."
+  
+  local confirm
+  printf "Remove section '%s' from config? [y/N]: " "$section_name" >&2
+  read -r confirm
+  if [[ ! "$confirm" =~ ^[Yy] ]]; then
+    log_info "Cancelled"
+    return 1
+  fi
+  
+  # Update array
+  SECTIONS=("${new_sections[@]}")
+  
+  # Save config
+  if ! ensure_config_json; then
+    log_error "Failed to save configuration"
+    return 1
+  fi
+  
+  log_info "Removed section '$section_name' from configuration"
+  log_info "Current sections: ${SECTIONS[*]}"
+}
+
+list_sections() {
+  log_info "Configured sections (${#SECTIONS[@]} total):"
+  for section in "${SECTIONS[@]}"; do
+    printf "  %s\n" "$section" >&2
+  done
+}
+
+#######################################
 # CONFIG (written to + loaded from cust-run-config.json)
 #######################################
 
@@ -407,23 +628,34 @@ run_bash() {
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   usage() {
     cat <<'EOF'
-Usage: cust-run-config.sh <command>
+Usage: cust-run-config.sh <command> [arguments]
 
 Commands:
-  install     Check and install missing requirements (jq, python3)
-  config      Interactive configuration wizard
-  structure   Create / refresh CUST Run folder structure
-  templates   Apply markdown templates to indexes
-  test        Verify structure & indexes
-  cleanup     Remove CUST folders (uses Cleanup script safety flags)
+  install             Check and install missing requirements (jq, python3)
+  config              Interactive configuration wizard
+  structure           Create / refresh CUST Run folder structure
+  templates           Apply markdown templates to indexes
+  test                Verify structure & indexes
+  cleanup             Remove CUST folders (uses Cleanup script safety flags)
+
+Customer Management:
+  add-customer <id>   Add a new customer ID to configuration
+  remove-customer <id> Remove a customer ID from configuration
+  list-customers      List all configured customer IDs
+
+Section Management:
+  add-section <name>  Add a new section to configuration
+  remove-section <name> Remove a section from configuration
+  list-sections       List all configured sections
 
 Examples:
   cust-run-config.sh install
   cust-run-config.sh config
   cust-run-config.sh structure
-  cust-run-config.sh templates
-  cust-run-config.sh test
-  cust-run-config.sh cleanup
+  cust-run-config.sh add-customer 31
+  cust-run-config.sh remove-customer 5
+  cust-run-config.sh add-section URGENT
+  cust-run-config.sh list-sections
 EOF
   }
 
@@ -461,6 +693,40 @@ EOF
     cleanup)
       log_warn "Using configuration from $CONFIG_JSON"
       run_bash "Cleanup-CustRunStructure.sh"
+      ;;
+    add-customer|add)
+      if [[ -z "${2:-}" ]]; then
+        log_error "Missing customer ID. Usage: cust-run-config.sh add-customer <id>"
+        exit 1
+      fi
+      add_customer "$2"
+      ;;
+    remove-customer|remove)
+      if [[ -z "${2:-}" ]]; then
+        log_error "Missing customer ID. Usage: cust-run-config.sh remove-customer <id>"
+        exit 1
+      fi
+      remove_customer "$2"
+      ;;
+    list-customers|list)
+      list_customers
+      ;;
+    add-section)
+      if [[ -z "${2:-}" ]]; then
+        log_error "Missing section name. Usage: cust-run-config.sh add-section <name>"
+        exit 1
+      fi
+      add_section "$2"
+      ;;
+    remove-section)
+      if [[ -z "${2:-}" ]]; then
+        log_error "Missing section name. Usage: cust-run-config.sh remove-section <name>"
+        exit 1
+      fi
+      remove_section "$2"
+      ;;
+    list-sections)
+      list_sections
       ;;
     *)
       log_error "Unknown command: $cmd"
