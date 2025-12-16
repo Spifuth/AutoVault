@@ -357,23 +357,23 @@ load_config() {
     return 1
   fi
 
-  if ! ensure_config_json; then
-    return 1
+  # If config file already exists, read values from it FIRST before calling ensure_config_json
+  # This prevents overwriting saved config with defaults
+  if [[ -f "$CONFIG_JSON" ]]; then
+    VAULT_ROOT="$(jq -r '.VaultRoot' "$CONFIG_JSON")"
+    CUSTOMER_ID_WIDTH="$(jq -r '.CustomerIdWidth // 3' "$CONFIG_JSON")"
+    # Declare as global before mapfile to avoid local variable creation in function context
+    declare -ga CUSTOMER_IDS
+    declare -ga SECTIONS
+    mapfile -t CUSTOMER_IDS < <(jq -r '.CustomerIds[]' "$CONFIG_JSON")
+    mapfile -t SECTIONS < <(jq -r '.Sections[]' "$CONFIG_JSON")
+    TEMPLATE_RELATIVE_ROOT="$(jq -r '.TemplateRelativeRoot' "$CONFIG_JSON")"
+  else
+    # Config file doesn't exist yet - create it with current (default) values
+    if ! ensure_config_json; then
+      return 1
+    fi
   fi
-
-  if [[ ! -f "$CONFIG_JSON" ]]; then
-    log_error "Configuration file not found: $CONFIG_JSON"
-    return 1
-  fi
-
-  VAULT_ROOT="$(jq -r '.VaultRoot' "$CONFIG_JSON")"
-  CUSTOMER_ID_WIDTH="$(jq -r '.CustomerIdWidth // 3' "$CONFIG_JSON")"
-  # Declare as global before mapfile to avoid local variable creation in function context
-  declare -ga CUSTOMER_IDS
-  declare -ga SECTIONS
-  mapfile -t CUSTOMER_IDS < <(jq -r '.CustomerIds[]' "$CONFIG_JSON")
-  mapfile -t SECTIONS < <(jq -r '.Sections[]' "$CONFIG_JSON")
-  TEMPLATE_RELATIVE_ROOT="$(jq -r '.TemplateRelativeRoot' "$CONFIG_JSON")"
 }
 
 if ! load_config; then
