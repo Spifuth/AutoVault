@@ -10,30 +10,66 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/config/cust-run-config.json"}"
 
 #--------------------------------------
+# GLOBAL FLAGS
+#--------------------------------------
+# Log levels: 0=quiet, 1=error, 2=warn, 3=info (default), 4=debug
+LOG_LEVEL="${LOG_LEVEL:-3}"
+
+#--------------------------------------
 # COLORS + LOGGING HELPERS
 #--------------------------------------
-if [[ -t 2 ]]; then
-  COLOR_BLUE="\033[34m"
-  COLOR_YELLOW="\033[33m"
-  COLOR_RED="\033[31m"
-  COLOR_RESET="\033[0m"
-else
-  COLOR_BLUE=""
-  COLOR_YELLOW=""
-  COLOR_RED=""
-  COLOR_RESET=""
-fi
+# NO_COLOR environment variable support (https://no-color.org/)
+# Can also be set via --no-color flag
+NO_COLOR="${NO_COLOR:-}"
+
+setup_colors() {
+  if [[ -n "$NO_COLOR" ]] || [[ ! -t 2 ]]; then
+    COLOR_BLUE=""
+    COLOR_YELLOW=""
+    COLOR_RED=""
+    COLOR_GREEN=""
+    COLOR_GRAY=""
+    COLOR_RESET=""
+  else
+    COLOR_BLUE="\033[34m"
+    COLOR_YELLOW="\033[33m"
+    COLOR_RED="\033[31m"
+    COLOR_GREEN="\033[32m"
+    COLOR_GRAY="\033[90m"
+    COLOR_RESET="\033[0m"
+  fi
+}
+
+# Initialize colors (may be re-called after parsing --no-color flag)
+setup_colors
+
+log_debug() {
+  [[ "$LOG_LEVEL" -ge 4 ]] && printf "%b[DEBUG]%b %s\n" "$COLOR_GRAY" "$COLOR_RESET" "$1" >&2
+  return 0
+}
 
 log_info() {
-  printf "%b[INFO ]%b %s\n" "$COLOR_BLUE" "$COLOR_RESET" "$1" >&2
+  [[ "$LOG_LEVEL" -ge 3 ]] && printf "%b[INFO ]%b %s\n" "$COLOR_BLUE" "$COLOR_RESET" "$1" >&2
+  return 0
 }
 
 log_warn() {
-  printf "%b[WARN ]%b %s\n" "$COLOR_YELLOW" "$COLOR_RESET" "$1" >&2
+  [[ "$LOG_LEVEL" -ge 2 ]] && printf "%b[WARN ]%b %s\n" "$COLOR_YELLOW" "$COLOR_RESET" "$1" >&2
+  return 0
 }
 
 log_error() {
-  printf "%b[ERROR]%b %s\n" "$COLOR_RED" "$COLOR_RESET" "$1" >&2
+  [[ "$LOG_LEVEL" -ge 1 ]] && printf "%b[ERROR]%b %s\n" "$COLOR_RED" "$COLOR_RESET" "$1" >&2
+  return 0
+}
+
+log_success() {
+  [[ "$LOG_LEVEL" -ge 3 ]] && printf "%b[OK   ]%b %s\n" "$COLOR_GREEN" "$COLOR_RESET" "$1" >&2
+  return 0
+}
+
+log_success() {
+  printf "%b[OK   ]%b %s\n" "$COLOR_GREEN" "$COLOR_RESET" "$1" >&2
 }
 
 #######################################
@@ -706,6 +742,142 @@ load_config() {
   fi
 }
 
+#######################################
+# CONFIG VALIDATION
+#######################################
+validate_config() {
+  local errors=0
+  local warnings=0
+
+  echo "=== Validating Configuration ==="
+  echo
+
+  # Check config file exists and is valid JSON
+  echo "Checking config file..."
+  if [[ ! -f "$CONFIG_JSON" ]]; then
+    log_error "Config file not found: $CONFIG_JSON"
+    errors=$((errors + 1))
+  elif ! jq empty "$CONFIG_JSON" 2>/dev/null; then
+    log_error "Config file is not valid JSON: $CONFIG_JSON"
+    errors=$((errors + 1))
+  else
+    echo "  ✓ Config file exists and is valid JSON"
+  fi
+
+  # Validate VaultRoot
+  echo "Checking VaultRoot..."
+  if [[ -z "$VAULT_ROOT" ]]; then
+    log_error "VaultRoot is not set"
+    errors=$((errors + 1))
+  elif [[ ! -d "$VAULT_ROOT" ]]; then
+    log_warn "VaultRoot directory does not exist: $VAULT_ROOT"
+    warnings=$((warnings + 1))
+  else
+    echo "  ✓ VaultRoot exists: $VAULT_ROOT"
+  fi
+
+  # Validate CustomerIdWidth
+  echo "Checking CustomerIdWidth..."
+  if [[ -z "$CUSTOMER_ID_WIDTH" ]]; then
+    log_error "CustomerIdWidth is not set"
+    errors=$((errors + 1))
+  elif ! [[ "$CUSTOMER_ID_WIDTH" =~ ^[0-9]+$ ]]; then
+    log_error "CustomerIdWidth must be a positive integer: $CUSTOMER_ID_WIDTH"
+    errors=$((errors + 1))
+  elif [[ "$CUSTOMER_ID_WIDTH" -lt 1 || "$CUSTOMER_ID_WIDTH" -gt 10 ]]; then
+    log_warn "CustomerIdWidth seems unusual (should be 1-10): $CUSTOMER_ID_WIDTH"
+    warnings=$((warnings + 1))
+  else
+    echo "  ✓ CustomerIdWidth is valid: $CUSTOMER_ID_WIDTH"
+  fi
+
+  # Validate CustomerIds
+  echo "Checking CustomerIds..."
+  if [[ ${#CUSTOMER_IDS[@]} -eq 0 ]]; then
+    log_warn "No customer IDs configured"
+    warnings=$((warnings + 1))
+  else
+    local invalid_ids=0
+    for id in "${CUSTOMER_IDS[@]}"; do
+      if ! [[ "$id" =~ ^[0-9]+$ ]]; then
+        log_error "Invalid customer ID (not a number): $id"
+        errors=$((errors + 1))
+        invalid_ids=$((invalid_ids + 1))
+      fi
+    done
+    if [[ $invalid_ids -eq 0 ]]; then
+      echo "  ✓ ${#CUSTOMER_IDS[@]} customer IDs configured (all valid integers)"
+    fi
+  fi
+
+  # Check for duplicate customer IDs
+  local duplicates
+  duplicates=$(printf '%s\n' "${CUSTOMER_IDS[@]}" | sort | uniq -d)
+  if [[ -n "$duplicates" ]]; then
+    log_warn "Duplicate customer IDs found: $duplicates"
+    warnings=$((warnings + 1))
+  fi
+
+  # Validate Sections
+  echo "Checking Sections..."
+  if [[ ${#SECTIONS[@]} -eq 0 ]]; then
+    log_warn "No sections configured"
+    warnings=$((warnings + 1))
+  else
+    local invalid_sections=0
+    for section in "${SECTIONS[@]}"; do
+      # Section names should be alphanumeric with possible hyphens/underscores
+      if ! [[ "$section" =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]]; then
+        log_warn "Section name may cause issues: $section"
+        warnings=$((warnings + 1))
+        invalid_sections=$((invalid_sections + 1))
+      fi
+    done
+    if [[ $invalid_sections -eq 0 ]]; then
+      echo "  ✓ ${#SECTIONS[@]} sections configured"
+    fi
+  fi
+
+  # Check for duplicate sections
+  local dup_sections
+  dup_sections=$(printf '%s\n' "${SECTIONS[@]}" | sort | uniq -d)
+  if [[ -n "$dup_sections" ]]; then
+    log_warn "Duplicate sections found: $dup_sections"
+    warnings=$((warnings + 1))
+  fi
+
+  # Validate TemplateRelativeRoot
+  echo "Checking TemplateRelativeRoot..."
+  if [[ -z "$TEMPLATE_RELATIVE_ROOT" ]]; then
+    log_warn "TemplateRelativeRoot is not set (templates won't work)"
+    warnings=$((warnings + 1))
+  else
+    local template_path="$VAULT_ROOT/$TEMPLATE_RELATIVE_ROOT"
+    # Normalize path separators
+    template_path="${template_path//\\//}"
+    if [[ -n "$VAULT_ROOT" && -d "$VAULT_ROOT" && ! -d "$template_path" ]]; then
+      log_warn "Template directory does not exist: $template_path"
+      warnings=$((warnings + 1))
+    else
+      echo "  ✓ TemplateRelativeRoot: $TEMPLATE_RELATIVE_ROOT"
+    fi
+  fi
+
+  # Summary
+  echo
+  echo "=== Validation Summary ==="
+  if [[ $errors -eq 0 && $warnings -eq 0 ]]; then
+    echo "✓ Configuration is valid with no issues"
+    return 0
+  elif [[ $errors -eq 0 ]]; then
+    echo "⚠ Configuration has $warnings warning(s) but no errors"
+    return 0
+  else
+    echo "✗ Configuration has $errors error(s) and $warnings warning(s)"
+    return 1
+  fi
+}
+
 if ! load_config; then
   # When sourced, return non-zero so callers can handle the error
   return 1 2>/dev/null || exit 1
@@ -721,12 +893,73 @@ export_cust_env() {
   export CUST_CUSTOMER_IDS="${CUSTOMER_IDS[*]}"
   export CUST_SECTIONS="${SECTIONS[*]}"
   export CUST_TEMPLATE_RELATIVE_ROOT="$TEMPLATE_RELATIVE_ROOT"
+  export LOG_LEVEL="$LOG_LEVEL"
 }
 
 run_bash() {
   local script="$1"
   shift || true
-  bash "$SCRIPT_DIR/bash/$script" "$@"
+  LOG_LEVEL="$LOG_LEVEL" bash "$SCRIPT_DIR/bash/$script" "$@"
+}
+
+#######################################
+# STATUS COMMAND
+#######################################
+show_status() {
+  echo "=== AutoVault Configuration Status ==="
+  echo
+  echo "Configuration file: $CONFIG_JSON"
+  if [[ -f "$CONFIG_JSON" ]]; then
+    echo "  Status: ✓ exists"
+  else
+    echo "  Status: ✗ not found"
+    return 1
+  fi
+  echo
+  echo "Vault Root: $VAULT_ROOT"
+  if [[ -d "$VAULT_ROOT" ]]; then
+    echo "  Status: ✓ directory exists"
+  else
+    echo "  Status: ✗ directory not found"
+  fi
+  echo
+  echo "Customer ID Width: $CUSTOMER_ID_WIDTH"
+  echo "Template Root: $TEMPLATE_RELATIVE_ROOT"
+  echo
+  echo "Sections (${#SECTIONS[@]}):"
+  for section in "${SECTIONS[@]}"; do
+    echo "  - $section"
+  done
+  echo
+  echo "Customers (${#CUSTOMER_IDS[@]}):"
+  local run_path="$VAULT_ROOT/Run"
+  for id in "${CUSTOMER_IDS[@]}"; do
+    local code
+    code=$(printf "CUST-%0${CUSTOMER_ID_WIDTH}d" "$id")
+    local cust_path="$run_path/$code"
+    if [[ -d "$cust_path" ]]; then
+      echo "  ✓ $code"
+    else
+      echo "  ✗ $code (not created)"
+    fi
+  done
+  echo
+  echo "Run folder: $run_path"
+  if [[ -d "$run_path" ]]; then
+    echo "  Status: ✓ exists"
+    local folder_count
+    folder_count=$(find "$run_path" -maxdepth 1 -type d -name "CUST-*" 2>/dev/null | wc -l)
+    echo "  CUST folders: $folder_count"
+  else
+    echo "  Status: ✗ not created"
+  fi
+  echo
+  echo "Hub file: $VAULT_ROOT/Run-Hub.md"
+  if [[ -f "$VAULT_ROOT/Run-Hub.md" ]]; then
+    echo "  Status: ✓ exists"
+  else
+    echo "  Status: ✗ not created"
+  fi
 }
 
 #######################################
@@ -735,11 +968,20 @@ run_bash() {
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   usage() {
     cat <<'EOF'
-Usage: cust-run-config.sh <command> [arguments]
+Usage: cust-run-config.sh [options] <command> [arguments]
+
+Options:
+  -v, --verbose   Show debug output (LOG_LEVEL=4)
+  -q, --quiet     Show only errors (LOG_LEVEL=1)
+  --silent        Show nothing (LOG_LEVEL=0)
+  --no-color      Disable colored output (also respects NO_COLOR env var)
+  -h, --help      Show this help message
 
 Commands:
   install             Check and install missing requirements (jq, python3)
   config              Interactive configuration wizard
+  validate            Validate configuration file
+  status              Show configuration and structure status
   structure           Create / refresh CUST Run folder structure
   templates           Apply markdown templates to indexes
   test                Verify structure & indexes
@@ -763,6 +1005,9 @@ Examples:
   cust-run-config.sh install
   cust-run-config.sh config
   cust-run-config.sh structure
+  cust-run-config.sh -v structure    # verbose mode
+  cust-run-config.sh -q cleanup      # quiet mode
+  cust-run-config.sh --no-color test
   cust-run-config.sh add-customer 31
   cust-run-config.sh remove-customer 5
   cust-run-config.sh add-section URGENT
@@ -771,12 +1016,50 @@ Examples:
 EOF
   }
 
+  # Parse options
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -v|--verbose)
+        LOG_LEVEL=4
+        shift
+        ;;
+      -q|--quiet)
+        LOG_LEVEL=1
+        shift
+        ;;
+      --silent)
+        LOG_LEVEL=0
+        shift
+        ;;
+      --no-color)
+        NO_COLOR=1
+        setup_colors
+        shift
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      -*)
+        log_error "Unknown option: $1"
+        usage
+        exit 1
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
+
   cmd="${1:-}"
 
   if [[ -z "$cmd" ]]; then
     usage
     exit 1
   fi
+
+  log_debug "Log level: $LOG_LEVEL"
+  log_debug "Command: $cmd"
 
   # Handle install command before loading config (which requires jq/python3)
   if [[ "$cmd" == "install" || "$cmd" == "requirements" ]]; then
@@ -789,6 +1072,12 @@ EOF
   case "$cmd" in
     config|setup|init)
       interactive_config
+      ;;
+    validate)
+      validate_config
+      ;;
+    status)
+      show_status
       ;;
     structure|new)
       log_info "Using configuration from $CONFIG_JSON"
