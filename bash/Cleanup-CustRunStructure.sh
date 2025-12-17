@@ -20,7 +20,9 @@ if ! load_config; then
 fi
 
 # Safety flags
-ENABLE_DELETION=false   # MUST be set to true to delete
+# ENABLE_CLEANUP is now read from config.json (EnableCleanup field)
+# Can be overridden via environment variable
+ENABLE_DELETION="${ENABLE_CLEANUP:-false}"
 REMOVE_HUB=false        # Set to true if you also want to remove Run-Hub.md
 CREATE_BACKUP=true      # Set to true to create backup before deletion (recommended)
 
@@ -98,10 +100,14 @@ HUB_PATH="$VAULT_ROOT/Run-Hub.md"
 
 # Create backup before deletion if enabled
 if [[ "$CREATE_BACKUP" == true ]]; then
-    write_log "INFO" "Backup enabled - creating backup before deletion..."
-    if ! create_backup "$RUN_PATH" "$HUB_PATH"; then
-        write_log "ERROR" "ABORT: Backup failed. Not proceeding with deletion."
-        exit 1
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        write_log "INFO" "[DRY-RUN] Would create backup before deletion"
+    else
+        write_log "INFO" "Backup enabled - creating backup before deletion..."
+        if ! create_backup "$RUN_PATH" "$HUB_PATH"; then
+            write_log "ERROR" "ABORT: Backup failed. Not proceeding with deletion."
+            exit 1
+        fi
     fi
 else
     write_log "WARN" "Backup disabled - proceeding without backup (CREATE_BACKUP=false)"
@@ -119,8 +125,12 @@ for id in "${CUSTOMER_IDS[@]}"; do
     cust_root="$RUN_PATH/$code"
 
     if [[ -d "$cust_root" ]]; then
-        write_log "WARN" "Removing CUST folder: $cust_root"
-        rm -rf -- "$cust_root"
+        if [[ "${DRY_RUN:-false}" == "true" ]]; then
+            write_log "WARN" "[DRY-RUN] Would remove CUST folder: $cust_root"
+        else
+            write_log "WARN" "Removing CUST folder: $cust_root"
+            rm -rf -- "$cust_root"
+        fi
     else
         write_log "DEBUG" "CUST folder not found (skip): $cust_root"
     fi
@@ -128,8 +138,12 @@ done
 
 if [[ "$REMOVE_HUB" == true ]]; then
     if [[ -f "$HUB_PATH" ]]; then
-        write_log "WARN" "Removing hub file: $HUB_PATH"
-        rm -f -- "$HUB_PATH"
+        if [[ "${DRY_RUN:-false}" == "true" ]]; then
+            write_log "WARN" "[DRY-RUN] Would remove hub file: $HUB_PATH"
+        else
+            write_log "WARN" "Removing hub file: $HUB_PATH"
+            rm -f -- "$HUB_PATH"
+        fi
     else
         write_log "DEBUG" "Hub file not found (skip): $HUB_PATH"
     fi

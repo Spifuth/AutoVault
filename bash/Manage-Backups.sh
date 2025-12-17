@@ -160,6 +160,12 @@ restore_backup() {
   
   # Confirm restore
   log_warn "This will overwrite the current configuration!"
+  
+  if [[ "${DRY_RUN:-false}" == "true" ]]; then
+    log_info "[DRY-RUN] Would restore configuration from: $filename"
+    return 0
+  fi
+  
   read -rp "Are you sure you want to restore this backup? [y/N]: " confirm
   
   if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
@@ -201,12 +207,16 @@ create_backup() {
     return 1
   fi
 
-  mkdir -p "$BACKUP_DIR"
-  
   local timestamp
   timestamp="$(date +%Y-%m-%d_%H-%M-%S)"
   local backup_file="$BACKUP_DIR/cust-run-config.$timestamp.$description.json"
   
+  if [[ "${DRY_RUN:-false}" == "true" ]]; then
+    log_info "[DRY-RUN] Would create backup: $(basename "$backup_file")"
+    return 0
+  fi
+
+  mkdir -p "$BACKUP_DIR"
   cp "$CONFIG_JSON" "$backup_file"
   
   log_success "Backup created: $(basename "$backup_file")"
@@ -234,6 +244,15 @@ cleanup_backups() {
   local to_delete=$((${#backup_files[@]} - keep))
   
   log_warn "This will delete $to_delete old backup(s), keeping the $keep most recent."
+  
+  if [[ "${DRY_RUN:-false}" == "true" ]]; then
+    log_info "[DRY-RUN] Would delete $to_delete old backup(s):"
+    for ((i = keep; i < ${#backup_files[@]}; i++)); do
+      log_info "[DRY-RUN]   - $(basename "${backup_files[$i]}")"
+    done
+    return 0
+  fi
+  
   read -rp "Continue? [y/N]: " confirm
   
   if [[ ! "$confirm" =~ ^[Yy]$ ]]; then

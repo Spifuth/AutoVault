@@ -223,6 +223,12 @@ validate_vault_path() {
 fix_duplicates() {
   local file="$1"
   
+  if [[ "${DRY_RUN:-false}" == "true" ]]; then
+    log_info "[DRY-RUN] Would remove duplicate CustomerIds"
+    log_info "[DRY-RUN] Would remove duplicate Sections"
+    return 0
+  fi
+  
   log_info "Removing duplicate CustomerIds..."
   local fixed
   fixed="$(jq '.CustomerIds |= unique' "$file")"
@@ -237,6 +243,11 @@ fix_duplicates() {
 
 fix_sorting() {
   local file="$1"
+  
+  if [[ "${DRY_RUN:-false}" == "true" ]]; then
+    log_info "[DRY-RUN] Would sort CustomerIds"
+    return 0
+  fi
   
   log_info "Sorting CustomerIds..."
   local fixed
