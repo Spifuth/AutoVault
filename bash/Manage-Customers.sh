@@ -49,6 +49,13 @@ add_customer() {
   # Sort the array numerically
   IFS=$'\n' CUSTOMER_IDS=($(sort -n <<<"${CUSTOMER_IDS[*]}")); unset IFS
 
+  # Dry-run check
+  if [[ "${DRY_RUN:-false}" == "true" ]]; then
+    log_info "[DRY-RUN] Would add customer ID $id"
+    log_info "[DRY-RUN] Would update config file: $CONFIG_JSON"
+    return 0
+  fi
+
   # Save config
   if ensure_config_json; then
     log_success "Added customer ID $id"

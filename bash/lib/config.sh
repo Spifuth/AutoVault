@@ -146,10 +146,11 @@ load_config() {
     mapfile -t SECTIONS < <(jq -r '.Sections[]' "$CONFIG_JSON")
     TEMPLATE_RELATIVE_ROOT="$(jq -r '.TemplateRelativeRoot' "$CONFIG_JSON")"
   else
-    # Config file doesn't exist yet - create it with current (default) values
-    if ! ensure_config_json; then
-      return 1
-    fi
+    # Config file doesn't exist - warn user and use defaults
+    log_warn "Config file not found: $CONFIG_JSON"
+    log_warn "Using default values. Run './cust-run-config.sh config' to create configuration."
+    # Return success but with defaults (already set at top of file)
+    return 0
   fi
 }
 
@@ -196,13 +197,12 @@ prompt_list() {
 # EXPORT ENV VARS (for child scripts)
 #--------------------------------------
 export_cust_env() {
-  export CUST_VAULT_ROOT="$VAULT_ROOT"
-  export CUST_CUSTOMER_ID_WIDTH="$CUSTOMER_ID_WIDTH"
-  # join arrays with spaces
-  export CUST_CUSTOMER_IDS="${CUSTOMER_IDS[*]}"
-  export CUST_SECTIONS="${SECTIONS[*]}"
-  export CUST_TEMPLATE_RELATIVE_ROOT="$TEMPLATE_RELATIVE_ROOT"
-  export LOG_LEVEL="$LOG_LEVEL"
+  # Export CONFIG_JSON so child scripts use the same config file
+  export CONFIG_JSON
+  # Export DRY_RUN flag for child scripts
+  export DRY_RUN="${DRY_RUN:-false}"
+  # Export log level
+  export LOG_LEVEL="${LOG_LEVEL:-3}"
 }
 
 #--------------------------------------
