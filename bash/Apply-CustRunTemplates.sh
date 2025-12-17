@@ -2,53 +2,25 @@
 #
 # Apply-CustRunTemplates.sh
 #
-set -euo pipefail
-
-# Initialize arrays to avoid unbound variable errors with set -u
-declare -a CUSTOMER_IDS=()
-declare -a SECTIONS=()
-
 # APPLY EXTERNAL MARKDOWN TEMPLATES TO ALL CUST RUN INDEX FILES
 #
 
-#######################################
-# Configuration (shared with cust-run-config.sh)
-#######################################
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_SCRIPT="$SCRIPT_DIR/../cust-run-config.sh"
 
-if [[ -f "$CONFIG_SCRIPT" ]]; then
-    # shellcheck source=/dev/null
-    source "$CONFIG_SCRIPT"
-    # Note: We don't call export_cust_env here because it's meant for PowerShell subprocess calls
-    # and it would corrupt our SECTIONS array by exporting it as a string.
-fi
+# Source shared libraries
+source "$SCRIPT_DIR/lib/logging.sh"
+source "$SCRIPT_DIR/lib/config.sh"
 
-if [[ -z "${VAULT_ROOT:-}" ]]; then
-    echo "ERROR: VAULT_ROOT is not set. Run via cust-run-config.sh or update cust-run-config.sh." >&2
+# Load configuration
+if ! load_config; then
+    write_log "ERROR" "Failed to load configuration"
     exit 1
 fi
 
-if [[ -z "${CUSTOMER_ID_WIDTH:-}" ]]; then
-    CUSTOMER_ID_WIDTH=3
-fi
-
-# Default sections if not set
-if [[ -z "${SECTIONS[*]:-}" ]]; then
-    SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
-fi
-
-# Verify CUSTOMER_IDS is set
-if [[ ${#CUSTOMER_IDS[@]} -eq 0 ]]; then
-    echo "ERROR: CUSTOMER_IDS is not set. Run via cust-run-config.sh or update cust-run-config.sh." >&2
-    exit 1
-fi
-
-TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT:-${CUST_TEMPLATE_RELATIVE_ROOT:-_templates/Run}}"
-# Normalize Windows-style separators for bash
+# Normalize template path (convert Windows-style separators)
 TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT//\\//}"
-
 TEMPLATE_ROOT="$VAULT_ROOT/${TEMPLATE_RELATIVE_ROOT#/}"
 ROOT_TEMPLATE_PATH="$TEMPLATE_ROOT/CUST-Root-Index.md"
 
@@ -61,23 +33,6 @@ get_section_template_path() {
 #######################################
 # Helper functions
 #######################################
-
-write_log() {
-    local level="${1:-INFO}"
-    shift
-    local message="$*"
-
-    local utc localtime
-    utc="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-    localtime="$(date +"%Y-%m-%dT%H:%M:%S%z")"
-
-    echo "[$level][UTC:$utc][Local:$localtime] $message"
-}
-
-get_cust_code() {
-    local id="$1"
-    printf "CUST-%0${CUSTOMER_ID_WIDTH}d" "$id"
-}
 
 get_template_content() {
     local path="$1"
@@ -99,13 +54,21 @@ set_file_content() {
     dir="$(dirname "$path")"
 
     if [[ ! -d "$dir" ]]; then
-        write_log "WARN" "Target directory does not exist, creating: $dir"
-        mkdir -p "$dir"
+        if [[ "${DRY_RUN:-false}" == "true" ]]; then
+            write_log "WARN" "[DRY-RUN] Would create directory: $dir"
+        else
+            write_log "WARN" "Target directory does not exist, creating: $dir"
+            mkdir -p "$dir"
+        fi
     fi
 
-    # Écrit exactement le contenu (sans rajouter de newline parasite)
-    printf "%s" "$content" > "$path"
-    write_log "INFO" "Template applied to: $path"
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        write_log "INFO" "[DRY-RUN] Would apply template to: $path"
+    else
+        # Écrit exactement le contenu (sans rajouter de newline parasite)
+        printf "%s" "$content" > "$path"
+        write_log "INFO" "Template applied to: $path"
+    fi
 }
 
 #######################################

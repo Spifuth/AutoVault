@@ -2,96 +2,41 @@
 #
 # New-CustRunStructure.sh
 #
-set -euo pipefail
-
-# Initialize arrays to avoid unbound variable errors with set -u
-declare -a CUSTOMER_IDS=()
-declare -a SECTIONS=()
-
-# CONFIGURATION:
-#   - Configuration is sourced from cust-run-config.sh (or environment overrides).
+# Creates the folder structure for customer runs in the Obsidian vault.
 #
 # STRUCTURE CREATED:
 #   <VAULT_ROOT>/Run/
 #       CUST-002/
+#           CUST-002-Index.md
 #           CUST-002-FP/
 #               CUST-002-FP-Index.md
 #           CUST-002-RAISED/
-#               CUST-002-RAISED-Index.md
-#           CUST-002-INFORMATIONS/
-#               CUST-002-INFORMATIONS-Index.md
-#           CUST-002-DIVERS/
-#               CUST-002-DIVERS-Index.md
+#               ...
 #
-#   And next to the Run folder:
-#   <VAULT_ROOT>/Run-Hub.md
-#       -> contains links to each CUST root index (CUST-002-Index, etc.)
-#
-# NAMING RULES:
-#   - Customer code       : CUST-XXX   (zero-padded with width = CUSTOMER_ID_WIDTH)
-#   - Customer folder     : Run/CUST-XXX
-#   - Root index file     : Run/CUST-XXX/CUST-XXX-Index.md
-#   - Subfolders          : CUST-XXX-FP, CUST-XXX-RAISED, CUST-XXX-INFORMATIONS, CUST-XXX-DIVERS
-#   - Subfolder index file: <SubFolderName>-Index.md
+#   And: <VAULT_ROOT>/Run-Hub.md
 #
 
-#######################################
-# Configuration
-#######################################
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_SCRIPT="$SCRIPT_DIR/../cust-run-config.sh"
 
-#######################################
-# Load shared config / environment
-#######################################
-
-load_config() {
-    if [[ -f "$CONFIG_SCRIPT" ]]; then
-        write_log "INFO" "Loading configuration from $CONFIG_SCRIPT"
-        if ! source "$CONFIG_SCRIPT"; then
-            write_log "ERROR" "Failed to load configuration from $CONFIG_SCRIPT"
-            return 1
-        fi
-    else
-        write_log "WARN" "Configuration script not found at $CONFIG_SCRIPT; falling back to environment variables"
-    fi
-
-    # Note: We don't call export_cust_env here because it's meant for PowerShell subprocess calls
-    # and it would corrupt our SECTIONS array by exporting it as a string.
-    # The VAULT_ROOT, CUSTOMER_ID_WIDTH, CUSTOMER_IDS, and SECTIONS variables are already
-    # available from sourcing cust-run-config.sh.
-
-    if [[ -z "${CUSTOMER_ID_WIDTH:-}" ]]; then
-        CUSTOMER_ID_WIDTH=3
-    fi
-
-    if [[ -z "${SECTIONS[*]:-}" ]]; then
-        SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
-    fi
-}
+# Source shared libraries
+source "$SCRIPT_DIR/lib/logging.sh"
+source "$SCRIPT_DIR/lib/config.sh"
 
 #######################################
 # Helper functions
 #######################################
 
-write_log() {
-    local level="${1:-INFO}"
-    shift
-    local message="$*"
-
-    local utc localtime
-    utc="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-    localtime="$(date +"%Y-%m-%dT%H:%M:%S%z")"
-
-    echo "[$level][UTC:$utc][Local:$localtime] $message"
-}
-
 ensure_directory() {
     local path="$1"
     if [[ ! -d "$path" ]]; then
-        write_log "INFO" "Creating directory: $path"
-        mkdir -p "$path"
+        if [[ "${DRY_RUN:-false}" == "true" ]]; then
+            write_log "INFO" "[DRY-RUN] Would create directory: $path"
+        else
+            write_log "INFO" "Creating directory: $path"
+            mkdir -p "$path"
+        fi
     else
         write_log "DEBUG" "Directory already exists: $path"
     fi
@@ -99,25 +44,28 @@ ensure_directory() {
 
 new_emptyfile_overwrite() {
     local path="$1"
-    if [[ -f "$path" ]]; then
-        write_log "INFO" "Overwriting file: $path"
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        if [[ -f "$path" ]]; then
+            write_log "INFO" "[DRY-RUN] Would overwrite file: $path"
+        else
+            write_log "INFO" "[DRY-RUN] Would create file: $path"
+        fi
     else
-        write_log "INFO" "Creating file: $path"
+        if [[ -f "$path" ]]; then
+            write_log "INFO" "Overwriting file: $path"
+        else
+            write_log "INFO" "Creating file: $path"
+        fi
+        # Create or truncate file
+        : > "$path"
     fi
-    # Create or truncate file
-    : > "$path"
-}
-
-get_cust_code() {
-    local id="$1"
-    # zero-pad with CUSTOMER_ID_WIDTH
-    printf "CUST-%0${CUSTOMER_ID_WIDTH}d" "$id"
 }
 
 #######################################
 # Main logic
 #######################################
 
+# Load configuration from JSON
 if ! load_config; then
     write_log "ERROR" "Failed to load configuration. Aborting."
     exit 1
@@ -189,8 +137,12 @@ hub_path="$VAULT_ROOT/Run-Hub.md"
 if [[ -f "$hub_path" ]]; then
     write_log "INFO" "Hub file already exists; preserving current content: $hub_path"
 else
-    printf "%s\n" "${hub_lines[@]}" > "$hub_path"
-    write_log "INFO" "Hub file written: $hub_path"
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        write_log "INFO" "[DRY-RUN] Would create hub file: $hub_path"
+    else
+        printf "%s\n" "${hub_lines[@]}" > "$hub_path"
+        write_log "INFO" "Hub file written: $hub_path"
+    fi
 fi
 
 write_log "INFO" "CUST Run structure creation completed."
