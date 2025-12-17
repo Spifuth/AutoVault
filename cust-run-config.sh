@@ -1,123 +1,280 @@
 #!/usr/bin/env bash
-#
-# cust-run-config.sh - Main CLI orchestrator for AutoVault
-#
-# This is the entry point for all AutoVault operations.
-# It parses CLI arguments and dispatches to the appropriate module.
-#
-# Usage:
-#   cust-run-config.sh [OPTIONS] COMMAND [ARGS]
-#
-# See --help for full documentation.
-#
+# cust-run-config.sh
+# Orchestrator + config for CUST Run PowerShell scripts.
 
-# Strict mode only when executed directly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   set -euo pipefail
 fi
 
-#--------------------------------------
-# PATHS
-#--------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BASH_DIR="$SCRIPT_DIR/bash"
-LIB_DIR="$BASH_DIR/lib"
-CONFIG_JSON="$SCRIPT_DIR/config/cust-run-config.json"
+CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/config/cust-run-config.json"}"
 
 #--------------------------------------
-# SOURCE LIBRARIES
+# COLORS + LOGGING HELPERS
 #--------------------------------------
-source "$LIB_DIR/logging.sh"
-source "$LIB_DIR/config.sh"
+if [[ -t 2 ]]; then
+  COLOR_BLUE="\033[34m"
+  COLOR_YELLOW="\033[33m"
+  COLOR_RED="\033[31m"
+  COLOR_RESET="\033[0m"
+else
+  COLOR_BLUE=""
+  COLOR_YELLOW=""
+  COLOR_RED=""
+  COLOR_RESET=""
+fi
 
-#--------------------------------------
-# GLOBAL FLAGS (can be set via CLI)
-#--------------------------------------
-DRY_RUN="${DRY_RUN:-false}"
-VERBOSE="${VERBOSE:-false}"
-
-#--------------------------------------
-# HELPER: RUN BASH SCRIPTS
-#--------------------------------------
-run_bash() {
-  local script_name="$1"
-  shift
-  local script_path="$BASH_DIR/$script_name"
-
-  if [[ ! -f "$script_path" ]]; then
-    log_error "Script not found: $script_path"
-    return 1
-  fi
-
-  log_debug "Running: $script_path $*"
-  
-  # Export environment for child scripts
-  export_cust_env
-  
-  bash "$script_path" "$@"
+log_info() {
+  printf "%b[INFO ]%b %s\n" "$COLOR_BLUE" "$COLOR_RESET" "$1" >&2
 }
 
-#--------------------------------------
-# INTERACTIVE CONFIG
-#--------------------------------------
-interactive_config() {
-  # Load existing config first (if any) to show current values
-  load_config 2>/dev/null || true
+log_warn() {
+  printf "%b[WARN ]%b %s\n" "$COLOR_YELLOW" "$COLOR_RESET" "$1" >&2
+}
+
+log_error() {
+  printf "%b[ERROR]%b %s\n" "$COLOR_RED" "$COLOR_RESET" "$1" >&2
+}
+
+#######################################
+# REQUIREMENTS CHECK & AUTO-INSTALL
+#######################################
+
+check_requirements() {
+  local missing=()
   
+  if ! command -v jq >/dev/null 2>&1; then
+    missing+=("jq")
+  fi
+  
+  if ! command -v python3 >/dev/null 2>&1; then
+    missing+=("python3")
+  fi
+  
+  if [[ ${#missing[@]} -eq 0 ]]; then
+    return 0
+  fi
+  
+  echo "${missing[*]}"
+  return 1
+}
+
+detect_package_manager() {
+  if command -v apt-get >/dev/null 2>&1; then
+    echo "apt"
+  elif command -v dnf >/dev/null 2>&1; then
+    echo "dnf"
+  elif command -v yum >/dev/null 2>&1; then
+    echo "yum"
+  elif command -v pacman >/dev/null 2>&1; then
+    echo "pacman"
+  elif command -v zypper >/dev/null 2>&1; then
+    echo "zypper"
+  elif command -v brew >/dev/null 2>&1; then
+    echo "brew"
+  elif command -v apk >/dev/null 2>&1; then
+    echo "apk"
+  else
+    echo ""
+  fi
+}
+
+install_requirements() {
+  local missing
+  missing=$(check_requirements) || true
+  
+  if [[ -z "$missing" ]]; then
+    log_info "All requirements are already installed"
+    return 0
+  fi
+  
+  log_warn "Missing requirements: $missing"
+  
+  local pkg_manager
+  pkg_manager=$(detect_package_manager)
+  
+  if [[ -z "$pkg_manager" ]]; then
+    log_error "No supported package manager found"
+    log_error "Please install manually: $missing"
+    return 1
+  fi
+  
+  log_info "Detected package manager: $pkg_manager"
+  
+  local confirm
+  printf "Install missing requirements using %s? [Y/n]: " "$pkg_manager" >&2
+  read -r confirm
+  if [[ "$confirm" =~ ^[Nn] ]]; then
+    log_warn "Installation cancelled"
+    return 1
+  fi
+  
+  local install_cmd
+  case "$pkg_manager" in
+    apt)
+      install_cmd="sudo apt-get update && sudo apt-get install -y"
+      ;;
+    dnf)
+      install_cmd="sudo dnf install -y"
+      ;;
+    yum)
+      install_cmd="sudo yum install -y"
+      ;;
+    pacman)
+      install_cmd="sudo pacman -S --noconfirm"
+      ;;
+    zypper)
+      install_cmd="sudo zypper install -y"
+      ;;
+    brew)
+      install_cmd="brew install"
+      ;;
+    apk)
+      install_cmd="sudo apk add"
+      ;;
+  esac
+  
+  # Map package names for different managers
+  local packages=""
+  for pkg in $missing; do
+    case "$pkg" in
+      python3)
+        case "$pkg_manager" in
+          pacman) packages="$packages python" ;;
+          *) packages="$packages python3" ;;
+        esac
+        ;;
+      *)
+        packages="$packages $pkg"
+        ;;
+    esac
+  done
+  
+  log_info "Running: $install_cmd$packages"
+  if eval "$install_cmd$packages"; then
+    log_info "Requirements installed successfully"
+    return 0
+  else
+    log_error "Failed to install requirements"
+    return 1
+  fi
+}
+
+#######################################
+# CONFIGURATION SOURCE
+#######################################
+
+# Base values used to seed cust-run-config.json. Adjust these to match your
+# vault and customer list. Re-running the script will refresh the JSON to match
+# these values (or environment overrides) so Bash and PowerShell stays aligned.
+VAULT_ROOT="${VAULT_ROOT:-"D:\\Obsidian\\Work-Vault"}"
+CUSTOMER_ID_WIDTH="${CUSTOMER_ID_WIDTH:-3}"
+
+# Initialize arrays if not already set
+# Use declare -g for global scope when sourced from a function
+declare -ga CUSTOMER_IDS="${CUSTOMER_IDS[@]:-}"
+declare -ga SECTIONS="${SECTIONS[@]:-}"
+
+if [[ -z "${CUSTOMER_IDS[*]:-}" ]]; then
+  CUSTOMER_IDS=(2 4 5 7 10 11 12 14 15 18 25 27 29 30)
+fi
+
+if [[ -z "${SECTIONS[*]:-}" ]]; then
+  SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
+fi
+
+TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT:-"_templates\\Run"}"
+
+#######################################
+# INTERACTIVE CONFIGURATION
+#######################################
+
+prompt_value() {
+  local prompt="$1"
+  local default="$2"
+  local result
+
+  if [[ -n "$default" ]]; then
+    printf "%s [%s]: " "$prompt" "$default" >&2
+  else
+    printf "%s: " "$prompt" >&2
+  fi
+
+  read -r result
+  if [[ -z "$result" ]]; then
+    echo "$default"
+  else
+    echo "$result"
+  fi
+}
+
+prompt_list() {
+  local prompt="$1"
+  shift
+  local -a defaults=("$@")
+  local default_str="${defaults[*]}"
+  local result
+
+  printf "%s (space-separated) [%s]: " "$prompt" "$default_str" >&2
+  read -r result
+
+  if [[ -z "$result" ]]; then
+    echo "$default_str"
+  else
+    echo "$result"
+  fi
+}
+
+interactive_config() {
   log_info "Interactive configuration mode"
   log_info "Press Enter to keep current/default values"
-  echo ""
+  echo >&2
 
   # Display current configuration
-  echo "Current configuration:"
-  echo "  1. VaultRoot:            $VAULT_ROOT"
-  echo "  2. CustomerIdWidth:      $CUSTOMER_ID_WIDTH"
-  echo "  3. CustomerIds:          ${CUSTOMER_IDS[*]}"
-  echo "  4. Sections:             ${SECTIONS[*]}"
-  echo "  5. TemplateRelativeRoot: $TEMPLATE_RELATIVE_ROOT"
-  echo "  6. EnableCleanup:        $ENABLE_CLEANUP"
-  echo ""
+  echo "Current configuration:" >&2
+  echo "  1. VaultRoot:            $VAULT_ROOT" >&2
+  echo "  2. CustomerIdWidth:      $CUSTOMER_ID_WIDTH" >&2
+  echo "  3. CustomerIds:          ${CUSTOMER_IDS[*]}" >&2
+  echo "  4. Sections:             ${SECTIONS[*]}" >&2
+  echo "  5. TemplateRelativeRoot: $TEMPLATE_RELATIVE_ROOT" >&2
+  echo >&2
 
   # VaultRoot
-  VAULT_ROOT="$(prompt_value "Vault root path" "$VAULT_ROOT")"
+  local new_vault_root
+  new_vault_root=$(prompt_value "Vault root path" "$VAULT_ROOT")
+  VAULT_ROOT="$new_vault_root"
 
   # CustomerIdWidth
-  CUSTOMER_ID_WIDTH="$(prompt_value "Customer ID width (padding)" "$CUSTOMER_ID_WIDTH")"
+  local new_width
+  new_width=$(prompt_value "Customer ID width (padding)" "$CUSTOMER_ID_WIDTH")
+  CUSTOMER_ID_WIDTH="$new_width"
 
   # CustomerIds
   local new_ids_str
-  new_ids_str="$(prompt_list "Customer IDs" "${CUSTOMER_IDS[@]}")"
+  new_ids_str=$(prompt_list "Customer IDs" "${CUSTOMER_IDS[@]}")
   read -ra CUSTOMER_IDS <<< "$new_ids_str"
 
   # Sections
   local new_sections_str
-  new_sections_str="$(prompt_list "Sections" "${SECTIONS[@]}")"
+  new_sections_str=$(prompt_list "Sections" "${SECTIONS[@]}")
   read -ra SECTIONS <<< "$new_sections_str"
 
   # TemplateRelativeRoot
-  TEMPLATE_RELATIVE_ROOT="$(prompt_value "Template relative root" "$TEMPLATE_RELATIVE_ROOT")"
+  local new_template_root
+  new_template_root=$(prompt_value "Template relative root" "$TEMPLATE_RELATIVE_ROOT")
+  TEMPLATE_RELATIVE_ROOT="$new_template_root"
 
-  # EnableCleanup
-  local enable_cleanup_input
-  enable_cleanup_input="$(prompt_value "Enable cleanup (true/false)" "$ENABLE_CLEANUP")"
-  if [[ "$enable_cleanup_input" =~ ^[Tt]rue$ ]]; then
-    ENABLE_CLEANUP="true"
-  else
-    ENABLE_CLEANUP="false"
-  fi
-
-  echo ""
+  echo >&2
   log_info "Configuration summary:"
-  echo "  VaultRoot:            $VAULT_ROOT"
-  echo "  CustomerIdWidth:      $CUSTOMER_ID_WIDTH"
-  echo "  CustomerIds:          ${CUSTOMER_IDS[*]}"
-  echo "  Sections:             ${SECTIONS[*]}"
-  echo "  TemplateRelativeRoot: $TEMPLATE_RELATIVE_ROOT"
-  echo "  EnableCleanup:        $ENABLE_CLEANUP"
-  echo ""
+  echo "  VaultRoot:            $VAULT_ROOT" >&2
+  echo "  CustomerIdWidth:      $CUSTOMER_ID_WIDTH" >&2
+  echo "  CustomerIds:          ${CUSTOMER_IDS[*]}" >&2
+  echo "  Sections:             ${SECTIONS[*]}" >&2
+  echo "  TemplateRelativeRoot: $TEMPLATE_RELATIVE_ROOT" >&2
+  echo >&2
 
   local confirm
-  printf "Save this configuration? [Y/n]: "
+  printf "Save this configuration? [Y/n]: " >&2
   read -r confirm
   if [[ "$confirm" =~ ^[Nn] ]]; then
     log_warn "Configuration cancelled"
@@ -130,237 +287,184 @@ interactive_config() {
     return 1
   fi
 
-  log_success "Configuration saved to $CONFIG_JSON"
+  log_info "Configuration saved to $CONFIG_JSON"
 }
 
-#--------------------------------------
-# USAGE / HELP
-#--------------------------------------
-usage() {
-  cat <<EOF
-AutoVault - Obsidian Vault Structure Manager
+#######################################
+# CONFIG (written to + loaded from cust-run-config.json)
+#######################################
 
-Usage: $(basename "$0") [OPTIONS] COMMAND [ARGS]
+render_config_json() {
+  if ! command -v python3 >/dev/null 2>&1; then
+    log_error "python3 is required to create $CONFIG_JSON"
+    return 1
+  fi
 
-Options:
-  -v, --verbose     Enable verbose/debug output (LOG_LEVEL=4)
-  -q, --quiet       Only show errors (LOG_LEVEL=1)
-  --silent          Suppress all output (LOG_LEVEL=0)
-  --no-color        Disable colored output
-  --dry-run         Show what would be done without making changes
-  -h, --help        Show this help message
+  VAULT_ROOT="$VAULT_ROOT" \
+  CUSTOMER_ID_WIDTH="$CUSTOMER_ID_WIDTH" \
+  CUSTOMER_IDS_LIST="${CUSTOMER_IDS[*]}" \
+  SECTIONS_LIST="${SECTIONS[*]}" \
+  TEMPLATE_RELATIVE_ROOT="$TEMPLATE_RELATIVE_ROOT" \
+  python3 - <<'PY'
+import json
+import os
+
+
+def split_list(name: str):
+    raw = os.environ.get(name, "")
+    return [item for item in raw.split() if item]
+
+
+payload = {
+    "VaultRoot": os.environ.get("VAULT_ROOT", ""),
+    "CustomerIdWidth": int(os.environ.get("CUSTOMER_ID_WIDTH", "3")),
+    "CustomerIds": [int(x) for x in split_list("CUSTOMER_IDS_LIST")],
+    "Sections": split_list("SECTIONS_LIST") or ["FP", "RAISED", "INFORMATIONS", "DIVERS"],
+    "TemplateRelativeRoot": os.environ.get("TEMPLATE_RELATIVE_ROOT", "_templates\\\\Run"),
+}
+
+print(json.dumps(payload, indent=2))
+PY
+}
+
+ensure_config_json() {
+  local tmp
+  tmp="$(mktemp)"
+
+  if ! render_config_json >"$tmp"; then
+    rm -f "$tmp"
+    return 1
+  fi
+
+  if [[ ! -f "$CONFIG_JSON" ]] || ! cmp -s "$tmp" "$CONFIG_JSON"; then
+    # Ensure config directory exists
+    local config_dir
+    config_dir="$(dirname "$CONFIG_JSON")"
+    if [[ ! -d "$config_dir" ]]; then
+      log_info "Creating config directory: $config_dir"
+      mkdir -p "$config_dir"
+    fi
+    log_info "Writing configuration file: $CONFIG_JSON"
+    mv "$tmp" "$CONFIG_JSON"
+  else
+    rm "$tmp"
+  fi
+}
+
+load_config() {
+  if ! command -v jq >/dev/null 2>&1; then
+    log_error "jq is required to read $CONFIG_JSON"
+    return 1
+  fi
+
+  # If config file already exists, read values from it FIRST before calling ensure_config_json
+  # This prevents overwriting saved config with defaults
+  if [[ -f "$CONFIG_JSON" ]]; then
+    VAULT_ROOT="$(jq -r '.VaultRoot' "$CONFIG_JSON")"
+    CUSTOMER_ID_WIDTH="$(jq -r '.CustomerIdWidth // 3' "$CONFIG_JSON")"
+    # Declare as global before mapfile to avoid local variable creation in function context
+    declare -ga CUSTOMER_IDS
+    declare -ga SECTIONS
+    mapfile -t CUSTOMER_IDS < <(jq -r '.CustomerIds[]' "$CONFIG_JSON")
+    mapfile -t SECTIONS < <(jq -r '.Sections[]' "$CONFIG_JSON")
+    TEMPLATE_RELATIVE_ROOT="$(jq -r '.TemplateRelativeRoot' "$CONFIG_JSON")"
+  else
+    # Config file doesn't exist yet - create it with current (default) values
+    if ! ensure_config_json; then
+      return 1
+    fi
+  fi
+}
+
+if ! load_config; then
+  # When sourced, return non-zero so callers can handle the error
+  return 1 2>/dev/null || exit 1
+fi
+
+#######################################
+# INTERNAL: export env vars for pwsh
+#######################################
+export_cust_env() {
+  export CUST_VAULT_ROOT="$VAULT_ROOT"
+  export CUST_CUSTOMER_ID_WIDTH="$CUSTOMER_ID_WIDTH"
+  # join arrays with spaces
+  export CUST_CUSTOMER_IDS="${CUSTOMER_IDS[*]}"
+  export CUST_SECTIONS="${SECTIONS[*]}"
+  export CUST_TEMPLATE_RELATIVE_ROOT="$TEMPLATE_RELATIVE_ROOT"
+}
+
+run_bash() {
+  local script="$1"
+  shift || true
+  bash "$SCRIPT_DIR/bash/$script" "$@"
+}
+
+#######################################
+# CLI (only when executed directly)
+#######################################
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  usage() {
+    cat <<'EOF'
+Usage: cust-run-config.sh <command>
 
 Commands:
-  Configuration:
-    config, init    Interactive configuration wizard
-    validate        Validate configuration file
-    status          Show current status and configuration
-
-  Structure Management:
-    structure, new  Create folder structure in vault
-    templates       Apply templates to vault folders
-    test, verify    Test/verify vault structure
-    cleanup         Remove vault structure (dangerous!)
-
-  Customer Management:
-    customer add [ID]     Add a new customer
-    customer remove [ID]  Remove a customer
-    customer list         List all customers
-
-  Section Management:
-    section add [NAME]    Add a new section
-    section remove [NAME] Remove a section
-    section list          List all sections
-
-  Backup Management:
-    backup list           List available backups
-    backup restore [N]    Restore a backup
-    backup create [DESC]  Create a manual backup
-    backup cleanup [N]    Clean up old backups (keep N most recent)
-
-  Requirements:
-    requirements check    Check if dependencies are installed
-    requirements install  Install missing dependencies
+  install     Check and install missing requirements (jq, python3)
+  config      Interactive configuration wizard
+  structure   Create / refresh CUST Run folder structure
+  templates   Apply markdown templates to indexes
+  test        Verify structure & indexes
+  cleanup     Remove CUST folders (uses Cleanup script safety flags)
 
 Examples:
-  $(basename "$0") config                 # Interactive setup
-  $(basename "$0") status                 # Show status
-  $(basename "$0") -v structure           # Create structure (verbose)
-  $(basename "$0") customer add 31        # Add customer 31
-  $(basename "$0") section add URGENT     # Add URGENT section
-  $(basename "$0") backup list            # List backups
-  $(basename "$0") --dry-run cleanup      # Preview cleanup
+  cust-run-config.sh install
+  cust-run-config.sh config
+  cust-run-config.sh structure
+  cust-run-config.sh templates
+  cust-run-config.sh test
+  cust-run-config.sh cleanup
 EOF
-}
+  }
 
-#--------------------------------------
-# MAIN
-#--------------------------------------
-main() {
-  # Parse global options first
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      -v|--verbose)
-        LOG_LEVEL=4
-        VERBOSE=true
-        shift
-        ;;
-      -q|--quiet)
-        LOG_LEVEL=1
-        shift
-        ;;
-      --silent)
-        LOG_LEVEL=0
-        shift
-        ;;
-      --no-color)
-        NO_COLOR=1
-        setup_colors
-        shift
-        ;;
-      --dry-run)
-        DRY_RUN=true
-        export DRY_RUN
-        shift
-        ;;
-      -h|--help)
-        usage
-        exit 0
-        ;;
-      -*)
-        log_error "Unknown option: $1"
-        echo ""
-        usage
-        exit 1
-        ;;
-      *)
-        break
-        ;;
-    esac
-  done
-
-  local cmd="${1:-}"
-  shift || true
+  cmd="${1:-}"
 
   if [[ -z "$cmd" ]]; then
     usage
     exit 1
   fi
 
-  log_debug "Command: $cmd"
-  log_debug "Log level: $LOG_LEVEL"
-  log_debug "Dry run: $DRY_RUN"
-
-  # Handle requirements command before loading config (which requires jq/python3)
-  if [[ "$cmd" == "requirements" || "$cmd" == "install" ]]; then
-    local subcmd="${1:-check}"
-    shift || true
-    bash "$BASH_DIR/Install-Requirements.sh" "$subcmd" "$@"
+  # Handle install command before loading config (which requires jq/python3)
+  if [[ "$cmd" == "install" || "$cmd" == "requirements" ]]; then
+    install_requirements
     exit $?
   fi
 
-  # Load configuration
-  load_config
+  export_cust_env
 
-  # Dispatch to appropriate handler
   case "$cmd" in
-    #--- Configuration ---
     config|setup|init)
       interactive_config
       ;;
-    validate)
-      bash "$BASH_DIR/Validate-Config.sh" "$@"
-      ;;
-    status)
-      VERBOSE="$VERBOSE" bash "$BASH_DIR/Show-Status.sh" "$@"
-      ;;
-
-    #--- Structure Management ---
     structure|new)
       log_info "Using configuration from $CONFIG_JSON"
-      run_bash "New-CustRunStructure.sh" "$@"
+      run_bash "New-CustRunStructure.sh"
       ;;
     templates|apply)
       log_info "Using configuration from $CONFIG_JSON"
-      run_bash "Apply-CustRunTemplates.sh" "$@"
+      run_bash "Apply-CustRunTemplates.sh"
       ;;
     test|verify)
       log_info "Using configuration from $CONFIG_JSON"
-      run_bash "Test-CustRunStructure.sh" "$@"
+      run_bash "Test-CustRunStructure.sh"
       ;;
     cleanup)
       log_warn "Using configuration from $CONFIG_JSON"
-      run_bash "Cleanup-CustRunStructure.sh" "$@"
+      run_bash "Cleanup-CustRunStructure.sh"
       ;;
-
-    #--- Customer Management ---
-    customer|customers)
-      local subcmd="${1:-list}"
-      shift || true
-      VERBOSE="$VERBOSE" bash "$BASH_DIR/Manage-Customers.sh" "$subcmd" "$@"
-      ;;
-    # Legacy commands (backwards compatibility)
-    add-customer|add)
-      if [[ "$cmd" == "add" ]] && [[ -z "${1:-}" ]]; then
-        # Plain "add" without args - show help
-        log_error "Usage: cust-run-config.sh customer add <id>"
-        exit 1
-      fi
-      bash "$BASH_DIR/Manage-Customers.sh" add "$@"
-      ;;
-    remove-customer|remove)
-      if [[ "$cmd" == "remove" ]] && [[ -z "${1:-}" ]]; then
-        log_error "Usage: cust-run-config.sh customer remove <id>"
-        exit 1
-      fi
-      bash "$BASH_DIR/Manage-Customers.sh" remove "$@"
-      ;;
-    list-customers|list)
-      VERBOSE="$VERBOSE" bash "$BASH_DIR/Manage-Customers.sh" list
-      ;;
-
-    #--- Section Management ---
-    section|sections)
-      local subcmd="${1:-list}"
-      shift || true
-      VERBOSE="$VERBOSE" bash "$BASH_DIR/Manage-Sections.sh" "$subcmd" "$@"
-      ;;
-    # Legacy commands
-    add-section)
-      bash "$BASH_DIR/Manage-Sections.sh" add "$@"
-      ;;
-    remove-section)
-      bash "$BASH_DIR/Manage-Sections.sh" remove "$@"
-      ;;
-    list-sections)
-      VERBOSE="$VERBOSE" bash "$BASH_DIR/Manage-Sections.sh" list
-      ;;
-
-    #--- Backup Management ---
-    backup|backups)
-      local subcmd="${1:-list}"
-      shift || true
-      bash "$BASH_DIR/Manage-Backups.sh" "$subcmd" "$@"
-      ;;
-    # Legacy commands
-    list-backups)
-      bash "$BASH_DIR/Manage-Backups.sh" list "$@"
-      ;;
-    restore-backup|restore)
-      bash "$BASH_DIR/Manage-Backups.sh" restore "$@"
-      ;;
-
-    #--- Unknown ---
     *)
       log_error "Unknown command: $cmd"
-      echo ""
+      echo
       usage
       exit 1
       ;;
   esac
-}
-
-# Run main only when executed directly
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  main "$@"
 fi
