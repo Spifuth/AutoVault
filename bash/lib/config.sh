@@ -55,6 +55,9 @@ fi
 
 TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT:-"_templates\\Run"}"
 
+# Cleanup safety flag (must be true to allow deletion)
+ENABLE_CLEANUP="${ENABLE_CLEANUP:-false}"
+
 #--------------------------------------
 # BACKUP DIRECTORY
 #--------------------------------------
@@ -74,6 +77,7 @@ render_config_json() {
   CUSTOMER_IDS_LIST="${CUSTOMER_IDS[*]}" \
   SECTIONS_LIST="${SECTIONS[*]}" \
   TEMPLATE_RELATIVE_ROOT="$TEMPLATE_RELATIVE_ROOT" \
+  ENABLE_CLEANUP="$ENABLE_CLEANUP" \
   python3 - <<'PY'
 import json
 import os
@@ -90,6 +94,7 @@ payload = {
     "CustomerIds": [int(x) for x in split_list("CUSTOMER_IDS_LIST")],
     "Sections": split_list("SECTIONS_LIST") or ["FP", "RAISED", "INFORMATIONS", "DIVERS"],
     "TemplateRelativeRoot": os.environ.get("TEMPLATE_RELATIVE_ROOT", "_templates\\\\Run"),
+    "EnableCleanup": os.environ.get("ENABLE_CLEANUP", "false").lower() == "true",
 }
 
 print(json.dumps(payload, indent=2))
@@ -145,6 +150,10 @@ load_config() {
     mapfile -t CUSTOMER_IDS < <(jq -r '.CustomerIds[]' "$CONFIG_JSON")
     mapfile -t SECTIONS < <(jq -r '.Sections[]' "$CONFIG_JSON")
     TEMPLATE_RELATIVE_ROOT="$(jq -r '.TemplateRelativeRoot' "$CONFIG_JSON")"
+    # Read EnableCleanup (defaults to false if not present)
+    local enable_cleanup_val
+    enable_cleanup_val="$(jq -r '.EnableCleanup // false' "$CONFIG_JSON")"
+    ENABLE_CLEANUP="$enable_cleanup_val"
   else
     # Config file doesn't exist - warn user and use defaults
     log_warn "Config file not found: $CONFIG_JSON"

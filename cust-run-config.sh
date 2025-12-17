@@ -75,6 +75,7 @@ interactive_config() {
   echo "  3. CustomerIds:          ${CUSTOMER_IDS[*]}"
   echo "  4. Sections:             ${SECTIONS[*]}"
   echo "  5. TemplateRelativeRoot: $TEMPLATE_RELATIVE_ROOT"
+  echo "  6. EnableCleanup:        $ENABLE_CLEANUP"
   echo ""
 
   # VaultRoot
@@ -96,6 +97,15 @@ interactive_config() {
   # TemplateRelativeRoot
   TEMPLATE_RELATIVE_ROOT="$(prompt_value "Template relative root" "$TEMPLATE_RELATIVE_ROOT")"
 
+  # EnableCleanup
+  local enable_cleanup_input
+  enable_cleanup_input="$(prompt_value "Enable cleanup (true/false)" "$ENABLE_CLEANUP")"
+  if [[ "$enable_cleanup_input" =~ ^[Tt]rue$ ]]; then
+    ENABLE_CLEANUP="true"
+  else
+    ENABLE_CLEANUP="false"
+  fi
+
   echo ""
   log_info "Configuration summary:"
   echo "  VaultRoot:            $VAULT_ROOT"
@@ -103,6 +113,7 @@ interactive_config() {
   echo "  CustomerIds:          ${CUSTOMER_IDS[*]}"
   echo "  Sections:             ${SECTIONS[*]}"
   echo "  TemplateRelativeRoot: $TEMPLATE_RELATIVE_ROOT"
+  echo "  EnableCleanup:        $ENABLE_CLEANUP"
   echo ""
 
   local confirm

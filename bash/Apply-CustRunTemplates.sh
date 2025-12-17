@@ -54,13 +54,21 @@ set_file_content() {
     dir="$(dirname "$path")"
 
     if [[ ! -d "$dir" ]]; then
-        write_log "WARN" "Target directory does not exist, creating: $dir"
-        mkdir -p "$dir"
+        if [[ "${DRY_RUN:-false}" == "true" ]]; then
+            write_log "WARN" "[DRY-RUN] Would create directory: $dir"
+        else
+            write_log "WARN" "Target directory does not exist, creating: $dir"
+            mkdir -p "$dir"
+        fi
     fi
 
-    # Écrit exactement le contenu (sans rajouter de newline parasite)
-    printf "%s" "$content" > "$path"
-    write_log "INFO" "Template applied to: $path"
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        write_log "INFO" "[DRY-RUN] Would apply template to: $path"
+    else
+        # Écrit exactement le contenu (sans rajouter de newline parasite)
+        printf "%s" "$content" > "$path"
+        write_log "INFO" "Template applied to: $path"
+    fi
 }
 
 #######################################
