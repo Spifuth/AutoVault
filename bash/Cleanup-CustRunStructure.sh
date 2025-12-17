@@ -86,7 +86,7 @@ create_backup() {
 #######################################
 
 if [[ "$ENABLE_DELETION" != true ]]; then
-    write_log "ERROR" "ABORT: Cleanup disabled. Set ENABLE_DELETION=true inside the script if you really want to delete."
+    write_log "ERROR" "ABORT: Cleanup disabled. Set EnableCleanup=true in config (cust-run-config.sh config) to enable deletion."
     exit 1
 fi
 

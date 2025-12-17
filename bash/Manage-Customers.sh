@@ -133,9 +133,17 @@ remove_customer() {
     return 1
   fi
 
-  # Confirm removal
   local cust_code
   cust_code="$(get_cust_code "$id")"
+
+  # Dry-run check
+  if [[ "${DRY_RUN:-false}" == "true" ]]; then
+    log_info "[DRY-RUN] Would remove customer ID $id ($cust_code)"
+    log_info "[DRY-RUN] Would update config file: $CONFIG_JSON"
+    return 0
+  fi
+
+  # Confirm removal
   log_warn "This will remove $cust_code from the configuration."
   log_warn "Note: Actual vault folders will NOT be deleted."
   read -rp "Are you sure? [y/N]: " confirm

@@ -124,6 +124,14 @@ validate_field_types() {
     ((errors++))
   fi
 
+  # EnableCleanup should be boolean (if present)
+  local cleanup_type
+  cleanup_type="$(jq -r '.EnableCleanup | type' "$file" 2>/dev/null)"
+  if [[ -n "$cleanup_type" ]] && [[ "$cleanup_type" != "null" ]] && [[ "$cleanup_type" != "boolean" ]]; then
+    log_error "EnableCleanup must be a boolean (got: $cleanup_type)"
+    ((errors++))
+  fi
+
   if [[ $errors -gt 0 ]]; then
     return 1
   fi
