@@ -31,8 +31,12 @@ source "$SCRIPT_DIR/lib/config.sh"
 ensure_directory() {
     local path="$1"
     if [[ ! -d "$path" ]]; then
-        write_log "INFO" "Creating directory: $path"
-        mkdir -p "$path"
+        if [[ "${DRY_RUN:-false}" == "true" ]]; then
+            write_log "INFO" "[DRY-RUN] Would create directory: $path"
+        else
+            write_log "INFO" "Creating directory: $path"
+            mkdir -p "$path"
+        fi
     else
         write_log "DEBUG" "Directory already exists: $path"
     fi
@@ -40,13 +44,21 @@ ensure_directory() {
 
 new_emptyfile_overwrite() {
     local path="$1"
-    if [[ -f "$path" ]]; then
-        write_log "INFO" "Overwriting file: $path"
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        if [[ -f "$path" ]]; then
+            write_log "INFO" "[DRY-RUN] Would overwrite file: $path"
+        else
+            write_log "INFO" "[DRY-RUN] Would create file: $path"
+        fi
     else
-        write_log "INFO" "Creating file: $path"
+        if [[ -f "$path" ]]; then
+            write_log "INFO" "Overwriting file: $path"
+        else
+            write_log "INFO" "Creating file: $path"
+        fi
+        # Create or truncate file
+        : > "$path"
     fi
-    # Create or truncate file
-    : > "$path"
 }
 
 #######################################
@@ -125,8 +137,12 @@ hub_path="$VAULT_ROOT/Run-Hub.md"
 if [[ -f "$hub_path" ]]; then
     write_log "INFO" "Hub file already exists; preserving current content: $hub_path"
 else
-    printf "%s\n" "${hub_lines[@]}" > "$hub_path"
-    write_log "INFO" "Hub file written: $hub_path"
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        write_log "INFO" "[DRY-RUN] Would create hub file: $hub_path"
+    else
+        printf "%s\n" "${hub_lines[@]}" > "$hub_path"
+        write_log "INFO" "Hub file written: $hub_path"
+    fi
 fi
 
 write_log "INFO" "CUST Run structure creation completed."

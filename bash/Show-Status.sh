@@ -36,10 +36,13 @@ show_status() {
   printf "${BOLD}Configuration${RESET}\n"
   echo "─────────────────────────────────────────────────────────────────"
   
+  local config_display
+  config_display="$(realpath "$CONFIG_JSON" 2>/dev/null || echo "$CONFIG_JSON")"
+  
   if [[ -f "$CONFIG_JSON" ]]; then
-    printf "  Config File:        ${GREEN}✓${RESET} %s\n" "$CONFIG_JSON"
+    printf "  Config File:        ${GREEN}✓${RESET} %s\n" "$config_display"
   else
-    printf "  Config File:        ${RED}✗${RESET} %s (not found)\n" "$CONFIG_JSON"
+    printf "  Config File:        ${RED}✗${RESET} %s (not found)\n" "$config_display"
   fi
   
   printf "  Vault Root:         %s\n" "$VAULT_ROOT"

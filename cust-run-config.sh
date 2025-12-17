@@ -22,6 +22,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASH_DIR="$SCRIPT_DIR/bash"
 LIB_DIR="$BASH_DIR/lib"
+CONFIG_JSON="$SCRIPT_DIR/config/cust-run-config.json"
 
 #--------------------------------------
 # SOURCE LIBRARIES
@@ -60,6 +61,9 @@ run_bash() {
 # INTERACTIVE CONFIG
 #--------------------------------------
 interactive_config() {
+  # Load existing config first (if any) to show current values
+  load_config 2>/dev/null || true
+  
   log_info "Interactive configuration mode"
   log_info "Press Enter to keep current/default values"
   echo ""

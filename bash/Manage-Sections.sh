@@ -48,6 +48,15 @@ add_section() {
 
   # Confirm addition
   log_info "Adding section '$section' will create new folders for all ${#CUSTOMER_IDS[@]} customers."
+  
+  # Dry-run check
+  if [[ "${DRY_RUN:-false}" == "true" ]]; then
+    log_info "[DRY-RUN] Would add section: $section"
+    log_info "[DRY-RUN] Would update config file: $CONFIG_JSON"
+    log_info "[DRY-RUN] Would create ${#CUSTOMER_IDS[@]} section folders"
+    return 0
+  fi
+  
   read -rp "Continue? [y/N]: " confirm
   
   if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
