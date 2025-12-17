@@ -137,6 +137,13 @@ remove_section() {
     return 1
   fi
 
+  # Dry-run check
+  if [[ "${DRY_RUN:-false}" == "true" ]]; then
+    log_info "[DRY-RUN] Would remove section: $section"
+    log_info "[DRY-RUN] Would update config file: $CONFIG_JSON"
+    return 0
+  fi
+
   # Confirm removal
   log_warn "This will remove '$section' from the configuration."
   log_warn "Note: Actual vault folders will NOT be deleted."
