@@ -19,6 +19,12 @@ if ! load_config; then
     exit 1
 fi
 
+# Normalize VAULT_ROOT path
+VAULT_ROOT="${VAULT_ROOT/#\~/$HOME}"
+if [[ "$VAULT_ROOT" == *"\\"* ]]; then
+    VAULT_ROOT="${VAULT_ROOT//\\//}"
+fi
+
 # Normalize template path (convert Windows-style separators)
 TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT//\\//}"
 TEMPLATE_ROOT="$VAULT_ROOT/${TEMPLATE_RELATIVE_ROOT#/}"
