@@ -55,9 +55,6 @@ list_backups() {
     filename="$(basename "$backup_file")"
     local filesize
     filesize="$(du -h "$backup_file" | cut -f1)"
-    local mtime
-    mtime="$(stat -c '%y' "$backup_file" 2>/dev/null | cut -d'.' -f1)" || \
-    mtime="$(stat -f '%Sm' -t '%Y-%m-%d %H:%M:%S' "$backup_file" 2>/dev/null)"
     
     # Parse backup filename for metadata if possible
     # Format: cust-run-config.YYYY-MM-DD_HH-MM-SS.json
@@ -66,7 +63,11 @@ list_backups() {
       backup_time="${backup_time//-/:}"
       printf "  %2d. %s  (%s, %s)\n" "$((count + 1))" "$filename" "$filesize" "$backup_time"
     else
-      printf "  %2d. %s  (%s)\n" "$((count + 1))" "$filename" "$filesize"
+      # Get file modification time as fallback
+      local mtime
+      mtime="$(stat -c '%y' "$backup_file" 2>/dev/null | cut -d'.' -f1)" || \
+      mtime="$(stat -f '%Sm' -t '%Y-%m-%d %H:%M:%S' "$backup_file" 2>/dev/null)"
+      printf "  %2d. %s  (%s, %s)\n" "$((count + 1))" "$filename" "$filesize" "$mtime"
     fi
     
     ((count++))
