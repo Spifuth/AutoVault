@@ -29,6 +29,12 @@ if ! load_config; then
     exit 1
 fi
 
+# Normalize VAULT_ROOT path
+VAULT_ROOT="${VAULT_ROOT/#\~/$HOME}"
+if [[ "$VAULT_ROOT" == *"\\"* ]]; then
+    VAULT_ROOT="${VAULT_ROOT//\\//}"
+fi
+
 # Basic checks
 if [[ ! -d "$VAULT_ROOT" ]]; then
     msg="Vault root does NOT exist: $VAULT_ROOT"

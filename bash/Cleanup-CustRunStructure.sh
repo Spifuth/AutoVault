@@ -19,6 +19,12 @@ if ! load_config; then
     exit 1
 fi
 
+# Normalize VAULT_ROOT path
+VAULT_ROOT="${VAULT_ROOT/#\~/$HOME}"
+if [[ "$VAULT_ROOT" == *"\\"* ]]; then
+    VAULT_ROOT="${VAULT_ROOT//\\//}"
+fi
+
 # Safety flags
 # ENABLE_CLEANUP is now read from config.json (EnableCleanup field)
 # Can be overridden via environment variable
