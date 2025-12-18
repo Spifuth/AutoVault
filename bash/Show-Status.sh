@@ -220,7 +220,7 @@ show_status() {
   echo "═══════════════════════════════════════════════════════════════"
   
   if [[ "$deps_ok" != true ]]; then
-    printf "${YELLOW}⚠ Some dependencies are missing. Run 'install-requirements.sh'${RESET}\n"
+    printf "${YELLOW}⚠ Some dependencies are missing. Run './cust-run-config.sh requirements install'${RESET}\n"
   elif [[ ! -f "$CONFIG_JSON" ]]; then
     printf "${YELLOW}⚠ Configuration file not found. Run 'cust-run-config.sh init'${RESET}\n"
   elif [[ ! -d "$vault_path" ]]; then

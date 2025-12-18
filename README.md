@@ -199,7 +199,6 @@ Placeholders (\`{{CUST_CODE}}\`, \`{{SECTION}}\`, \`{{NOW_UTC}}\`, \`{{NOW_LOCAL
 \`\`\`
 AutoVault/
 ├── cust-run-config.sh              # Main CLI orchestrator (entry point)
-├── install-requirements.sh         # Standalone requirements installer
 ├── Generate-CustRunTemplates.sh    # Template generator
 ├── cust-run-templates.sample.json  # Template definitions sample
 ├── README.md
