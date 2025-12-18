@@ -91,7 +91,7 @@ create_backup() {
 # Main
 #######################################
 
-if [[ "$ENABLE_DELETION" != true ]]; then
+if [[ "$ENABLE_DELETION" != "true" ]]; then
     log_error "ABORT: Cleanup disabled. Set EnableCleanup=true in config (cust-run-config.sh config) to enable deletion."
     exit 1
 fi
