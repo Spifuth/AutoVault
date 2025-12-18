@@ -32,13 +32,13 @@ ensure_directory() {
     local path="$1"
     if [[ ! -d "$path" ]]; then
         if [[ "${DRY_RUN:-false}" == "true" ]]; then
-            write_log "INFO" "[DRY-RUN] Would create directory: $path"
+            log_info "[DRY-RUN] Would create directory: $path"
         else
-            write_log "INFO" "Creating directory: $path"
+            log_info "Creating directory: $path"
             mkdir -p "$path"
         fi
     else
-        write_log "DEBUG" "Directory already exists: $path"
+        log_debug "Directory already exists: $path"
     fi
 }
 
@@ -46,15 +46,15 @@ new_emptyfile_overwrite() {
     local path="$1"
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
         if [[ -f "$path" ]]; then
-            write_log "INFO" "[DRY-RUN] Would overwrite file: $path"
+            log_info "[DRY-RUN] Would overwrite file: $path"
         else
-            write_log "INFO" "[DRY-RUN] Would create file: $path"
+            log_info "[DRY-RUN] Would create file: $path"
         fi
     else
         if [[ -f "$path" ]]; then
-            write_log "INFO" "Overwriting file: $path"
+            log_info "Overwriting file: $path"
         else
-            write_log "INFO" "Creating file: $path"
+            log_info "Creating file: $path"
         fi
         # Create or truncate file
         : > "$path"
@@ -67,20 +67,20 @@ new_emptyfile_overwrite() {
 
 # Load configuration from JSON
 if ! load_config; then
-    write_log "ERROR" "Failed to load configuration. Aborting."
+    log_error "Failed to load configuration. Aborting."
     exit 1
 fi
 
-write_log "INFO" "Starting CUST Run structure creation"
-write_log "INFO" "Vault root: $VAULT_ROOT"
+log_info "Starting CUST Run structure creation"
+log_info "Vault root: $VAULT_ROOT"
 
 if [[ -z "${VAULT_ROOT:-}" ]]; then
-    write_log "ERROR" "VAULT_ROOT is not set. Configure cust-run-config.sh or export VAULT_ROOT."
+    log_error "VAULT_ROOT is not set. Configure cust-run-config.sh or export VAULT_ROOT."
     exit 1
 fi
 
 if [[ ${#CUSTOMER_IDS[@]} -eq 0 ]]; then
-    write_log "ERROR" "No CUST ids defined in CUSTOMER_IDS. Update cust-run-config.sh or export CUSTOMER_IDS."
+    log_error "No CUST ids defined in CUSTOMER_IDS. Update cust-run-config.sh or export CUSTOMER_IDS."
     exit 1
 fi
 
@@ -99,12 +99,12 @@ hub_lines+=("")
 for id in "${CUSTOMER_IDS[@]}"; do
     # Check integer
     if ! [[ "$id" =~ ^[0-9]+$ ]]; then
-        write_log "ERROR" "Invalid CUST id (not an integer): $id"
+        log_error "Invalid CUST id (not an integer): $id"
         continue
     fi
 
     code="$(get_cust_code "$id")"
-    write_log "INFO" "Processing $code"
+    log_info "Processing $code"
 
     # Root CUST folder: Run/CUST-XXX
     cust_root="$RUN_PATH/$code"
@@ -135,14 +135,14 @@ done
 # Write the Run-Hub.md file next to Run
 hub_path="$VAULT_ROOT/Run-Hub.md"
 if [[ -f "$hub_path" ]]; then
-    write_log "INFO" "Hub file already exists; preserving current content: $hub_path"
+    log_info "Hub file already exists; preserving current content: $hub_path"
 else
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        write_log "INFO" "[DRY-RUN] Would create hub file: $hub_path"
+        log_info "[DRY-RUN] Would create hub file: $hub_path"
     else
         printf "%s\n" "${hub_lines[@]}" > "$hub_path"
-        write_log "INFO" "Hub file written: $hub_path"
+        log_info "Hub file written: $hub_path"
     fi
 fi
 
-write_log "INFO" "CUST Run structure creation completed."
+log_info "CUST Run structure creation completed."
