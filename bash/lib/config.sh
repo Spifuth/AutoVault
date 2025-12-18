@@ -104,9 +104,13 @@ PY
 ensure_config_json() {
   local tmp
   tmp="$(mktemp)"
+  
+  # Cleanup temp file on exit or interrupt
+  trap 'rm -f "$tmp"' EXIT INT TERM
 
   if ! render_config_json >"$tmp"; then
     rm -f "$tmp"
+    trap - EXIT INT TERM
     return 1
   fi
 
@@ -123,6 +127,9 @@ ensure_config_json() {
   else
     rm "$tmp"
   fi
+  
+  # Clear trap after successful completion
+  trap - EXIT INT TERM
 }
 
 #--------------------------------------
