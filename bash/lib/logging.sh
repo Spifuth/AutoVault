@@ -9,7 +9,6 @@
 #   - LOG_LEVEL control (0=silent, 1=error, 2=warn, 3=info, 4=debug)
 #   - NO_COLOR support (https://no-color.org/)
 #   - Colored log functions: log_debug, log_info, log_warn, log_error, log_success
-#   - write_log() for timestamped logs (used by structure scripts)
 #
 
 # Prevent multiple sourcing
@@ -89,35 +88,4 @@ log_error() {
 log_success() {
   [[ "$LOG_LEVEL" -ge 3 ]] && printf "%b[OK   ]%b %s\n" "$COLOR_GREEN" "$COLOR_RESET" "$1" >&2
   return 0
-}
-
-#--------------------------------------
-# TIMESTAMPED LOG (for structure scripts)
-#--------------------------------------
-write_log() {
-  local level="${1:-INFO}"
-  shift
-  local message="$*"
-
-  # LOG_LEVEL: 0=silent, 1=error, 2=warn, 3=info, 4=debug
-  local log_level="${LOG_LEVEL:-3}"
-  local level_num=3
-
-  case "$level" in
-    DEBUG) level_num=4 ;;
-    INFO)  level_num=3 ;;
-    WARN)  level_num=2 ;;
-    ERROR) level_num=1 ;;
-  esac
-
-  # Skip if message level is higher than configured LOG_LEVEL
-  if (( level_num > log_level )); then
-    return 0
-  fi
-
-  local utc localtime
-  utc="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-  localtime="$(date +"%Y-%m-%dT%H:%M:%S%z")"
-
-  echo "[$level][UTC:$utc][Local:$localtime] $message"
 }

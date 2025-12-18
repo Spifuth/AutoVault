@@ -42,15 +42,12 @@ VAULT_ROOT="${VAULT_ROOT:-"D:\\Obsidian\\Work-Vault"}"
 CUSTOMER_ID_WIDTH="${CUSTOMER_ID_WIDTH:-3}"
 
 # Initialize arrays if not already set
-declare -ga CUSTOMER_IDS="${CUSTOMER_IDS[@]:-}"
-declare -ga SECTIONS="${SECTIONS[@]:-}"
-
 if [[ -z "${CUSTOMER_IDS[*]:-}" ]]; then
-  CUSTOMER_IDS=(2 4 5 7 10 11 12 14 15 18 25 27 29 30)
+  declare -ga CUSTOMER_IDS=(2 4 5 7 10 11 12 14 15 18 25 27 29 30)
 fi
 
 if [[ -z "${SECTIONS[*]:-}" ]]; then
-  SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
+  declare -ga SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
 fi
 
 TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT:-"_templates\\Run"}"
