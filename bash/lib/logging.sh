@@ -49,12 +49,18 @@ setup_colors() {
     COLOR_GREEN="\033[32m"
     COLOR_GRAY="\033[90m"
     COLOR_RESET="\033[0m"
-    # Short aliases for scripts
+    # Short aliases for scripts (used in printf format strings)
+    # shellcheck disable=SC2034  # These are used by sourcing scripts
     BOLD="\033[1m"
+    # shellcheck disable=SC2034
     RESET="\033[0m"
+    # shellcheck disable=SC2034
     RED="\033[31m"
+    # shellcheck disable=SC2034
     GREEN="\033[32m"
+    # shellcheck disable=SC2034
     YELLOW="\033[33m"
+    # shellcheck disable=SC2034
     BLUE="\033[34m"
   fi
 }

@@ -20,6 +20,7 @@ source "$SCRIPT_DIR/lib/config.sh"
 #--------------------------------------
 # STATUS DISPLAY
 #--------------------------------------
+# shellcheck disable=SC2059  # Variables in printf format are intentional for ANSI colors
 show_status() {
   local verbose="${VERBOSE:-false}"
 

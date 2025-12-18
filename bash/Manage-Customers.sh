@@ -46,7 +46,7 @@ add_customer() {
   CUSTOMER_IDS+=("$id")
   
   # Sort the array numerically
-  IFS=$'\n' CUSTOMER_IDS=($(sort -n <<<"${CUSTOMER_IDS[*]}")); unset IFS
+  mapfile -t CUSTOMER_IDS < <(printf '%s\n' "${CUSTOMER_IDS[@]}" | sort -n)
 
   # Dry-run check
   if [[ "${DRY_RUN:-false}" == "true" ]]; then
