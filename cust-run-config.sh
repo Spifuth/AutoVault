@@ -117,9 +117,9 @@ interactive_config() {
   echo ""
 
   local confirm
-  printf "Save this configuration? [Y/n]: "
+  printf "Save this configuration? [y/N]: "
   read -r confirm
-  if [[ "$confirm" =~ ^[Nn] ]]; then
+  if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
     log_warn "Configuration cancelled"
     return 1
   fi
