@@ -12,7 +12,6 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Source logging (config.sh depends on these tools, so we can't source it yet)
 source "$SCRIPT_DIR/lib/logging.sh"
