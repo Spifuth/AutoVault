@@ -1,5 +1,7 @@
 # AutoVault
 
+> **Version 1.3** – Code quality audit, ShellCheck compliance, and reliability improvements.
+
 Helper scripts to create, template, verify, and clean a "Run" workspace in an Obsidian vault. Each customer gets a `CUST-XXX` folder with section subfolders, index files, and a global `Run-Hub.md` linking to every customer.
 
 ## Features
@@ -12,6 +14,7 @@ Helper scripts to create, template, verify, and clean a "Run" workspace in an Ob
 - **Backup Management** – List, create, and restore configuration backups
 - **Configuration Validation** – Validate JSON config with automatic fixes
 - **Modular Architecture** – Shared libraries for logging and config management
+- **Cross-platform** – Works on Linux, macOS, and Windows (via WSL) with automatic path conversion
 
 ## Generated Structure
 
@@ -225,5 +228,36 @@ The project uses a modular architecture:
 
 - **\`cust-run-config.sh\`** - Main CLI orchestrator (~350 lines). Parses arguments and dispatches to feature scripts.
 - **\`bash/lib/logging.sh\`** - Shared logging with LOG_LEVEL support (0=silent, 1=error, 2=warn, 3=info, 4=debug) and NO_COLOR support.
-- **\`bash/lib/config.sh\`** - Configuration management: load/save JSON config, default values, helper functions.
+- **`bash/lib/config.sh`** - Configuration management: load/save JSON config, default values, helper functions. Includes trap-based cleanup for temp files.
 - **Feature scripts** - Each command has its own script that sources the shared libraries.
+
+## Code Quality
+
+The codebase follows bash best practices:
+
+- **ShellCheck compliant** – All scripts pass [ShellCheck](https://www.shellcheck.net/) static analysis
+- **Consistent logging** – Unified `log_info`, `log_warn`, `log_error`, `log_debug`, `log_success` functions
+- **Safe defaults** – Destructive operations require explicit opt-in (`ENABLE_DELETION=true`)
+- **Portable paths** – Automatic tilde expansion (`~`) and Windows path conversion (`\` → `/`)
+- **Proper cleanup** – Trap handlers ensure temp files are removed on interruption
+
+## Changelog
+
+### v1.3 (December 2024)
+- ✅ Full ShellCheck compliance (SC2034, SC2059, SC2207 fixes)
+- ✅ Added trap cleanup for temp files in config operations
+- ✅ Standardized logging functions across all scripts
+- ✅ Fixed boolean comparison quoting
+- ✅ Unified confirmation prompts to `[y/N]` pattern
+- ✅ Added Windows path and tilde expansion support
+- ✅ Removed unused variables and legacy code
+
+### v1.1
+- Initial modular architecture
+- Customer and section management
+- Backup system
+- Configuration validation
+
+## License
+
+MIT
