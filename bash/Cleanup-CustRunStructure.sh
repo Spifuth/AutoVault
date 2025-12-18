@@ -15,7 +15,7 @@ source "$SCRIPT_DIR/lib/config.sh"
 
 # Load configuration
 if ! load_config; then
-    write_log "ERROR" "Failed to load configuration"
+    log_error "Failed to load configuration"
     exit 1
 fi
 
@@ -35,13 +35,13 @@ create_backup() {
     local hub_path="$2"
     
     if [[ ! -d "$run_path" ]]; then
-        write_log "WARN" "Nothing to backup - Run folder does not exist: $run_path"
+        log_warn "Nothing to backup - Run folder does not exist: $run_path"
         return 0
     fi
     
     # Create backup directory if needed
     if [[ ! -d "$BACKUP_DIR" ]]; then
-        write_log "INFO" "Creating backup directory: $BACKUP_DIR"
+        log_info "Creating backup directory: $BACKUP_DIR"
         mkdir -p "$BACKUP_DIR"
     fi
     
@@ -51,7 +51,7 @@ create_backup() {
     local backup_name="autovault_backup_${timestamp}.tar.gz"
     local backup_path="$BACKUP_DIR/$backup_name"
     
-    write_log "INFO" "Creating backup: $backup_path"
+    log_info "Creating backup: $backup_path"
     
     # Build list of items to backup
     local items_to_backup=()
@@ -65,7 +65,7 @@ create_backup() {
     fi
     
     if [[ ${#items_to_backup[@]} -eq 0 ]]; then
-        write_log "WARN" "No items to backup"
+        log_warn "No items to backup"
         return 0
     fi
     
@@ -73,10 +73,10 @@ create_backup() {
     if tar -czf "$backup_path" "${items_to_backup[@]}" 2>/dev/null; then
         local backup_size
         backup_size="$(du -h "$backup_path" | cut -f1)"
-        write_log "INFO" "Backup created successfully: $backup_path ($backup_size)"
+        log_info "Backup created successfully: $backup_path ($backup_size)"
         return 0
     else
-        write_log "ERROR" "Failed to create backup archive"
+        log_error "Failed to create backup archive"
         return 1
     fi
 }
@@ -86,12 +86,12 @@ create_backup() {
 #######################################
 
 if [[ "$ENABLE_DELETION" != true ]]; then
-    write_log "ERROR" "ABORT: Cleanup disabled. Set EnableCleanup=true in config (cust-run-config.sh config) to enable deletion."
+    log_error "ABORT: Cleanup disabled. Set EnableCleanup=true in config (cust-run-config.sh config) to enable deletion."
     exit 1
 fi
 
 if [[ ${#CUSTOMER_IDS[@]} -eq 0 ]]; then
-    write_log "WARN" "No CUST ids defined in CUSTOMER_IDS. Nothing to clean."
+    log_warn "No CUST ids defined in CUSTOMER_IDS. Nothing to clean."
     exit 0
 fi
 
@@ -101,23 +101,23 @@ HUB_PATH="$VAULT_ROOT/Run-Hub.md"
 # Create backup before deletion if enabled
 if [[ "$CREATE_BACKUP" == true ]]; then
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        write_log "INFO" "[DRY-RUN] Would create backup before deletion"
+        log_info "[DRY-RUN] Would create backup before deletion"
     else
-        write_log "INFO" "Backup enabled - creating backup before deletion..."
+        log_info "Backup enabled - creating backup before deletion..."
         if ! create_backup "$RUN_PATH" "$HUB_PATH"; then
-            write_log "ERROR" "ABORT: Backup failed. Not proceeding with deletion."
+            log_error "ABORT: Backup failed. Not proceeding with deletion."
             exit 1
         fi
     fi
 else
-    write_log "WARN" "Backup disabled - proceeding without backup (CREATE_BACKUP=false)"
+    log_warn "Backup disabled - proceeding without backup (CREATE_BACKUP=false)"
 fi
 
-write_log "WARN" "Starting cleanup of CUST folders under: $RUN_PATH"
+log_warn "Starting cleanup of CUST folders under: $RUN_PATH"
 
 for id in "${CUSTOMER_IDS[@]}"; do
     if ! [[ "$id" =~ ^[0-9]+$ ]]; then
-        write_log "ERROR" "Invalid CUST id (not an integer): $id"
+        log_error "Invalid CUST id (not an integer): $id"
         continue
     fi
 
@@ -126,30 +126,30 @@ for id in "${CUSTOMER_IDS[@]}"; do
 
     if [[ -d "$cust_root" ]]; then
         if [[ "${DRY_RUN:-false}" == "true" ]]; then
-            write_log "WARN" "[DRY-RUN] Would remove CUST folder: $cust_root"
+            log_warn "[DRY-RUN] Would remove CUST folder: $cust_root"
         else
-            write_log "WARN" "Removing CUST folder: $cust_root"
+            log_warn "Removing CUST folder: $cust_root"
             rm -rf -- "$cust_root"
         fi
     else
-        write_log "DEBUG" "CUST folder not found (skip): $cust_root"
+        log_debug "CUST folder not found (skip): $cust_root"
     fi
 done
 
 if [[ "$REMOVE_HUB" == true ]]; then
     if [[ -f "$HUB_PATH" ]]; then
         if [[ "${DRY_RUN:-false}" == "true" ]]; then
-            write_log "WARN" "[DRY-RUN] Would remove hub file: $HUB_PATH"
+            log_warn "[DRY-RUN] Would remove hub file: $HUB_PATH"
         else
-            write_log "WARN" "Removing hub file: $HUB_PATH"
+            log_warn "Removing hub file: $HUB_PATH"
             rm -f -- "$HUB_PATH"
         fi
     else
-        write_log "DEBUG" "Hub file not found (skip): $HUB_PATH"
+        log_debug "Hub file not found (skip): $HUB_PATH"
     fi
 fi
 
-write_log "INFO" "Cleanup completed."
+log_info "Cleanup completed."
 if [[ "$CREATE_BACKUP" == true ]]; then
-    write_log "INFO" "Backup location: $BACKUP_DIR"
+    log_info "Backup location: $BACKUP_DIR"
 fi

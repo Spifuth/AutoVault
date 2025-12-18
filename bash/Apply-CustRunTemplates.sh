@@ -15,7 +15,7 @@ source "$SCRIPT_DIR/lib/config.sh"
 
 # Load configuration
 if ! load_config; then
-    write_log "ERROR" "Failed to load configuration"
+    log_error "Failed to load configuration"
     exit 1
 fi
 
@@ -39,7 +39,7 @@ get_template_content() {
     local logical_name="$2"
 
     if [[ ! -f "$path" ]]; then
-        write_log "ERROR" "Template missing for ${logical_name}: ${path}"
+        log_error "Template missing for ${logical_name}: ${path}"
         return 1
     fi
 
@@ -55,19 +55,19 @@ set_file_content() {
 
     if [[ ! -d "$dir" ]]; then
         if [[ "${DRY_RUN:-false}" == "true" ]]; then
-            write_log "WARN" "[DRY-RUN] Would create directory: $dir"
+            log_warn "[DRY-RUN] Would create directory: $dir"
         else
-            write_log "WARN" "Target directory does not exist, creating: $dir"
+            log_warn "Target directory does not exist, creating: $dir"
             mkdir -p "$dir"
         fi
     fi
 
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        write_log "INFO" "[DRY-RUN] Would apply template to: $path"
+        log_info "[DRY-RUN] Would apply template to: $path"
     else
         # Écrit exactement le contenu (sans rajouter de newline parasite)
         printf "%s" "$content" > "$path"
-        write_log "INFO" "Template applied to: $path"
+        log_info "Template applied to: $path"
     fi
 }
 
@@ -75,10 +75,10 @@ set_file_content() {
 # Load templates
 #######################################
 
-write_log "INFO" "Loading templates from: $TEMPLATE_ROOT"
+log_info "Loading templates from: $TEMPLATE_ROOT"
 
 if ! root_template_content="$(get_template_content "$ROOT_TEMPLATE_PATH" "ROOT")"; then
-    write_log "ERROR" "Aborting: root template missing."
+    log_error "Aborting: root template missing."
     exit 1
 fi
 
@@ -88,7 +88,7 @@ for section in "${SECTIONS[@]}"; do
     tmpl_path="$(get_section_template_path "$section")"
 
     if ! content="$(get_template_content "$tmpl_path" "$section")"; then
-        write_log "ERROR" "Aborting: template missing for section '$section'."
+        log_error "Aborting: template missing for section '$section'."
         exit 1
     fi
 
@@ -100,7 +100,7 @@ done
 #######################################
 
 if [[ ${#CUSTOMER_IDS[@]} -eq 0 ]]; then
-    write_log "ERROR" "No CUST ids defined in CUSTOMER_IDS. Edit the configuration at the top of the script."
+    log_error "No CUST ids defined in CUSTOMER_IDS. Edit the configuration at the top of the script."
     exit 1
 fi
 
@@ -108,7 +108,7 @@ RUN_PATH="$VAULT_ROOT/Run"
 
 for id in "${CUSTOMER_IDS[@]}"; do
     if ! [[ "$id" =~ ^[0-9]+$ ]]; then
-        write_log "ERROR" "Invalid CUST id (not an integer): $id"
+        log_error "Invalid CUST id (not an integer): $id"
         continue
     fi
 
@@ -116,7 +116,7 @@ for id in "${CUSTOMER_IDS[@]}"; do
     cust_root="$RUN_PATH/$code"
 
     if [[ ! -d "$cust_root" ]]; then
-        write_log "WARN" "CUST folder missing, skipping ${code}: $cust_root"
+        log_warn "CUST folder missing, skipping ${code}: $cust_root"
         continue
     fi
 
@@ -129,7 +129,7 @@ for id in "${CUSTOMER_IDS[@]}"; do
     #######################################
     root_index_path="$cust_root/$code-Index.md"
     if [[ ! -f "$root_index_path" ]]; then
-        write_log "WARN" "Root index does not exist yet, will create: $root_index_path"
+        log_warn "Root index does not exist yet, will create: $root_index_path"
     fi
 
     root_content="$root_template_content"
@@ -150,13 +150,13 @@ for id in "${CUSTOMER_IDS[@]}"; do
         sub_folder_path="$cust_root/$sub_folder_name"
 
         if [[ ! -d "$sub_folder_path" ]]; then
-            write_log "WARN" "Subfolder missing for ${code} ($section), skipping: $sub_folder_path"
+            log_warn "Subfolder missing for ${code} ($section), skipping: $sub_folder_path"
             continue
         fi
 
         sub_index_path="$sub_folder_path/$sub_folder_name-Index.md"
         if [[ ! -f "$sub_index_path" ]]; then
-            write_log "WARN" "Subfolder index does not exist yet for ${code} ($section), will create: $sub_index_path"
+            log_warn "Subfolder index does not exist yet for ${code} ($section), will create: $sub_index_path"
         fi
 
         tmpl_text="${SECTION_TEMPLATE_CONTENT[$section]}"
@@ -171,5 +171,5 @@ for id in "${CUSTOMER_IDS[@]}"; do
     done
 done
 
-write_log "INFO" "Template application completed."
+log_info "Template application completed."
 exit 0
