@@ -1,263 +1,167 @@
-# AutoVault
+# 🏦 AutoVault
 
-> **Version 1.3** – Code quality audit, ShellCheck compliance, and reliability improvements.
+**Automated Obsidian vault structure manager for customer-centric operations (RUN/SOC workflows).**
 
-Helper scripts to create, template, verify, and clean a "Run" workspace in an Obsidian vault. Each customer gets a `CUST-XXX` folder with section subfolders, index files, and a global `Run-Hub.md` linking to every customer.
+AutoVault creates and maintains a standardized folder structure in your Obsidian vault, complete with templates and plugin configuration.
 
-## Features
+[![Version](https://img.shields.io/badge/version-2.0-blue)](https://github.com/Spifuth/AutoVault)
+[![Bash](https://img.shields.io/badge/bash-4%2B-green)](https://www.gnu.org/software/bash/)
+[![Tests](https://github.com/Spifuth/AutoVault/actions/workflows/tests.yml/badge.svg)](https://github.com/Spifuth/AutoVault/actions)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20WSL-lightgrey)](https://github.com/Spifuth/AutoVault)
 
-- **Structure generation** – Creates customer folders (`CUST-001`, `CUST-002`, …) with configurable section subfolders and a central `Run-Hub.md`
-- **Template application** – Applies Markdown templates with placeholder substitution (`{{CUST_CODE}}`, `{{SECTION}}`, `{{NOW_UTC}}`, `{{NOW_LOCAL}}`)
-- **Verification** – Validates folder structure, index files, and hub links
-- **Cleanup** – Removes customer folders (protected by safety flags)
-- **Customer & Section Management** – Add/remove customers and sections dynamically
-- **Backup Management** – List, create, and restore configuration backups
-- **Configuration Validation** – Validate JSON config with automatic fixes
-- **Modular Architecture** – Shared libraries for logging and config management
-- **Cross-platform** – Works on Linux, macOS, and Windows (via WSL) with automatic path conversion
+---
 
-## Generated Structure
+## ⚡ Quick Start
 
-\`\`\`
-<VaultRoot>/
+```bash
+# 1. Clone the repo
+git clone https://github.com/Spifuth/AutoVault.git
+cd AutoVault
+
+# 2. Configure your vault
+./cust-run-config.sh config
+
+# 3. Initialize everything
+./cust-run-config.sh vault init
+```
+
+That's it! Your vault is ready with:
+- 📁 Folder structure for all customers
+- 📝 Templates applied to all index files
+- ⚙️ Obsidian plugins configured (Templater, Dataview)
+- 📊 Dynamic Run-Hub dashboard
+
+---
+
+## 📖 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [docs/COMMANDS.md](docs/COMMANDS.md) | Complete CLI reference |
+| [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | Configuration options |
+| [docs/TEMPLATES.md](docs/TEMPLATES.md) | Template system guide |
+| [docs/OBSIDIAN-SETUP.md](docs/OBSIDIAN-SETUP.md) | Obsidian plugin setup |
+
+---
+
+## 🗂️ What It Creates
+
+```
+YourVault/
+├── Run-Hub.md                    # Dashboard with Dataview queries
 ├── Run/
 │   ├── CUST-002/
-│   │   ├── CUST-002-Index.md
-│   │   ├── CUST-002-FP/
-│   │   │   └── CUST-002-FP-Index.md
-│   │   ├── CUST-002-RAISED/
-│   │   │   └── CUST-002-RAISED-Index.md
-│   │   ├── CUST-002-INFORMATIONS/
-│   │   │   └── CUST-002-INFORMATIONS-Index.md
-│   │   └── CUST-002-DIVERS/
-│   │       └── CUST-002-DIVERS-Index.md
+│   │   ├── CUST-002-Index.md     # Customer hub
+│   │   ├── CUST-002-FP/          # First Pass (routine checks)
+│   │   ├── CUST-002-RAISED/      # Incidents/tickets
+│   │   ├── CUST-002-INFORMATIONS/# Knowledge base
+│   │   └── CUST-002-DIVERS/      # Misc/sandbox
+│   ├── CUST-004/
 │   └── ...
-└── Run-Hub.md
-\`\`\`
+└── _templates/
+    └── Run/                      # Auto-applied templates
+```
 
-## Requirements
+---
 
-### Linux / macOS
-- Bash 4+
-- \`jq\` (for JSON parsing)
-- \`python3\` (for JSON generation)
+## 🔧 Requirements
 
-### Windows
-- **WSL (Windows Subsystem for Linux)** – Required to run the Bash scripts
-- Inside WSL: Bash 4+, \`jq\`, \`python3\`
+- **Bash 4+** (Linux, macOS, WSL)
+- **jq** - JSON processor
+- **Python 3** - For JSON/template operations
 
-To install WSL on Windows 10/11:
-\`\`\`powershell
-wsl --install
-\`\`\`
+```bash
+# Check requirements
+./cust-run-config.sh requirements check
 
-Then install dependencies inside WSL:
-\`\`\`bash
-sudo apt update && sudo apt install -y jq python3
-\`\`\`
+# Auto-install (Debian/Ubuntu)
+./cust-run-config.sh requirements install
+```
 
-Your Windows vault path will be accessible from WSL at \`/mnt/c/...\` (e.g., \`/mnt/c/Users/YourName/Obsidian/Work-Vault\`).
+---
 
-### Auto-Install Requirements
+## 🎯 Core Commands
 
-The script can automatically check and install missing requirements:
-
-\`\`\`bash
-./cust-run-config.sh requirements check    # Check what's installed
-./cust-run-config.sh requirements install  # Install missing deps
-\`\`\`
-
-Detects and uses the available package manager (apt, dnf, yum, pacman, zypper, brew, apk) to install \`jq\` and \`python3\`.
-
-## Configure
-
-### Interactive Mode
-
-The easiest way to configure the project is using the interactive wizard:
-
-\`\`\`bash
-./cust-run-config.sh config
-\`\`\`
-
-The wizard first displays the current configuration, then prompts for each value:
-
-\`\`\`
-[INFO ] Interactive configuration mode
-[INFO ] Press Enter to keep current/default values
-
-Current configuration:
-  1. VaultRoot:            /mnt/c/Users/YourName/Obsidian/Work-Vault
-  2. CustomerIdWidth:      3
-  3. CustomerIds:          2 4 5 7 10 11 12 14 15 18 25 27 29 30
-  4. Sections:             FP RAISED INFORMATIONS DIVERS
-  5. TemplateRelativeRoot: _templates/Run
-
-Vault root path [/mnt/c/Users/YourName/Obsidian/Work-Vault]: 
-Customer ID width (padding) [3]: 
-...
-\`\`\`
-
-Configuration parameters:
-- **Vault root path** – path to your Obsidian vault (use \`/mnt/c/...\` for Windows paths in WSL)
-- **Customer ID width** – zero-padding width (default 3, e.g., \`CUST-002\`)
-- **Customer IDs** – space-separated list of numeric customer codes
-- **Sections** – space-separated section names
-- **Template relative root** – relative path to templates folder
-
-### Manual Configuration
-
-Edit \`config/cust-run-config.json\` directly:
-
-\`\`\`json
-{
-  "VaultRoot": "/mnt/c/Users/YourName/Obsidian/Work-Vault",
-  "CustomerIdWidth": 3,
-  "CustomerIds": [2, 4, 5, 7, 10],
-  "Sections": ["FP", "RAISED", "INFORMATIONS", "DIVERS"],
-  "TemplateRelativeRoot": "_templates/Run"
-}
-\`\`\`
-
-## Usage
-
-\`\`\`bash
-# Global options (can be combined with any command)
-./cust-run-config.sh -v <command>       # Verbose/debug output
-./cust-run-config.sh -q <command>       # Quiet mode (errors only)
-./cust-run-config.sh --silent <command> # Silent mode (no output)
-./cust-run-config.sh --no-color <command> # Disable colored output
-./cust-run-config.sh --dry-run <command>  # Preview without changes
-./cust-run-config.sh -h                 # Show help
-
+```bash
 # Configuration
-./cust-run-config.sh config             # Interactive configuration wizard
-./cust-run-config.sh validate           # Validate configuration file
-./cust-run-config.sh status             # Show comprehensive status report
+./cust-run-config.sh config       # Interactive setup wizard
+./cust-run-config.sh status       # Show current status
 
-# Structure Management
-./cust-run-config.sh structure          # Create/refresh folder structure
-./cust-run-config.sh templates          # Apply markdown templates
-./cust-run-config.sh test               # Verify structure & indexes
-./cust-run-config.sh cleanup            # Remove CUST folders (protected)
+# Vault Management (recommended)
+./cust-run-config.sh vault init   # Full setup: structure + templates + plugins
 
-# Customer Management
-./cust-run-config.sh customer add 31    # Add customer ID 31
-./cust-run-config.sh customer remove 5  # Remove customer ID 5
-./cust-run-config.sh customer list      # List all customers
+# Individual Operations
+./cust-run-config.sh structure    # Create folder structure only
+./cust-run-config.sh templates apply  # Apply templates to folders
+./cust-run-config.sh vault plugins    # Configure Obsidian plugins
+```
 
-# Section Management
-./cust-run-config.sh section add URGENT     # Add new section
-./cust-run-config.sh section remove DIVERS  # Remove section
-./cust-run-config.sh section list           # List all sections
+See [docs/COMMANDS.md](docs/COMMANDS.md) for the complete reference.
 
-# Backup Management
-./cust-run-config.sh backup list        # List available backups
-./cust-run-config.sh backup restore 1   # Restore backup #1
-./cust-run-config.sh backup create      # Create manual backup
-./cust-run-config.sh backup cleanup 10  # Keep only 10 most recent
+---
 
-# Requirements
-./cust-run-config.sh requirements check   # Check dependencies
-./cust-run-config.sh requirements install # Install missing deps
-\`\`\`
+## 🔌 Obsidian Plugins
 
-## Safety Notes
+AutoVault auto-configures these plugins:
 
-### Hub file preservation
+| Plugin | Purpose |
+|--------|---------|
+| **Templater** | Auto-apply templates when creating notes in CUST folders |
+| **Dataview** | Dynamic queries in Run-Hub (open incidents, stats) |
 
-When running \`structure\`, if \`Run-Hub.md\` already exists, it will **not be overwritten**. This preserves any manual edits you've made. To regenerate the hub file, delete it first and re-run the structure command.
+Install them from Obsidian: `Settings → Community Plugins → Browse`
 
-### Cleanup protection
+---
 
-Cleanup is **disabled by default** to prevent accidental data loss. To enable deletions, set \`ENABLE_DELETION=true\` in \`bash/Cleanup-CustRunStructure.sh\`.
+## 📁 Project Structure
 
-To also remove \`Run-Hub.md\`, set \`REMOVE_HUB=true\`.
-
-## Generate Templates from JSON
-
-Use \`Generate-CustRunTemplates.sh\` to populate the \`_templates/Run\` folder from a JSON description:
-
-\`\`\`bash
-./Generate-CustRunTemplates.sh cust-run-templates.json
-\`\`\`
-
-Copy \`cust-run-templates.sample.json\` to \`cust-run-templates.json\` and customize:
-
-\`\`\`json
-{
-  "Templates": [
-    {"FileName": "CUST-Root-Index.md", "Content": "# {{CUST_CODE}} ..."},
-    {"FileName": "CUST-Section-FP-Index.md", "Content": "# {{CUST_CODE}} | {{SECTION}} ..."}
-  ]
-}
-\`\`\`
-
-Placeholders (\`{{CUST_CODE}}\`, \`{{SECTION}}\`, \`{{NOW_UTC}}\`, \`{{NOW_LOCAL}}\`) are replaced when running \`templates\`.
-
-## Project Structure
-
-\`\`\`
+```
 AutoVault/
-├── cust-run-config.sh              # Main CLI orchestrator (entry point)
-├── install-requirements.sh         # Standalone requirements installer
-├── Generate-CustRunTemplates.sh    # Template generator
-├── cust-run-templates.sample.json  # Template definitions sample
-├── README.md
+├── cust-run-config.sh          # Main CLI entry point
 ├── config/
-│   └── cust-run-config.json        # Configuration (auto-generated)
-├── backups/                        # Configuration backups (auto-created)
-└── bash/
-    ├── lib/                        # Shared libraries
-    │   ├── logging.sh              # Logging utilities (colors, log levels)
-    │   └── config.sh               # Config loading/saving functions
-    ├── Manage-Customers.sh         # Customer add/remove/list
-    ├── Manage-Sections.sh          # Section add/remove/list
-    ├── Manage-Backups.sh           # Backup list/restore/create/cleanup
-    ├── Show-Status.sh              # Status report display
-    ├── Validate-Config.sh          # Configuration validation
-    ├── Install-Requirements.sh     # Dependency management
-    ├── New-CustRunStructure.sh     # Create folder structure
-    ├── Apply-CustRunTemplates.sh   # Apply markdown templates
-    ├── Test-CustRunStructure.sh    # Verify structure
-    └── Cleanup-CustRunStructure.sh # Remove structure (protected)
-\`\`\`
+│   ├── cust-run-config.json    # Your vault configuration
+│   ├── templates.json          # All templates in JSON
+│   └── obsidian-settings.json  # Plugin settings to apply
+├── bash/
+│   ├── lib/
+│   │   ├── config.sh           # Config management
+│   │   └── logging.sh          # Logging utilities
+│   ├── New-CustRunStructure.sh
+│   ├── Manage-Templates.sh
+│   ├── Configure-ObsidianPlugins.sh
+│   └── ...
+├── docs/                       # Documentation
+└── tests/                      # Automated tests
+```
 
-## Architecture
+---
 
-The project uses a modular architecture:
+## 🧪 Testing
 
-- **\`cust-run-config.sh\`** - Main CLI orchestrator (~350 lines). Parses arguments and dispatches to feature scripts.
-- **\`bash/lib/logging.sh\`** - Shared logging with LOG_LEVEL support (0=silent, 1=error, 2=warn, 3=info, 4=debug) and NO_COLOR support.
-- **`bash/lib/config.sh`** - Configuration management: load/save JSON config, default values, helper functions. Includes trap-based cleanup for temp files.
-- **Feature scripts** - Each command has its own script that sources the shared libraries.
+```bash
+# Run all tests
+./tests/run-tests.sh
 
-## Code Quality
+# Test specific functionality
+./cust-run-config.sh test       # Verify vault structure
+./cust-run-config.sh validate   # Validate configuration
+```
 
-The codebase follows bash best practices:
+---
 
-- **ShellCheck compliant** – All scripts pass [ShellCheck](https://www.shellcheck.net/) static analysis
-- **Consistent logging** – Unified `log_info`, `log_warn`, `log_error`, `log_debug`, `log_success` functions
-- **Safe defaults** – Destructive operations require explicit opt-in (`ENABLE_DELETION=true`)
-- **Portable paths** – Automatic tilde expansion (`~`) and Windows path conversion (`\` → `/`)
-- **Proper cleanup** – Trap handlers ensure temp files are removed on interruption
+## 📜 License
 
-## Changelog
+MIT License - See [LICENSE](LICENSE) for details.
 
-### v1.3 (December 2024)
-- ✅ Full ShellCheck compliance (SC2034, SC2059, SC2207 fixes)
-- ✅ Added trap cleanup for temp files in config operations
-- ✅ Standardized logging functions across all scripts
-- ✅ Fixed boolean comparison quoting
-- ✅ Unified confirmation prompts to `[y/N]` pattern
-- ✅ Added Windows path and tilde expansion support
-- ✅ Removed unused variables and legacy code
+---
 
-### v1.1
-- Initial modular architecture
-- Customer and section management
-- Backup system
-- Configuration validation
+## 🤝 Contributing
 
-## License
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing`)
+3. Commit your changes
+4. Push and open a Pull Request
 
-MIT
+---
+
+Made with ❤️ for SOC/RUN teams who love organized documentation.

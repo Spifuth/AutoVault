@@ -38,7 +38,7 @@ CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/../config/cust-run-config.json"}"
 #--------------------------------------
 # DEFAULT VALUES
 #--------------------------------------
-VAULT_ROOT="${VAULT_ROOT:-"D:\\Obsidian\\Work-Vault"}"
+VAULT_ROOT="${VAULT_ROOT:-""}"
 CUSTOMER_ID_WIDTH="${CUSTOMER_ID_WIDTH:-3}"
 
 # Initialize arrays if not already set
@@ -50,7 +50,7 @@ if [[ -z "${SECTIONS[*]:-}" ]]; then
   declare -ga SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
 fi
 
-TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT:-"_templates\\Run"}"
+TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT:-"_templates/Run"}"
 
 # Cleanup safety flag (must be true to allow deletion)
 ENABLE_CLEANUP="${ENABLE_CLEANUP:-false}"

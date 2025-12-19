@@ -109,7 +109,7 @@ check_requirements() {
   
   if [[ $missing -gt 0 ]]; then
     log_error "$missing required dependency(ies) missing"
-    log_info "Run 'install-requirements.sh' to install missing dependencies"
+    log_info "Run './cust-run-config.sh requirements install' to install missing dependencies"
     return 1
   fi
 

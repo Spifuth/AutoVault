@@ -1,5 +1,5 @@
 {
-  "VaultRoot": "",
+  "VaultRoot": "/mnt/c/Users/ncaluye/Documents/Obsidian/DetectVault",
   "CustomerIdWidth": 3,
   "CustomerIds": [
     2,
@@ -23,5 +23,6 @@
     "INFORMATIONS",
     "DIVERS"
   ],
-  "TemplateRelativeRoot": "_templates\\\\Run"
+  "TemplateRelativeRoot": "_templates/Run",
+  "EnableCleanup": false
 }

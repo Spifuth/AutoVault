@@ -22,7 +22,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASH_DIR="$SCRIPT_DIR/bash"
 LIB_DIR="$BASH_DIR/lib"
-CONFIG_JSON="$SCRIPT_DIR/config/cust-run-config.json"
+CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/config/cust-run-config.json"}"
 
 #--------------------------------------
 # SOURCE LIBRARIES
@@ -158,7 +158,10 @@ Commands:
 
   Structure Management:
     structure, new  Create folder structure in vault
-    templates       Apply templates to vault folders
+    templates       Manage templates:
+      templates apply   Apply templates to CUST folders (default)
+      templates sync    Sync templates from JSON to vault/_templates/
+      templates export  Export templates from vault to JSON
     test, verify    Test/verify vault structure
     cleanup         Remove vault structure (dangerous!)
 
@@ -178,6 +181,12 @@ Commands:
     backup create [DESC]  Create a manual backup
     backup cleanup [N]    Clean up old backups (keep N most recent)
 
+  Vault Management:
+    vault init            Full setup: structure + templates + plugins
+    vault plugins         Configure Obsidian plugin settings
+    vault check           Check if required plugins are installed
+    vault hub             Regenerate Run-Hub.md with Dataview queries
+
   Requirements:
     requirements check    Check if dependencies are installed
     requirements install  Install missing dependencies
@@ -186,6 +195,7 @@ Examples:
   $(basename "$0") config                 # Interactive setup
   $(basename "$0") status                 # Show status
   $(basename "$0") -v structure           # Create structure (verbose)
+  $(basename "$0") vault init             # Full vault initialization
   $(basename "$0") customer add 31        # Add customer 31
   $(basename "$0") section add URGENT     # Add URGENT section
   $(basename "$0") backup list            # List backups
@@ -282,7 +292,17 @@ main() {
       ;;
     templates|apply)
       log_info "Using configuration from $CONFIG_JSON"
-      run_bash "Apply-CustRunTemplates.sh" "$@"
+      local subcmd="${1:-apply}"
+      shift || true
+      case "$subcmd" in
+        export|sync|apply)
+          run_bash "Manage-Templates.sh" "$subcmd" "$@"
+          ;;
+        *)
+          # Legacy: if first arg is not a subcommand, treat as "apply"
+          run_bash "Manage-Templates.sh" apply "$subcmd" "$@"
+          ;;
+      esac
       ;;
     test|verify)
       log_info "Using configuration from $CONFIG_JSON"
@@ -348,6 +368,22 @@ main() {
       ;;
     restore-backup|restore)
       bash "$BASH_DIR/Manage-Backups.sh" restore "$@"
+      ;;
+
+    #--- Vault Management ---
+    vault)
+      local subcmd="${1:-init}"
+      shift || true
+      case "$subcmd" in
+        init|plugins|check|hub)
+          run_bash "Configure-ObsidianPlugins.sh" "$subcmd" "$@"
+          ;;
+        *)
+          log_error "Unknown vault subcommand: $subcmd"
+          log_info "Available: init, plugins, check, hub"
+          exit 1
+          ;;
+      esac
       ;;
 
     #--- Unknown ---

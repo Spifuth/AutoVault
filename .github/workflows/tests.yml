@@ -1,0 +1,72 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Make scripts executable
+        run: |
+          chmod +x cust-run-config.sh
+          chmod +x bash/*.sh
+          chmod +x tests/*.sh
+
+      - name: Run tests
+        run: ./tests/run-tests.sh
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Run ShellCheck on main script
+        run: shellcheck -x cust-run-config.sh || true
+
+      - name: Run ShellCheck on bash scripts
+        run: |
+          for script in bash/*.sh; do
+            echo "Checking $script..."
+            shellcheck -x "$script" || true
+          done
+
+  json-validation:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Validate JSON files
+        run: |
+          echo "Validating config/templates.json..."
+          jq empty config/templates.json
+          
+          echo "Validating config/obsidian-settings.json..."
+          jq empty config/obsidian-settings.json
+          
+          echo "All JSON files are valid!"
