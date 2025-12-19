@@ -22,7 +22,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASH_DIR="$SCRIPT_DIR/bash"
 LIB_DIR="$BASH_DIR/lib"
-CONFIG_JSON="$SCRIPT_DIR/config/cust-run-config.json"
+CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/config/cust-run-config.json"}"
 
 #--------------------------------------
 # SOURCE LIBRARIES
