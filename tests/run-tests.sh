@@ -27,7 +27,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
 CURRENT_TEST=0
-TOTAL_TESTS=31
+TOTAL_TESTS=36
 
 # Animation frames
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -811,6 +811,194 @@ EOF
 }
 
 #######################################
+# Backup Tests
+#######################################
+
+test_backup_create() {
+    # Test backup creation
+    # Note: BACKUP_DIR defaults to $PROJECT_ROOT/backups, not vault/backups
+    
+    local test_config
+    test_config=$(mktemp)
+    cat > "$test_config" <<EOF
+{
+  "VaultRoot": "$TEST_VAULT",
+  "CustomerIdWidth": 3,
+  "CustomerIds": [1],
+  "Sections": ["FP"],
+  "TemplateRelativeRoot": "_templates/Run",
+  "EnableCleanup": true
+}
+EOF
+    
+    local backup_count_before
+    backup_count_before=$(find "$PROJECT_ROOT/backups" -name "*.json" -type f 2>/dev/null | wc -l)
+    
+    (
+        cd "$PROJECT_ROOT"
+        export CONFIG_JSON="$test_config"
+        bash ./cust-run-config.sh backup create test-backup >/dev/null 2>&1
+    )
+    
+    local backup_count_after
+    backup_count_after=$(find "$PROJECT_ROOT/backups" -name "*.json" -type f 2>/dev/null | wc -l)
+    
+    rm -f "$test_config"
+    
+    # Cleanup test backup
+    find "$PROJECT_ROOT/backups" -name "*test-backup*" -type f -delete 2>/dev/null || true
+    
+    [[ $backup_count_after -gt $backup_count_before ]]
+}
+
+test_backup_list() {
+    # Test backup listing
+    # Create a fake backup in project backups dir
+    mkdir -p "$PROJECT_ROOT/backups"
+    local test_backup="$PROJECT_ROOT/backups/cust-run-config.2024-01-01_12-00-00.test.json"
+    echo '{"test": 1}' > "$test_backup"
+    
+    local test_config
+    test_config=$(mktemp)
+    cat > "$test_config" <<EOF
+{
+  "VaultRoot": "$TEST_VAULT",
+  "CustomerIdWidth": 3,
+  "CustomerIds": [1],
+  "Sections": ["FP"],
+  "TemplateRelativeRoot": "_templates/Run",
+  "EnableCleanup": true
+}
+EOF
+    
+    local output
+    output=$(
+        cd "$PROJECT_ROOT"
+        export CONFIG_JSON="$test_config"
+        bash ./cust-run-config.sh backup list 2>&1
+    )
+    
+    rm -f "$test_config" "$test_backup"
+    
+    # Should list backups
+    echo "$output" | grep -q "cust-run-config.2024-01-01"
+}
+
+test_backup_list_empty() {
+    # Test backup listing when no backups exist
+    # Move existing backups temporarily
+    local temp_backup_dir
+    temp_backup_dir=$(mktemp -d)
+    if [[ -d "$PROJECT_ROOT/backups" ]]; then
+        mv "$PROJECT_ROOT/backups"/*.json "$temp_backup_dir/" 2>/dev/null || true
+    fi
+    
+    local test_config
+    test_config=$(mktemp)
+    cat > "$test_config" <<EOF
+{
+  "VaultRoot": "$TEST_VAULT",
+  "CustomerIdWidth": 3,
+  "CustomerIds": [1],
+  "Sections": ["FP"],
+  "TemplateRelativeRoot": "_templates/Run",
+  "EnableCleanup": true
+}
+EOF
+    
+    local output
+    output=$(
+        cd "$PROJECT_ROOT"
+        export CONFIG_JSON="$test_config"
+        bash ./cust-run-config.sh backup list 2>&1
+    )
+    
+    # Restore backups
+    if [[ -d "$temp_backup_dir" ]]; then
+        mv "$temp_backup_dir"/*.json "$PROJECT_ROOT/backups/" 2>/dev/null || true
+        rm -rf "$temp_backup_dir"
+    fi
+    
+    rm -f "$test_config"
+    
+    # Should indicate no backups
+    echo "$output" | grep -qi "no backup"
+}
+
+test_backup_dry_run_no_create() {
+    # Ensure dry-run doesn't create backups
+    local backup_count_before
+    backup_count_before=$(find "$PROJECT_ROOT/backups" -name "*.json" -type f 2>/dev/null | wc -l)
+    
+    local test_config
+    test_config=$(mktemp)
+    cat > "$test_config" <<EOF
+{
+  "VaultRoot": "$TEST_VAULT",
+  "CustomerIdWidth": 3,
+  "CustomerIds": [1],
+  "Sections": ["FP"],
+  "TemplateRelativeRoot": "_templates/Run",
+  "EnableCleanup": true
+}
+EOF
+    
+    (
+        cd "$PROJECT_ROOT"
+        export CONFIG_JSON="$test_config"
+        bash ./cust-run-config.sh --dry-run backup create test >/dev/null 2>&1
+    )
+    
+    local backup_count_after
+    backup_count_after=$(find "$PROJECT_ROOT/backups" -name "*test*" -type f 2>/dev/null | wc -l)
+    
+    rm -f "$test_config"
+    
+    # Should not create new test backup files
+    [[ $backup_count_after -eq $backup_count_before ]] || [[ $backup_count_after -eq 0 ]]
+}
+
+test_backup_cleanup_dry_run() {
+    # Test backup cleanup dry-run
+    mkdir -p "$PROJECT_ROOT/backups"
+    
+    # Create many fake backups
+    for i in {01..15}; do
+        echo "{\"test\": $i}" > "$PROJECT_ROOT/backups/cust-run-config.2024-01-${i}_12-00-00.cleanup-test.json"
+    done
+    
+    local test_config
+    test_config=$(mktemp)
+    cat > "$test_config" <<EOF
+{
+  "VaultRoot": "$TEST_VAULT",
+  "CustomerIdWidth": 3,
+  "CustomerIds": [1],
+  "Sections": ["FP"],
+  "TemplateRelativeRoot": "_templates/Run",
+  "EnableCleanup": true
+}
+EOF
+    
+    (
+        cd "$PROJECT_ROOT"
+        export CONFIG_JSON="$test_config"
+        bash ./cust-run-config.sh --dry-run backup cleanup 5 >/dev/null 2>&1
+    ) || true
+    
+    # Should still have all 15 backups (dry-run)
+    local backup_count
+    backup_count=$(find "$PROJECT_ROOT/backups" -name "*cleanup-test*" -type f 2>/dev/null | wc -l)
+    
+    # Cleanup test files
+    find "$PROJECT_ROOT/backups" -name "*cleanup-test*" -type f -delete 2>/dev/null || true
+    
+    rm -f "$test_config"
+    
+    [[ $backup_count -eq 15 ]]
+}
+
+#######################################
 # Subcommand Help Tests
 #######################################
 
@@ -1024,6 +1212,14 @@ main() {
     run_test "Dry-run structure no changes" test_dry_run_structure_no_changes || true
     run_test "Dry-run cleanup no deletion" test_dry_run_cleanup_no_deletion || true
     run_test "Dry-run templates no write" test_dry_run_templates_no_write || true
+    
+    # Backup tests
+    show_category "BACKUP TESTS" "💾"
+    run_test "Backup create" test_backup_create || true
+    run_test "Backup list" test_backup_list || true
+    run_test "Backup list empty" test_backup_list_empty || true
+    run_test "Backup dry-run no create" test_backup_dry_run_no_create || true
+    run_test "Backup cleanup dry-run" test_backup_cleanup_dry_run || true
     
     # Permission tests
     show_category "PERMISSION TESTS" "🔐"
