@@ -158,7 +158,10 @@ Commands:
 
   Structure Management:
     structure, new  Create folder structure in vault
-    templates       Apply templates to vault folders
+    templates       Manage templates:
+      templates apply   Apply templates to CUST folders (default)
+      templates sync    Sync templates from JSON to vault/_templates/
+      templates export  Export templates from vault to JSON
     test, verify    Test/verify vault structure
     cleanup         Remove vault structure (dangerous!)
 
@@ -282,7 +285,17 @@ main() {
       ;;
     templates|apply)
       log_info "Using configuration from $CONFIG_JSON"
-      run_bash "Apply-CustRunTemplates.sh" "$@"
+      local subcmd="${1:-apply}"
+      shift || true
+      case "$subcmd" in
+        export|sync|apply)
+          run_bash "Manage-Templates.sh" "$subcmd" "$@"
+          ;;
+        *)
+          # Legacy: if first arg is not a subcommand, treat as "apply"
+          run_bash "Manage-Templates.sh" apply "$subcmd" "$@"
+          ;;
+      esac
       ;;
     test|verify)
       log_info "Using configuration from $CONFIG_JSON"
