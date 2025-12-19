@@ -2,7 +2,7 @@
 #
 # run-tests.sh
 #
-# Run all AutoVault tests
+# Run all AutoVault tests - WITH FANCY ANIMATIONS! 🎬
 #
 
 set -euo pipefail
@@ -15,34 +15,154 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
+WHITE='\033[1;37m'
+BOLD='\033[1m'
+DIM='\033[2m'
 NC='\033[0m' # No Color
 
 # Counters
 TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
+CURRENT_TEST=0
+TOTAL_TESTS=31
+
+# Animation frames
+SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+PROGRESS_CHARS=("░" "▒" "▓" "█")
+
+#######################################
+# Animation utilities
+#######################################
+
+# Hide/show cursor
+hide_cursor() { echo -ne "\033[?25l"; }
+show_cursor() { echo -ne "\033[?25h"; }
+
+# Trap to restore cursor on exit
+trap 'show_cursor' EXIT
+
+# Spinner animation while running a command
+spin() {
+    local pid=$1
+    local delay=0.1
+    local frame=0
+    
+    while kill -0 "$pid" 2>/dev/null; do
+        echo -ne "\r  ${CYAN}${SPINNER_FRAMES[$frame]}${NC} "
+        frame=$(( (frame + 1) % ${#SPINNER_FRAMES[@]} ))
+        sleep $delay
+    done
+    echo -ne "\r"
+}
+
+# Progress bar
+draw_progress_bar() {
+    local current=$1
+    local total=$2
+    local width=30
+    local percentage=$((current * 100 / total))
+    local filled=$((current * width / total))
+    local empty=$((width - filled))
+    
+    echo -ne "\r  ${DIM}[${NC}"
+    for ((i=0; i<filled; i++)); do
+        echo -ne "${GREEN}█${NC}"
+    done
+    for ((i=0; i<empty; i++)); do
+        echo -ne "${DIM}░${NC}"
+    done
+    echo -ne "${DIM}]${NC} ${WHITE}${percentage}%${NC} (${current}/${total})"
+}
+
+# Animated banner
+show_banner() {
+    clear
+    echo ""
+    echo -e "${CYAN}"
+    cat << 'EOF'
+    ╔═══════════════════════════════════════════════════════════════╗
+    ║                                                               ║
+    ║       █████╗ ██╗   ██╗████████╗ ██████╗ ████████╗███████╗    ║
+    ║      ██╔══██╗██║   ██║╚══██╔══╝██╔═══██╗╚══██╔══╝██╔════╝    ║
+    ║      ███████║██║   ██║   ██║   ██║   ██║   ██║   █████╗      ║
+    ║      ██╔══██║██║   ██║   ██║   ██║   ██║   ██║   ██╔══╝      ║
+    ║      ██║  ██║╚██████╔╝   ██║   ╚██████╔╝   ██║   ███████╗    ║
+    ║      ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝    ╚═╝   ╚══════╝    ║
+    ║                                                               ║
+    ║                    🧪 TEST SUITE 🧪                           ║
+    ║                                                               ║
+    ╚═══════════════════════════════════════════════════════════════╝
+EOF
+    echo -e "${NC}"
+    sleep 0.5
+}
+
+# Typing effect
+type_text() {
+    local text="$1"
+    local delay="${2:-0.03}"
+    for ((i=0; i<${#text}; i++)); do
+        echo -n "${text:$i:1}"
+        sleep "$delay"
+    done
+    echo ""
+}
+
+# Category header with animation
+show_category() {
+    local name="$1"
+    local icon="$2"
+    echo ""
+    echo -e "  ${MAGENTA}━━━${NC} ${icon} ${BOLD}${WHITE}${name}${NC}"
+    echo -e "  ${MAGENTA}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    sleep 0.2
+}
+
+# Result animation
+show_result() {
+    local status="$1"
+    local name="$2"
+    
+    case "$status" in
+        pass)
+            echo -e "    ${GREEN}✓${NC} ${name}"
+            ;;
+        fail)
+            echo -e "    ${RED}✗${NC} ${name} ${RED}← FAILED${NC}"
+            ;;
+        skip)
+            echo -e "    ${YELLOW}○${NC} ${name} ${DIM}(skipped)${NC}"
+            ;;
+    esac
+}
 
 #######################################
 # Test utilities
 #######################################
 
 log_test() {
-    echo -e "${BLUE}[TEST]${NC} $*"
+    echo -ne "    ${CYAN}◉${NC} ${DIM}$*${NC}"
 }
 
 log_pass() {
-    echo -e "${GREEN}[PASS]${NC} $*"
+    echo -e "\r    ${GREEN}✓${NC} $*"
     ((TESTS_PASSED++))
+    ((CURRENT_TEST++))
 }
 
 log_fail() {
-    echo -e "${RED}[FAIL]${NC} $*"
+    echo -e "\r    ${RED}✗${NC} $* ${RED}← FAILED${NC}"
     ((TESTS_FAILED++))
+    ((CURRENT_TEST++))
 }
 
 log_skip() {
-    echo -e "${YELLOW}[SKIP]${NC} $*"
+    echo -e "\r    ${YELLOW}○${NC} $* ${DIM}(skipped)${NC}"
     ((TESTS_SKIPPED++))
+    ((CURRENT_TEST++))
 }
 
 # Run a test function and capture result
@@ -50,15 +170,33 @@ run_test() {
     local test_name="$1"
     local test_func="$2"
     
-    log_test "$test_name"
+    echo -ne "    ${CYAN}◉${NC} ${DIM}${test_name}${NC} "
     
-    if $test_func; then
-        log_pass "$test_name"
-        return 0
+    # Run test in background for spinner
+    local result=0
+    $test_func &>/dev/null &
+    local pid=$!
+    
+    # Show spinner while test runs
+    local frame=0
+    while kill -0 "$pid" 2>/dev/null; do
+        echo -ne "\r    ${CYAN}${SPINNER_FRAMES[$frame]}${NC} ${DIM}${test_name}${NC} "
+        frame=$(( (frame + 1) % ${#SPINNER_FRAMES[@]} ))
+        sleep 0.08
+    done
+    
+    wait "$pid" || result=1
+    
+    if [[ $result -eq 0 ]]; then
+        echo -e "\r    ${GREEN}✓${NC} ${test_name}                    "
+        ((TESTS_PASSED++))
     else
-        log_fail "$test_name"
-        return 1
+        echo -e "\r    ${RED}✗${NC} ${test_name} ${RED}← FAILED${NC}        "
+        ((TESTS_FAILED++))
     fi
+    ((CURRENT_TEST++))
+    
+    return 0  # Don't fail the whole suite
 }
 
 #######################################
@@ -700,23 +838,147 @@ test_no_color_flag() {
 }
 
 #######################################
+# Final Summary Animation
+#######################################
+
+show_final_summary() {
+    echo ""
+    echo ""
+    
+    # Drum roll effect
+    echo -ne "  ${DIM}Calculating results"
+    for i in {1..5}; do
+        echo -n "."
+        sleep 0.2
+    done
+    echo -e "${NC}"
+    sleep 0.3
+    
+    # Results box
+    echo -e "  ${CYAN}╔═══════════════════════════════════════════════╗${NC}"
+    echo -e "  ${CYAN}║${NC}             ${BOLD}📊 TEST RESULTS 📊${NC}              ${CYAN}║${NC}"
+    echo -e "  ${CYAN}╠═══════════════════════════════════════════════╣${NC}"
+    
+    # Animated counters
+    echo -ne "  ${CYAN}║${NC}   ${GREEN}✓ Passed:${NC}  "
+    for ((i=0; i<=TESTS_PASSED; i++)); do
+        echo -ne "\r  ${CYAN}║${NC}   ${GREEN}✓ Passed:${NC}  ${WHITE}${BOLD}$i${NC}                              "
+        sleep 0.05
+    done
+    echo -e "  ${CYAN}║${NC}"
+    
+    echo -ne "  ${CYAN}║${NC}   ${RED}✗ Failed:${NC}  "
+    for ((i=0; i<=TESTS_FAILED; i++)); do
+        echo -ne "\r  ${CYAN}║${NC}   ${RED}✗ Failed:${NC}  ${WHITE}${BOLD}$i${NC}                              "
+        sleep 0.05
+    done
+    echo -e "  ${CYAN}║${NC}"
+    
+    echo -ne "  ${CYAN}║${NC}   ${YELLOW}○ Skipped:${NC} "
+    for ((i=0; i<=TESTS_SKIPPED; i++)); do
+        echo -ne "\r  ${CYAN}║${NC}   ${YELLOW}○ Skipped:${NC} ${WHITE}${BOLD}$i${NC}                              "
+        sleep 0.05
+    done
+    echo -e "  ${CYAN}║${NC}"
+    
+    echo -e "  ${CYAN}╠═══════════════════════════════════════════════╣${NC}"
+    
+    # Calculate percentage
+    local total=$((TESTS_PASSED + TESTS_FAILED + TESTS_SKIPPED))
+    local success_rate=0
+    if [[ $total -gt 0 ]]; then
+        success_rate=$((TESTS_PASSED * 100 / total))
+    fi
+    
+    # Success rate with visual bar
+    local bar_width=25
+    local filled=$((success_rate * bar_width / 100))
+    local empty=$((bar_width - filled))
+    
+    echo -ne "  ${CYAN}║${NC}   Success: "
+    for ((i=0; i<filled; i++)); do
+        if [[ $success_rate -ge 80 ]]; then
+            echo -ne "${GREEN}█${NC}"
+        elif [[ $success_rate -ge 50 ]]; then
+            echo -ne "${YELLOW}█${NC}"
+        else
+            echo -ne "${RED}█${NC}"
+        fi
+    done
+    for ((i=0; i<empty; i++)); do
+        echo -ne "${DIM}░${NC}"
+    done
+    echo -e " ${WHITE}${BOLD}${success_rate}%${NC}   ${CYAN}║${NC}"
+    
+    echo -e "  ${CYAN}╚═══════════════════════════════════════════════╝${NC}"
+    echo ""
+    
+    # Final status with celebration or consolation
+    if [[ $TESTS_FAILED -eq 0 ]]; then
+        # Success celebration
+        echo ""
+        echo -e "  ${GREEN}${BOLD}╭──────────────────────────────────────────────╮${NC}"
+        echo -e "  ${GREEN}${BOLD}│    🎉 ALL TESTS PASSED! AMAZING! 🎉         │${NC}"
+        echo -e "  ${GREEN}${BOLD}╰──────────────────────────────────────────────╯${NC}"
+        
+        # Confetti animation
+        local confetti=("🎊" "✨" "🌟" "💫" "⭐" "🎈" "🎁" "🏆")
+        echo ""
+        echo -n "  "
+        for i in {1..20}; do
+            echo -n "${confetti[$((RANDOM % ${#confetti[@]}))]} "
+            sleep 0.05
+        done
+        echo ""
+        echo ""
+        
+        # Victory message
+        echo -e "  ${WHITE}${BOLD}Your code is rock solid! 🪨${NC}"
+        echo ""
+    else
+        # Failure message - but supportive!
+        echo ""
+        echo -e "  ${YELLOW}${BOLD}╭──────────────────────────────────────────────╮${NC}"
+        echo -e "  ${YELLOW}${BOLD}│    ⚠️  Some tests need attention ⚠️         │${NC}"
+        echo -e "  ${YELLOW}${BOLD}╰──────────────────────────────────────────────╯${NC}"
+        echo ""
+        echo -e "  ${WHITE}Don't worry! You've got this! 💪${NC}"
+        echo -e "  ${DIM}Check the failed tests above and try again.${NC}"
+        echo ""
+    fi
+}
+
+#######################################
 # Main
 #######################################
 
 main() {
-    echo "========================================"
-    echo "       AutoVault Test Suite"
-    echo "========================================"
-    echo ""
+    hide_cursor
     
-    # Setup
-    echo "Setting up test environment..."
+    # Show animated banner
+    show_banner
+    
+    # Setup phase with animation  
+    echo -ne "  ${CYAN}⚙${NC} Setting up test environment"
+    
+    # Show spinner for visual effect
+    local frame=0
+    for i in {1..10}; do
+        echo -ne "\r  ${CYAN}${SPINNER_FRAMES[$frame]}${NC} Setting up test environment"
+        frame=$(( (frame + 1) % ${#SPINNER_FRAMES[@]} ))
+        sleep 0.08
+    done
+    
+    # Actually run setup (needs to be in foreground for variable export)
     setup
-    echo "Test vault: $TEST_VAULT"
+    
+    echo -e "\r  ${GREEN}✓${NC} Test environment ready!              "
+    echo -e "  ${DIM}Test vault: $TEST_VAULT${NC}"
     echo ""
+    sleep 0.3
     
     # Unit tests
-    echo "--- Unit Tests ---"
+    show_category "UNIT TESTS" "🔬"
     run_test "Requirements available" test_requirements_check || true
     run_test "Config JSON files valid" test_config_json_valid || true
     run_test "Scripts are executable" test_scripts_executable || true
@@ -724,10 +986,9 @@ main() {
     run_test "Help command works" test_help_command || true
     run_test "Subcommand helps work" test_help_subcommands || true
     run_test "No-color flag works" test_no_color_flag || true
-    echo ""
     
     # Integration tests
-    echo "--- Integration Tests ---"
+    show_category "INTEGRATION TESTS" "🔗"
     run_test "Dry-run mode" test_dry_run || true
     run_test "Structure creation" test_structure_creation || true
     run_test "Templates sync" test_templates_sync || true
@@ -735,10 +996,9 @@ main() {
     run_test "Configuration validation" test_validation || true
     run_test "Status command" test_status_command || true
     run_test "Structure verification" test_verify_structure || true
-    echo ""
     
     # Edge case tests
-    echo "--- Edge Case Tests ---"
+    show_category "EDGE CASE TESTS" "🔍"
     run_test "Customer ID zero" test_customer_id_zero || true
     run_test "Customer ID large (9999)" test_customer_id_large || true
     run_test "Customer ID negative" test_customer_id_negative || true
@@ -746,47 +1006,48 @@ main() {
     run_test "Empty sections list" test_empty_sections_list || true
     run_test "Vault path with spaces" test_vault_path_with_spaces || true
     run_test "Section with special chars" test_section_name_special_chars || true
-    echo ""
     
     # Idempotence tests
-    echo "--- Idempotence Tests ---"
+    show_category "IDEMPOTENCE TESTS" "🔄"
     run_test "Structure idempotence" test_structure_idempotence || true
     run_test "Templates apply idempotence" test_templates_apply_idempotence || true
-    echo ""
     
     # Invalid config tests
-    echo "--- Invalid Config Tests ---"
+    show_category "INVALID CONFIG TESTS" "⚠️"
     run_test "Malformed JSON config" test_config_malformed_json || true
     run_test "Missing VaultRoot" test_config_missing_vaultroot || true
     run_test "Wrong types in config" test_config_wrong_types || true
     run_test "Non-existent config file" test_config_nonexistent || true
-    echo ""
     
     # Dry-run exhaustive tests
-    echo "--- Dry-Run Tests ---"
+    show_category "DRY-RUN TESTS" "🌵"
     run_test "Dry-run structure no changes" test_dry_run_structure_no_changes || true
     run_test "Dry-run cleanup no deletion" test_dry_run_cleanup_no_deletion || true
     run_test "Dry-run templates no write" test_dry_run_templates_no_write || true
-    echo ""
     
     # Permission tests
-    echo "--- Permission Tests ---"
+    show_category "PERMISSION TESTS" "🔐"
     run_test "Read-only vault directory" test_readonly_vault_dir || true
-    echo ""
     
-    # Teardown
-    echo "Cleaning up..."
+    # Teardown with animation
+    echo ""
+    echo -ne "  ${CYAN}⚙${NC} Cleaning up"
+    
+    # Show spinner for visual effect
+    frame=0
+    for i in {1..8}; do
+        echo -ne "\r  ${CYAN}${SPINNER_FRAMES[$frame]}${NC} Cleaning up"
+        frame=$(( (frame + 1) % ${#SPINNER_FRAMES[@]} ))
+        sleep 0.06
+    done
+    
     teardown
-    echo ""
+    echo -e "\r  ${GREEN}✓${NC} Cleanup complete!              "
     
-    # Summary
-    echo "========================================"
-    echo "               Results"
-    echo "========================================"
-    echo -e "  ${GREEN}Passed:${NC}  $TESTS_PASSED"
-    echo -e "  ${RED}Failed:${NC}  $TESTS_FAILED"
-    echo -e "  ${YELLOW}Skipped:${NC} $TESTS_SKIPPED"
-    echo "========================================"
+    # Show final summary
+    show_final_summary
+    
+    show_cursor
     
     if [[ $TESTS_FAILED -gt 0 ]]; then
         exit 1
