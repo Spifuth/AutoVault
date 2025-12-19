@@ -155,7 +155,7 @@ main() {
         shift
         ;;
       --no-color)
-        NO_COLOR=1
+        export NO_COLOR=1
         setup_colors
         shift
         ;;

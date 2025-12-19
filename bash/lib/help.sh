@@ -18,13 +18,13 @@ _HELP_SH_LOADED=1
 #--------------------------------------
 # HELP COLORS (respects NO_COLOR)
 #--------------------------------------
-_h_bold()   { [[ -z "${NO_COLOR:-}" ]] && echo -ne "\033[1m"  || true; }
-_h_dim()    { [[ -z "${NO_COLOR:-}" ]] && echo -ne "\033[2m"  || true; }
-_h_cyan()   { [[ -z "${NO_COLOR:-}" ]] && echo -ne "\033[36m" || true; }
-_h_green()  { [[ -z "${NO_COLOR:-}" ]] && echo -ne "\033[32m" || true; }
-_h_yellow() { [[ -z "${NO_COLOR:-}" ]] && echo -ne "\033[33m" || true; }
-_h_blue()   { [[ -z "${NO_COLOR:-}" ]] && echo -ne "\033[34m" || true; }
-_h_reset()  { [[ -z "${NO_COLOR:-}" ]] && echo -ne "\033[0m"  || true; }
+_h_bold()   { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[1m";  fi; }
+_h_dim()    { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[2m";  fi; }
+_h_cyan()   { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[36m"; fi; }
+_h_green()  { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[32m"; fi; }
+_h_yellow() { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[33m"; fi; }
+_h_blue()   { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[34m"; fi; }
+_h_reset()  { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[0m";  fi; }
 
 #--------------------------------------
 # VERSION
