@@ -34,7 +34,7 @@ _autovault_completions() {
     _init_completion || return
     
     # All main commands
-    local commands="config validate status diff stats structure templates test cleanup customer section backup vault hooks requirements help"
+    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks requirements help"
     
     # Global options
     local global_opts="-v --verbose -q --quiet --silent --no-color --dry-run -h --help --version"
@@ -46,6 +46,7 @@ _autovault_completions() {
     local templates_cmds="sync apply export preview list"
     local vault_cmds="init plugins check hub"
     local hooks_cmds="list init test"
+    local remote_cmds="list init add remove test push pull status"
     
     # Get the main command (skip options)
     local main_cmd=""
@@ -157,6 +158,22 @@ _autovault_completions() {
             esac
             ;;
         
+        remote)
+            case "$prev" in
+                remove|rm|test|push|pull|status)
+                    # Suggest configured remotes
+                    local remotes=$(_autovault_get_remotes)
+                    COMPREPLY=($(compgen -W "$remotes" -- "$cur"))
+                    ;;
+                remote)
+                    COMPREPLY=($(compgen -W "$remote_cmds --help" -- "$cur"))
+                    ;;
+                *)
+                    COMPREPLY=($(compgen -W "$remote_cmds --help" -- "$cur"))
+                    ;;
+            esac
+            ;;
+        
         structure|new)
             COMPREPLY=($(compgen -W "--help" -- "$cur"))
             ;;
@@ -199,6 +216,14 @@ _autovault_get_backups() {
     local backup_dir="./backups"
     if [[ -d "$backup_dir" ]]; then
         find "$backup_dir" -maxdepth 1 -name "*.json" -printf "%f\n" 2>/dev/null | sed 's/\.json$//'
+    fi
+}
+
+# Helper: Get configured remotes
+_autovault_get_remotes() {
+    local config_file="${REMOTES_JSON:-./config/remotes.json}"
+    if [[ -f "$config_file" ]] && command -v jq &>/dev/null; then
+        jq -r '.remotes | keys[]' "$config_file" 2>/dev/null
     fi
 }
 

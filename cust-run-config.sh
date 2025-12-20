@@ -63,6 +63,7 @@ source "$LIB_DIR/help.sh"
 source "$LIB_DIR/version.sh"
 source "$LIB_DIR/diff.sh"
 source "$LIB_DIR/hooks.sh"
+source "$LIB_DIR/remote.sh"
 
 #--------------------------------------
 # GLOBAL FLAGS (can be set via CLI)
@@ -563,6 +564,47 @@ main() {
         *)
           log_error "Unknown hooks subcommand: $subcmd"
           log_info "Available: list, init, test"
+          exit 1
+          ;;
+      esac
+      ;;
+
+    #--- Remote Vault Sync ---
+    remote)
+      CURRENT_OPERATION="remote"
+      local subcmd="${1:-list}"
+      shift || true
+      case "$subcmd" in
+        --help|-h)
+          usage "remote"
+          ;;
+        list)
+          list_remotes
+          ;;
+        init)
+          init_remotes_config
+          ;;
+        add)
+          add_remote "$@"
+          ;;
+        remove|rm)
+          remove_remote "$@"
+          ;;
+        test)
+          test_remote "$@"
+          ;;
+        push)
+          remote_push "$@"
+          ;;
+        pull)
+          remote_pull "$@"
+          ;;
+        status)
+          remote_status "$@"
+          ;;
+        *)
+          log_error "Unknown remote subcommand: $subcmd"
+          log_info "Available: list, init, add, remove, test, push, pull, status"
           exit 1
           ;;
       esac
