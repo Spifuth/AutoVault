@@ -1,0 +1,236 @@
+#compdef cust-run-config.sh cust-run-config autovault
+#===============================================================================
+#
+#  AUTOVAULT - Zsh Completion
+#
+#===============================================================================
+#
+#  DESCRIPTION:    Zsh completion script for AutoVault CLI.
+#                  Provides intelligent tab-completion with descriptions.
+#
+#  INSTALLATION:   
+#                  # Option 1: Add to fpath in your .zshrc
+#                  fpath=(/path/to/completions $fpath)
+#                  autoload -Uz compinit && compinit
+#
+#                  # Option 2: System-wide (Linux)
+#                  sudo cp _autovault /usr/share/zsh/site-functions/
+#
+#                  # Option 3: Oh-My-Zsh custom
+#                  cp _autovault ~/.oh-my-zsh/completions/
+#
+#===============================================================================
+
+_autovault() {
+    local curcontext="$curcontext" state line
+    typeset -A opt_args
+    
+    # Global options
+    local -a global_opts
+    global_opts=(
+        '-v[Enable verbose output]'
+        '--verbose[Enable verbose output]'
+        '-q[Only show errors]'
+        '--quiet[Only show errors]'
+        '--silent[Suppress all output]'
+        '--no-color[Disable colored output]'
+        '--dry-run[Preview changes without applying]'
+        '-h[Show help]'
+        '--help[Show help]'
+        '--version[Show version information]'
+    )
+    
+    _arguments -C \
+        $global_opts \
+        '1: :->command' \
+        '*: :->args'
+    
+    case "$state" in
+        command)
+            local -a commands
+            commands=(
+                'config:Interactive configuration wizard'
+                'validate:Validate configuration file'
+                'status:Show current status'
+                'structure:Create folder structure in vault'
+                'templates:Manage templates (sync/apply/export/preview)'
+                'test:Verify vault structure'
+                'cleanup:Remove vault structure (dangerous!)'
+                'customer:Manage customers (add/remove/list)'
+                'section:Manage sections (add/remove/list)'
+                'backup:Manage backups (create/list/restore/delete)'
+                'vault:Obsidian setup (init/plugins/check/hub)'
+                'requirements:Check/install dependencies'
+                'help:Show help for a command'
+            )
+            _describe 'command' commands
+            ;;
+        args)
+            case "${line[1]}" in
+                customer|customers)
+                    _autovault_customer
+                    ;;
+                section|sections)
+                    _autovault_section
+                    ;;
+                backup|backups)
+                    _autovault_backup
+                    ;;
+                templates|apply)
+                    _autovault_templates
+                    ;;
+                vault)
+                    _autovault_vault
+                    ;;
+                *)
+                    _arguments '--help[Show help]'
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_autovault_customer() {
+    local -a subcmds
+    subcmds=(
+        'add:Add a new customer'
+        'remove:Remove a customer'
+        'list:List all customers'
+        'rename:Rename a customer'
+    )
+    
+    _arguments \
+        '1: :->subcmd' \
+        '*: :->args'
+    
+    case "$state" in
+        subcmd)
+            _describe 'customer command' subcmds
+            ;;
+        args)
+            # Complete with existing customer IDs
+            local -a ids
+            ids=(${(f)"$(_autovault_get_customer_ids)"})
+            [[ -n "$ids" ]] && _describe 'customer ID' ids
+            ;;
+    esac
+}
+
+_autovault_section() {
+    local -a subcmds
+    subcmds=(
+        'add:Add a new section'
+        'remove:Remove a section'
+        'list:List all sections'
+    )
+    
+    _arguments \
+        '1: :->subcmd' \
+        '*: :->args'
+    
+    case "$state" in
+        subcmd)
+            _describe 'section command' subcmds
+            ;;
+        args)
+            # Complete with existing sections
+            local -a sections
+            sections=(${(f)"$(_autovault_get_sections)"})
+            [[ -n "$sections" ]] && _describe 'section name' sections
+            ;;
+    esac
+}
+
+_autovault_backup() {
+    local -a subcmds
+    subcmds=(
+        'create:Create a new backup'
+        'list:List all backups'
+        'restore:Restore from a backup'
+        'delete:Delete a backup'
+    )
+    
+    _arguments \
+        '1: :->subcmd' \
+        '*: :->args'
+    
+    case "$state" in
+        subcmd)
+            _describe 'backup command' subcmds
+            ;;
+        args)
+            case "${line[2]}" in
+                restore|delete)
+                    # Complete with backup files
+                    local -a backups
+                    backups=(${(f)"$(_autovault_get_backups)"})
+                    [[ -n "$backups" ]] && _describe 'backup file' backups
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_autovault_templates() {
+    local -a subcmds
+    subcmds=(
+        'sync:Sync templates from config to vault'
+        'apply:Apply templates to existing structure'
+        'export:Export templates from vault to config'
+        'preview:Preview a template before applying'
+    )
+    
+    _arguments \
+        '1: :->subcmd' \
+        '*: :->args'
+    
+    case "$state" in
+        subcmd)
+            _describe 'templates command' subcmds
+            ;;
+        args)
+            case "${line[2]}" in
+                preview)
+                    # Complete with template names
+                    local -a templates
+                    templates=(${(f)"$(_autovault_get_templates)"})
+                    [[ -n "$templates" ]] && _describe 'template name' templates
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_autovault_vault() {
+    local -a subcmds
+    subcmds=(
+        'init:Initialize Obsidian vault'
+        'plugins:Install community plugins'
+        'check:Check vault configuration'
+        'hub:Open Obsidian plugin hub'
+    )
+    _describe 'vault command' subcmds
+}
+
+# Helper functions to get dynamic values
+_autovault_get_customer_ids() {
+    local config_file="${CONFIG_JSON:-./config/cust-run-config.json}"
+    [[ -f "$config_file" ]] && jq -r '.CustomerIds[]? // empty' "$config_file" 2>/dev/null
+}
+
+_autovault_get_sections() {
+    local config_file="${CONFIG_JSON:-./config/cust-run-config.json}"
+    [[ -f "$config_file" ]] && jq -r '.Sections[]? // empty' "$config_file" 2>/dev/null
+}
+
+_autovault_get_backups() {
+    local backup_dir="./backups"
+    [[ -d "$backup_dir" ]] && find "$backup_dir" -maxdepth 1 -name "*.json" -printf "%f\n" 2>/dev/null | sed 's/\.json$//'
+}
+
+_autovault_get_templates() {
+    local config_file="${CONFIG_JSON:-./config/templates.json}"
+    [[ -f "$config_file" ]] && jq -r 'keys[]' "$config_file" 2>/dev/null
+}
+
+_autovault "$@"

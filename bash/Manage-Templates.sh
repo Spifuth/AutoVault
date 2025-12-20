@@ -380,6 +380,142 @@ PYTHON
 }
 
 #######################################
+# PREVIEW: Show rendered template
+#######################################
+cmd_preview() {
+    local template_name="${1:-root}"
+    local cust_id="${2:-1}"
+    
+    log_info "Previewing template: $template_name (CUST ID: $cust_id)"
+    
+    if [[ ! -f "$TEMPLATES_JSON" ]]; then
+        log_error "Templates JSON not found: $TEMPLATES_JSON"
+        return 1
+    fi
+    
+    # Preview templates using python
+    python3 - "$TEMPLATES_JSON" "$template_name" "$cust_id" "$CUSTOMER_ID_WIDTH" <<'PYTHON'
+import json
+import sys
+from datetime import datetime, timezone
+
+templates_file = sys.argv[1]
+template_name = sys.argv[2]
+cust_id = int(sys.argv[3])
+customer_id_width = int(sys.argv[4])
+
+with open(templates_file, 'r', encoding='utf-8') as f:
+    data = json.load(f)
+
+templates = data.get("templates", {})
+index_templates = templates.get("index", {})
+section_templates = index_templates.get("sections", {})
+note_templates = templates.get("notes", {})
+
+# Find the requested template
+template_content = None
+template_display_name = template_name
+
+if template_name == "root":
+    template_content = index_templates.get("root", "")
+    template_display_name = "CUST-Root-Index"
+elif template_name.startswith("section-"):
+    section = template_name.replace("section-", "").upper()
+    template_content = section_templates.get(section, "")
+    template_display_name = f"CUST-Section-{section}-Index"
+elif template_name.startswith("note-"):
+    section = template_name.replace("note-", "").upper()
+    template_content = note_templates.get(section, "")
+    template_display_name = f"RUN - New {section} note"
+elif template_name.upper() in section_templates:
+    template_content = section_templates.get(template_name.upper(), "")
+    template_display_name = f"CUST-Section-{template_name.upper()}-Index"
+elif template_name.upper() in note_templates:
+    template_content = note_templates.get(template_name.upper(), "")
+    template_display_name = f"RUN - New {template_name.upper()} note"
+else:
+    # List available templates
+    print(f"❌ Template '{template_name}' not found.\n")
+    print("Available templates:")
+    print("  root              - Main CUST index template")
+    for section in section_templates.keys():
+        print(f"  section-{section.lower():<8}  - {section} section index template")
+    for section in note_templates.keys():
+        print(f"  note-{section.lower():<11}  - {section} note template")
+    sys.exit(1)
+
+if not template_content:
+    print(f"❌ Template '{template_name}' is empty.")
+    sys.exit(1)
+
+# Generate cust code
+cust_code = f"CUST-{cust_id:0{customer_id_width}d}"
+
+# Replace placeholders
+now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+now_local = datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z")
+
+rendered = template_content.replace("{{CUST_CODE}}", cust_code)
+rendered = rendered.replace("{{NOW_UTC}}", now_utc)
+rendered = rendered.replace("{{NOW_LOCAL}}", now_local)
+
+# Pretty print
+print("=" * 60)
+print(f"📄 Template: {template_display_name}")
+print(f"👤 Customer: {cust_code}")
+print("=" * 60)
+print()
+print(rendered)
+print()
+print("=" * 60)
+print(f"📝 Placeholders replaced:")
+print(f"   {{{{CUST_CODE}}}}  → {cust_code}")
+print(f"   {{{{NOW_UTC}}}}    → {now_utc}")
+print(f"   {{{{NOW_LOCAL}}}}  → {now_local}")
+print("=" * 60)
+PYTHON
+}
+
+#######################################
+# LIST: Show all available templates
+#######################################
+cmd_list() {
+    log_info "Available templates in: $TEMPLATES_JSON"
+    
+    if [[ ! -f "$TEMPLATES_JSON" ]]; then
+        log_error "Templates JSON not found: $TEMPLATES_JSON"
+        return 1
+    fi
+    
+    python3 - "$TEMPLATES_JSON" <<'PYTHON'
+import json
+import sys
+
+with open(sys.argv[1], 'r', encoding='utf-8') as f:
+    data = json.load(f)
+
+templates = data.get("templates", {})
+index_templates = templates.get("index", {})
+section_templates = index_templates.get("sections", {})
+note_templates = templates.get("notes", {})
+
+print()
+print("📁 Index Templates:")
+print(f"   root              - Main CUST index ({len(index_templates.get('root', ''))} chars)")
+for section, content in section_templates.items():
+    print(f"   section-{section.lower():<8}  - {section} section index ({len(content)} chars)")
+
+print()
+print("📝 Note Templates:")
+for section, content in note_templates.items():
+    print(f"   note-{section.lower():<11}  - {section} note ({len(content)} chars)")
+
+print()
+print("💡 Use 'templates preview <name> [cust_id]' to preview a template")
+PYTHON
+}
+
+#######################################
 # Main
 #######################################
 show_usage() {
@@ -390,6 +526,14 @@ Commands:
   export    Read templates from vault/_templates/ and update config/templates.json
   sync      Write templates from config/templates.json to vault/_templates/
   apply     Apply templates to CUST folders (replace placeholders)
+  preview   Preview a template with placeholder replacement
+  list      List all available templates
+
+Preview Examples:
+  templates preview root         Preview root index for CUST-001
+  templates preview root 42      Preview root index for CUST-042
+  templates preview section-fp   Preview FP section template
+  templates preview note-raised  Preview RAISED note template
 
 Environment:
   DRY_RUN=true    Show what would be done without making changes
@@ -405,6 +549,13 @@ case "${1:-}" in
         ;;
     apply)
         cmd_apply
+        ;;
+    preview)
+        shift
+        cmd_preview "$@"
+        ;;
+    list)
+        cmd_list
         ;;
     -h|--help|help)
         show_usage

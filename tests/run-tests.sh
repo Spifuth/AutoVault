@@ -77,7 +77,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
 CURRENT_TEST=0
-TOTAL_TESTS=36
+TOTAL_TESTS=41
 
 # Animation frames
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -374,6 +374,59 @@ test_scripts_syntax() {
 test_help_command() {
     # Test that help works
     "$PROJECT_ROOT/cust-run-config.sh" --help >/dev/null 2>&1
+}
+
+test_version_command() {
+    # Test that --version works and shows version info
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" --version 2>&1)
+    
+    # Should contain version number
+    echo "$output" | grep -q "AutoVault" && \
+    echo "$output" | grep -q "version" && \
+    echo "$output" | grep -qE "[0-9]+\.[0-9]+\.[0-9]+"
+}
+
+test_templates_preview() {
+    # Test templates preview command
+    export CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json"
+    
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" templates preview root 2>&1)
+    
+    # Should contain preview markers and placeholder info
+    echo "$output" | grep -q "Template:" && \
+    echo "$output" | grep -q "CUST-001"
+}
+
+test_templates_preview_with_custom_id() {
+    # Test templates preview with custom customer ID
+    export CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json"
+    
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" templates preview root 42 2>&1)
+    
+    # Should show CUST-042 (with padding)
+    echo "$output" | grep -q "CUST-042"
+}
+
+test_templates_list() {
+    # Test templates list command
+    export CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json"
+    
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" templates list 2>&1)
+    
+    # Should list available templates
+    echo "$output" | grep -q "root" && \
+    echo "$output" | grep -qi "section"
+}
+
+test_completion_files_exist() {
+    # Test that completion files exist and are valid
+    [[ -f "$PROJECT_ROOT/completions/autovault.bash" ]] && \
+    [[ -f "$PROJECT_ROOT/completions/_autovault" ]] && \
+    bash -n "$PROJECT_ROOT/completions/autovault.bash" 2>/dev/null
 }
 
 #######################################
@@ -1304,8 +1357,10 @@ main() {
     run_test "Scripts are executable" test_scripts_executable || true
     run_test "Scripts have valid syntax" test_scripts_syntax || true
     run_test "Help command works" test_help_command || true
+    run_test "Version command works" test_version_command || true
     run_test "Subcommand helps work" test_help_subcommands || true
     run_test "No-color flag works" test_no_color_flag || true
+    run_test "Completion files exist" test_completion_files_exist || true
     
     # Integration tests
     show_category "INTEGRATION TESTS" "🔗"
@@ -1313,6 +1368,9 @@ main() {
     run_test "Structure creation" test_structure_creation || true
     run_test "Templates sync" test_templates_sync || true
     run_test "Templates apply" test_templates_apply || true
+    run_test "Templates preview" test_templates_preview || true
+    run_test "Templates preview custom ID" test_templates_preview_with_custom_id || true
+    run_test "Templates list" test_templates_list || true
     run_test "Configuration validation" test_validation || true
     run_test "Status command" test_status_command || true
     run_test "Structure verification" test_verify_structure || true
