@@ -1,0 +1,12 @@
+{
+  "remotes": {},
+  "defaults": {
+    "port": 22,
+    "rsync_opts": "-avz --progress --delete",
+    "excludes": [
+      ".obsidian/workspace.json",
+      ".obsidian/workspace-mobile.json",
+      ".trash/"
+    ]
+  }
+}

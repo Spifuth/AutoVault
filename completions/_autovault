@@ -62,6 +62,7 @@ _autovault() {
                 'section:Manage sections (add/remove/list)'
                 'backup:Manage backups (create/list/restore/delete)'
                 'vault:Obsidian setup (init/plugins/check/hub)'
+                'remote:Remote vault sync via SSH (push/pull)'
                 'hooks:Manage automation hooks (list/init/test)'
                 'requirements:Check/install dependencies'
                 'help:Show help for a command'
@@ -87,6 +88,9 @@ _autovault() {
                     ;;
                 hooks)
                     _autovault_hooks
+                    ;;
+                remote)
+                    _autovault_remote
                     ;;
                 *)
                     _arguments '--help[Show help]'
@@ -256,6 +260,41 @@ _autovault_hooks() {
     esac
 }
 
+_autovault_remote() {
+    local state
+    _arguments -C \
+        '--help[Show help]' \
+        '1: :->subcmd' \
+        '*: :->args'
+    
+    case "$state" in
+        subcmd)
+            local -a subcmds
+            subcmds=(
+                'list:List configured remotes'
+                'init:Initialize remotes configuration'
+                'add:Add a new remote'
+                'remove:Remove a remote'
+                'test:Test remote connection'
+                'push:Push vault to remote'
+                'pull:Pull vault from remote'
+                'status:Compare local and remote'
+            )
+            _describe 'remote command' subcmds
+            ;;
+        args)
+            case "${line[2]}" in
+                remove|rm|test|push|pull|status)
+                    # Complete with remote names
+                    local -a remotes
+                    remotes=(${(f)"$(_autovault_get_remotes)"})
+                    [[ -n "$remotes" ]] && _describe 'remote name' remotes
+                    ;;
+            esac
+            ;;
+    esac
+}
+
 # Helper functions to get dynamic values
 _autovault_get_customer_ids() {
     local config_file="${CONFIG_JSON:-./config/cust-run-config.json}"
@@ -275,6 +314,11 @@ _autovault_get_backups() {
 _autovault_get_templates() {
     local config_file="${CONFIG_JSON:-./config/templates.json}"
     [[ -f "$config_file" ]] && jq -r 'keys[]' "$config_file" 2>/dev/null
+}
+
+_autovault_get_remotes() {
+    local config_file="${REMOTES_JSON:-./config/remotes.json}"
+    [[ -f "$config_file" ]] && jq -r '.remotes | keys[]' "$config_file" 2>/dev/null
 }
 
 _autovault "$@"

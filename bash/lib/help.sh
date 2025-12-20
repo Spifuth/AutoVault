@@ -63,6 +63,7 @@ usage() {
     backup)     help_backup ;;
     vault)      help_vault ;;
     hooks)      help_hooks ;;
+    remote)     help_remote ;;
     *)          help_main ;;
   esac
 }
@@ -118,6 +119,7 @@ $(_h_bold)COMMANDS$(_h_reset)
 
     $(_h_yellow)Vault$(_h_reset)
     vault               Obsidian setup (init/plugins/check/hub)
+    remote              Remote vault sync via SSH (push/pull)
 
     $(_h_yellow)System$(_h_reset)
     requirements        Check/install dependencies
@@ -529,5 +531,75 @@ $(_h_bold)EXAMPLES$(_h_reset)
     $script_name hooks                  $(_h_dim)# List hooks$(_h_reset)
     $script_name hooks init             $(_h_dim)# Create hooks directory$(_h_reset)
     $script_name hooks test on-error    $(_h_dim)# Test on-error hook$(_h_reset)
+EOF
+}
+
+#--------------------------------------
+# REMOTE HELP
+#--------------------------------------
+help_remote() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - REMOTE$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name remote [SUBCOMMAND] [ARGS]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Synchronize your Obsidian vault with remote servers via SSH/rsync.
+    Supports multiple remotes with individual configuration.
+
+$(_h_bold)SUBCOMMANDS$(_h_reset)
+    $(_h_green)list$(_h_reset) $(_h_dim)(default)$(_h_reset)
+        List all configured remotes with connection status.
+
+    $(_h_green)init$(_h_reset)
+        Create remotes configuration file (config/remotes.json).
+
+    $(_h_green)add$(_h_reset) <name> <user@host> <path> [port]
+        Add a new remote configuration.
+
+    $(_h_green)remove$(_h_reset) <name>
+        Remove a remote configuration.
+
+    $(_h_green)test$(_h_reset) <name>
+        Test SSH connection and rsync availability.
+
+    $(_h_green)push$(_h_reset) <name>
+        Push local vault to remote (upload).
+
+    $(_h_green)pull$(_h_reset) <name>
+        Pull remote vault to local (download).
+
+    $(_h_green)status$(_h_reset) <name>
+        Compare local and remote vault stats.
+
+$(_h_bold)REQUIREMENTS$(_h_reset)
+    - SSH key-based authentication (recommended)
+    - rsync installed locally and on remote
+    - Remote server accessible via SSH
+
+$(_h_bold)CONFIGURATION$(_h_reset)
+    Remotes are stored in: config/remotes.json
+    
+    Default excludes (not synced):
+    - .obsidian/workspace.json
+    - .obsidian/workspace-mobile.json
+    - .trash/
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $(_h_dim)# Setup a remote$(_h_reset)
+    $script_name remote add server me@myserver.com /home/me/vault
+    $script_name remote test server
+    
+    $(_h_dim)# Sync operations$(_h_reset)
+    $script_name remote push server         $(_h_dim)# Upload to remote$(_h_reset)
+    $script_name remote pull server         $(_h_dim)# Download from remote$(_h_reset)
+    $script_name --dry-run remote push srv  $(_h_dim)# Preview changes$(_h_reset)
+    
+    $(_h_dim)# With custom SSH port$(_h_reset)
+    $script_name remote add vps user@vps.example.com /vault 2222
 EOF
 }

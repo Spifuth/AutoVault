@@ -77,7 +77,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
 CURRENT_TEST=0
-TOTAL_TESTS=53
+TOTAL_TESTS=58
 
 # Animation frames
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -1362,12 +1362,116 @@ test_hooks_help() {
 }
 
 #######################################
+# Remote Tests
+#######################################
+
+test_remote_init() {
+    # Test remote init creates config file
+    local test_config="$TEST_VAULT/remotes-test.json"
+    rm -f "$test_config"
+    
+    (
+        cd "$PROJECT_ROOT"
+        export REMOTES_JSON="$test_config"
+        bash ./cust-run-config.sh remote init >/dev/null 2>&1
+    ) || true
+    
+    # Should create config file
+    [[ -f "$test_config" ]] && \
+    jq -e '.remotes' "$test_config" >/dev/null 2>&1
+}
+
+test_remote_add() {
+    # Test adding a remote
+    local test_config="$TEST_VAULT/remotes-add-test.json"
+    
+    # Create initial config
+    echo '{"remotes": {}, "defaults": {"port": 22}}' > "$test_config"
+    
+    (
+        cd "$PROJECT_ROOT"
+        export REMOTES_JSON="$test_config"
+        bash ./cust-run-config.sh remote add testserver user@example.com /path/to/vault >/dev/null 2>&1
+    ) || true
+    
+    # Should have added the remote
+    local host
+    host=$(jq -r '.remotes.testserver.host' "$test_config" 2>/dev/null)
+    
+    rm -f "$test_config"
+    [[ "$host" == "user@example.com" ]]
+}
+
+test_remote_remove() {
+    # Test removing a remote
+    local test_config="$TEST_VAULT/remotes-remove-test.json"
+    
+    # Create config with a remote
+    cat > "$test_config" << 'EOF'
+{
+  "remotes": {
+    "toremove": {
+      "host": "user@server.com",
+      "path": "/vault",
+      "port": 22
+    }
+  }
+}
+EOF
+    
+    (
+        cd "$PROJECT_ROOT"
+        export REMOTES_JSON="$test_config"
+        bash ./cust-run-config.sh remote remove toremove >/dev/null 2>&1
+    ) || true
+    
+    # Should have removed the remote
+    local result
+    result=$(jq -r '.remotes | keys | length' "$test_config" 2>/dev/null)
+    
+    rm -f "$test_config"
+    [[ "$result" == "0" ]]
+}
+
+test_remote_list() {
+    # Test remote list command
+    local test_config="$TEST_VAULT/remotes-list-test.json"
+    
+    cat > "$test_config" << 'EOF'
+{
+  "remotes": {
+    "server1": {"host": "user@srv1.com", "path": "/v1", "port": 22}
+  }
+}
+EOF
+    
+    local output
+    output=$(
+        cd "$PROJECT_ROOT"
+        export REMOTES_JSON="$test_config"
+        bash ./cust-run-config.sh remote list 2>&1
+    ) || true
+    
+    rm -f "$test_config"
+    echo "$output" | grep -q "server1"
+}
+
+test_remote_help() {
+    # Test remote help page
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" remote --help 2>&1)
+    
+    # Should contain remote descriptions
+    echo "$output" | grep -qi "ssh\|rsync\|push\|pull"
+}
+
+#######################################
 # Subcommand Help Tests
 #######################################
 
 test_help_subcommands() {
     # Test all subcommand helps work
-    local cmds=("templates" "customer" "section" "backup" "vault" "config" "structure")
+    local cmds=("templates" "customer" "section" "backup" "vault" "config" "structure" "hooks" "remote")
     local errors=0
     
     for cmd in "${cmds[@]}"; do
@@ -1635,6 +1739,14 @@ main() {
     run_test "Hooks pre-hook cancellation" test_hooks_pre_cancel || true
     run_test "Hooks disabled" test_hooks_disabled || true
     run_test "Hooks help page" test_hooks_help || true
+    
+    # Remote tests
+    show_category "REMOTE TESTS" "🌐"
+    run_test "Remote init command" test_remote_init || true
+    run_test "Remote add command" test_remote_add || true
+    run_test "Remote remove command" test_remote_remove || true
+    run_test "Remote list command" test_remote_list || true
+    run_test "Remote help page" test_remote_help || true
     
     # Teardown with animation
     echo ""
