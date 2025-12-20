@@ -321,9 +321,11 @@ test_templates_sync() {
 
 test_templates_apply() {
     # Test applying templates (requires structure first)
+    # Note: Structure must already exist from test_structure_creation
+    export CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json"
+    
     (
         cd "$PROJECT_ROOT"
-        export CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json"
         bash ./cust-run-config.sh templates apply >/dev/null 2>&1
     )
     
@@ -335,13 +337,13 @@ test_templates_apply() {
 
 test_validation() {
     # Test config validation
-    CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json" \
+    export CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json"
     "$PROJECT_ROOT/cust-run-config.sh" validate >/dev/null 2>&1
 }
 
 test_status_command() {
     # Test status command
-    CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json" \
+    export CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json"
     "$PROJECT_ROOT/cust-run-config.sh" status >/dev/null 2>&1
 }
 
@@ -350,7 +352,7 @@ test_dry_run() {
     local before_count
     before_count=$(find "$TEST_VAULT" -type f 2>/dev/null | wc -l)
     
-    CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json" \
+    export CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json"
     "$PROJECT_ROOT/cust-run-config.sh" --dry-run structure >/dev/null 2>&1
     
     local after_count
@@ -361,7 +363,7 @@ test_dry_run() {
 
 test_verify_structure() {
     # Test structure verification (after creation)
-    CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json" \
+    export CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json"
     "$PROJECT_ROOT/cust-run-config.sh" test >/dev/null 2>&1
 }
 
