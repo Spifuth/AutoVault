@@ -77,7 +77,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
 CURRENT_TEST=0
-TOTAL_TESTS=41
+TOTAL_TESTS=43
 
 # Animation frames
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -427,6 +427,28 @@ test_completion_files_exist() {
     [[ -f "$PROJECT_ROOT/completions/autovault.bash" ]] && \
     [[ -f "$PROJECT_ROOT/completions/_autovault" ]] && \
     bash -n "$PROJECT_ROOT/completions/autovault.bash" 2>/dev/null
+}
+
+test_config_wizard_functions() {
+    # Test that config wizard functions are defined
+    source "$PROJECT_ROOT/bash/lib/config.sh"
+    
+    # Check that prompt functions exist
+    declare -f prompt_value >/dev/null && \
+    declare -f prompt_path >/dev/null && \
+    declare -f prompt_list >/dev/null
+}
+
+test_prompt_path_expands_tilde() {
+    # Test that prompt_path expands ~ correctly
+    source "$PROJECT_ROOT/bash/lib/config.sh"
+    
+    # Simulate input with echo
+    local result
+    result=$(echo "" | prompt_path "test" "~/testpath" 2>/dev/null)
+    
+    # Should expand ~ to $HOME
+    [[ "$result" == "$HOME/testpath" ]]
 }
 
 #######################################
@@ -1361,6 +1383,8 @@ main() {
     run_test "Subcommand helps work" test_help_subcommands || true
     run_test "No-color flag works" test_no_color_flag || true
     run_test "Completion files exist" test_completion_files_exist || true
+    run_test "Config wizard functions" test_config_wizard_functions || true
+    run_test "Prompt path expands tilde" test_prompt_path_expands_tilde || true
     
     # Integration tests
     show_category "INTEGRATION TESTS" "🔗"

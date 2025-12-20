@@ -90,79 +90,200 @@ run_bash() {
 }
 
 #--------------------------------------
-# INTERACTIVE CONFIG
+# INTERACTIVE CONFIG WIZARD
 #--------------------------------------
 interactive_config() {
-  # Load existing config first (if any) to show current values
-  load_config 2>/dev/null || true
+  source "$LIB_DIR/logging.sh"
   
-  log_info "Interactive configuration mode"
-  log_info "Press Enter to keep current/default values"
+  # Banner
   echo ""
-
-  # Display current configuration
-  echo "Current configuration:"
-  echo "  1. VaultRoot:            $VAULT_ROOT"
-  echo "  2. CustomerIdWidth:      $CUSTOMER_ID_WIDTH"
-  echo "  3. CustomerIds:          ${CUSTOMER_IDS[*]}"
-  echo "  4. Sections:             ${SECTIONS[*]}"
-  echo "  5. TemplateRelativeRoot: $TEMPLATE_RELATIVE_ROOT"
-  echo "  6. EnableCleanup:        $ENABLE_CLEANUP"
+  echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
+  echo -e "${CYAN}║${NC}                                                              ${CYAN}║${NC}"
+  echo -e "${CYAN}║${NC}    ${BOLD}🔧 AutoVault Configuration Wizard${NC}                        ${CYAN}║${NC}"
+  echo -e "${CYAN}║${NC}                                                              ${CYAN}║${NC}"
+  echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
   echo ""
-
-  # VaultRoot
-  VAULT_ROOT="$(prompt_value "Vault root path" "$VAULT_ROOT")"
-
-  # CustomerIdWidth
-  CUSTOMER_ID_WIDTH="$(prompt_value "Customer ID width (padding)" "$CUSTOMER_ID_WIDTH")"
-
-  # CustomerIds
-  local new_ids_str
-  new_ids_str="$(prompt_list "Customer IDs" "${CUSTOMER_IDS[@]}")"
-  read -ra CUSTOMER_IDS <<< "$new_ids_str"
-
-  # Sections
-  local new_sections_str
-  new_sections_str="$(prompt_list "Sections" "${SECTIONS[@]}")"
-  read -ra SECTIONS <<< "$new_sections_str"
-
-  # TemplateRelativeRoot
-  TEMPLATE_RELATIVE_ROOT="$(prompt_value "Template relative root" "$TEMPLATE_RELATIVE_ROOT")"
-
-  # EnableCleanup
-  local enable_cleanup_input
-  enable_cleanup_input="$(prompt_value "Enable cleanup (true/false)" "$ENABLE_CLEANUP")"
-  if [[ "$enable_cleanup_input" =~ ^[Tt]rue$ ]]; then
-    ENABLE_CLEANUP="true"
+  
+  # Try to load existing config
+  local has_existing_config=false
+  if [[ -f "$CONFIG_JSON" ]] && load_config 2>/dev/null; then
+    has_existing_config=true
+    echo -e "${GREEN}✓${NC} Found existing configuration: ${DIM}$CONFIG_JSON${NC}"
+    echo ""
   else
-    ENABLE_CLEANUP="false"
+    # Set defaults for new config
+    VAULT_ROOT="${HOME}/Obsidian/MyVault"
+    CUSTOMER_ID_WIDTH=3
+    CUSTOMER_IDS=(1 2 3)
+    SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
+    TEMPLATE_RELATIVE_ROOT="_templates/Run"
+    ENABLE_CLEANUP=false
   fi
 
-  echo ""
-  log_info "Configuration summary:"
-  echo "  VaultRoot:            $VAULT_ROOT"
-  echo "  CustomerIdWidth:      $CUSTOMER_ID_WIDTH"
-  echo "  CustomerIds:          ${CUSTOMER_IDS[*]}"
-  echo "  Sections:             ${SECTIONS[*]}"
-  echo "  TemplateRelativeRoot: $TEMPLATE_RELATIVE_ROOT"
-  echo "  EnableCleanup:        $ENABLE_CLEANUP"
+  echo -e "${DIM}Press Enter to keep current/default values${NC}"
+  echo -e "${DIM}Use Tab for path completion${NC}"
   echo ""
 
+  # Step 1: Vault Root
+  echo -e "${YELLOW}━━━ Step 1/6: Vault Location ━━━${NC}"
+  echo -e "${DIM}Where is your Obsidian vault located?${NC}"
+  VAULT_ROOT="$(prompt_path "Vault root path" "$VAULT_ROOT")"
+  
+  # Validate vault path
+  if [[ ! -d "$VAULT_ROOT" ]]; then
+    echo -e "${YELLOW}⚠${NC}  Directory doesn't exist. It will be created."
+    local create_vault
+    printf "Create it now? [Y/n]: "
+    read -r create_vault
+    if [[ ! "$create_vault" =~ ^[Nn] ]]; then
+      mkdir -p "$VAULT_ROOT"
+      echo -e "${GREEN}✓${NC} Created: $VAULT_ROOT"
+    fi
+  else
+    echo -e "${GREEN}✓${NC} Vault found: $VAULT_ROOT"
+  fi
+  echo ""
+
+  # Step 2: Customer ID Width
+  echo -e "${YELLOW}━━━ Step 2/6: Customer ID Format ━━━${NC}"
+  echo -e "${DIM}How many digits for customer IDs? (e.g., 3 = CUST-001)${NC}"
+  while true; do
+    CUSTOMER_ID_WIDTH="$(prompt_value "ID width (1-5)" "$CUSTOMER_ID_WIDTH")"
+    if [[ "$CUSTOMER_ID_WIDTH" =~ ^[1-5]$ ]]; then
+      echo -e "${GREEN}✓${NC} Format: CUST-$(printf "%0${CUSTOMER_ID_WIDTH}d" 42)"
+      break
+    else
+      echo -e "${RED}✗${NC} Please enter a number between 1 and 5"
+    fi
+  done
+  echo ""
+
+  # Step 3: Customer IDs
+  echo -e "${YELLOW}━━━ Step 3/6: Customer IDs ━━━${NC}"
+  echo -e "${DIM}Enter customer IDs (numbers separated by spaces)${NC}"
+  echo -e "${DIM}Example: 1 2 3 10 42${NC}"
+  while true; do
+    local ids_str
+    ids_str="$(prompt_list "Customer IDs" "${CUSTOMER_IDS[@]}")"
+    
+    # Validate all are numbers
+    local valid=true
+    local -a new_ids=()
+    for id in $ids_str; do
+      if [[ "$id" =~ ^[0-9]+$ ]]; then
+        new_ids+=("$id")
+      else
+        echo -e "${RED}✗${NC} '$id' is not a valid number"
+        valid=false
+        break
+      fi
+    done
+    
+    if [[ "$valid" == "true" ]] && [[ ${#new_ids[@]} -gt 0 ]]; then
+      CUSTOMER_IDS=("${new_ids[@]}")
+      echo -e "${GREEN}✓${NC} ${#CUSTOMER_IDS[@]} customer(s): ${CUSTOMER_IDS[*]}"
+      break
+    elif [[ ${#new_ids[@]} -eq 0 ]]; then
+      echo -e "${RED}✗${NC} At least one customer ID is required"
+    fi
+  done
+  echo ""
+
+  # Step 4: Sections
+  echo -e "${YELLOW}━━━ Step 4/6: Sections ━━━${NC}"
+  echo -e "${DIM}Enter section names (separated by spaces)${NC}"
+  echo -e "${DIM}Default: FP RAISED INFORMATIONS DIVERS${NC}"
+  while true; do
+    local sections_str
+    sections_str="$(prompt_list "Sections" "${SECTIONS[@]}")"
+    
+    # Parse sections (uppercase them)
+    local -a new_sections=()
+    for section in $sections_str; do
+      new_sections+=("${section^^}")
+    done
+    
+    if [[ ${#new_sections[@]} -gt 0 ]]; then
+      SECTIONS=("${new_sections[@]}")
+      echo -e "${GREEN}✓${NC} ${#SECTIONS[@]} section(s): ${SECTIONS[*]}"
+      break
+    else
+      echo -e "${RED}✗${NC} At least one section is required"
+    fi
+  done
+  echo ""
+
+  # Step 5: Template Location
+  echo -e "${YELLOW}━━━ Step 5/6: Template Location ━━━${NC}"
+  echo -e "${DIM}Where should templates be stored (relative to vault)?${NC}"
+  TEMPLATE_RELATIVE_ROOT="$(prompt_value "Template path" "$TEMPLATE_RELATIVE_ROOT")"
+  echo -e "${GREEN}✓${NC} Templates: \$VAULT/${TEMPLATE_RELATIVE_ROOT}"
+  echo ""
+
+  # Step 6: Cleanup Mode
+  echo -e "${YELLOW}━━━ Step 6/6: Cleanup Mode ━━━${NC}"
+  echo -e "${DIM}Enable cleanup command? (removes orphan folders)${NC}"
+  echo -e "${DIM}${RED}Warning: This can delete data if misconfigured!${NC}"
+  local enable_cleanup_input
+  while true; do
+    printf "Enable cleanup? [y/N]: "
+    read -r enable_cleanup_input
+    if [[ -z "$enable_cleanup_input" ]] || [[ "$enable_cleanup_input" =~ ^[Nn] ]]; then
+      ENABLE_CLEANUP=false
+      echo -e "${GREEN}✓${NC} Cleanup: ${YELLOW}disabled${NC} (safe)"
+      break
+    elif [[ "$enable_cleanup_input" =~ ^[Yy] ]]; then
+      ENABLE_CLEANUP=true
+      echo -e "${GREEN}✓${NC} Cleanup: ${RED}enabled${NC}"
+      break
+    fi
+  done
+  echo ""
+
+  # Summary
+  echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
+  echo -e "${CYAN}║${NC}               ${BOLD}📋 Configuration Summary${NC}                       ${CYAN}║${NC}"
+  echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
+  echo ""
+  echo -e "  ${BOLD}Vault Root:${NC}        $VAULT_ROOT"
+  echo -e "  ${BOLD}ID Format:${NC}         CUST-$(printf "%0${CUSTOMER_ID_WIDTH}d" 1) (width: $CUSTOMER_ID_WIDTH)"
+  echo -e "  ${BOLD}Customers:${NC}         ${CUSTOMER_IDS[*]} (${#CUSTOMER_IDS[@]} total)"
+  echo -e "  ${BOLD}Sections:${NC}          ${SECTIONS[*]} (${#SECTIONS[@]} total)"
+  echo -e "  ${BOLD}Templates:${NC}         ${TEMPLATE_RELATIVE_ROOT}"
+  echo -e "  ${BOLD}Cleanup:${NC}           $(if [[ "$ENABLE_CLEANUP" == "true" ]]; then echo -e "${RED}enabled${NC}"; else echo -e "${GREEN}disabled${NC}"; fi)"
+  echo ""
+  echo -e "  ${DIM}Config file: $CONFIG_JSON${NC}"
+  echo ""
+
+  # Confirm save
   local confirm
-  printf "Save this configuration? [y/N]: "
+  printf "${BOLD}Save this configuration? [Y/n]:${NC} "
   read -r confirm
-  if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+  if [[ "$confirm" =~ ^[Nn] ]]; then
     log_warn "Configuration cancelled"
     return 1
   fi
 
-  # Force write the new config
+  # Save config
   if ! ensure_config_json; then
     log_error "Failed to write configuration"
     return 1
   fi
 
+  echo ""
   log_success "Configuration saved to $CONFIG_JSON"
+  echo ""
+  
+  # Next steps
+  echo -e "${CYAN}━━━ Next Steps ━━━${NC}"
+  echo -e "  1. Create vault structure:  ${DIM}./cust-run-config.sh structure${NC}"
+  echo -e "  2. Sync templates:          ${DIM}./cust-run-config.sh templates sync${NC}"
+  echo -e "  3. Apply templates:         ${DIM}./cust-run-config.sh templates apply${NC}"
+  echo -e "  4. Check status:            ${DIM}./cust-run-config.sh status${NC}"
+  echo ""
+  echo -e "${DIM}Or run 'vault init' to do all at once:${NC}"
+  echo -e "  ${BOLD}./cust-run-config.sh vault init${NC}"
+  echo ""
 }
 
 #--------------------------------------
