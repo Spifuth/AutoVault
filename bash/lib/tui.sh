@@ -89,34 +89,44 @@ tui_restore_cursor() { echo -ne "\033[u"; }
 # Read single key
 tui_read_key() {
     local key
-    IFS= read -rsn1 key 2>/dev/null
+    local escape_seq
+    
+    # Read first character
+    IFS= read -rsn1 key 2>/dev/null || return 1
     
     # Handle escape sequences (arrows, etc.)
     if [[ "$key" == $'\x1b' ]]; then
-        read -rsn2 -t 0.1 key 2>/dev/null
-        case "$key" in
-            '[A') echo "UP" ;;
-            '[B') echo "DOWN" ;;
-            '[C') echo "RIGHT" ;;
-            '[D') echo "LEFT" ;;
-            '[H') echo "HOME" ;;
-            '[F') echo "END" ;;
-            *)    echo "ESC" ;;
-        esac
-    else
-        case "$key" in
-            '') echo "ENTER" ;;
-            ' ') echo "SPACE" ;;
-            'q'|'Q') echo "QUIT" ;;
-            'j'|'J') echo "DOWN" ;;
-            'k'|'K') echo "UP" ;;
-            'h'|'H') echo "LEFT" ;;
-            'l'|'L') echo "RIGHT" ;;
-            '?') echo "HELP" ;;
-            [0-9]) echo "$key" ;;
-            *) echo "$key" ;;
-        esac
+        # Read the bracket
+        IFS= read -rsn1 -t 0.1 escape_seq 2>/dev/null
+        if [[ "$escape_seq" == "[" ]]; then
+            # Read the actual key code
+            IFS= read -rsn1 -t 0.1 escape_seq 2>/dev/null
+            case "$escape_seq" in
+                'A') echo "UP" ; return 0 ;;
+                'B') echo "DOWN" ; return 0 ;;
+                'C') echo "RIGHT" ; return 0 ;;
+                'D') echo "LEFT" ; return 0 ;;
+                'H') echo "HOME" ; return 0 ;;
+                'F') echo "END" ; return 0 ;;
+            esac
+        fi
+        echo "ESC"
+        return 0
     fi
+    
+    case "$key" in
+        '') echo "ENTER" ;;
+        ' ') echo "SPACE" ;;
+        'q'|'Q') echo "QUIT" ;;
+        'j'|'J') echo "DOWN" ;;
+        'k'|'K') echo "UP" ;;
+        'h'|'H') echo "LEFT" ;;
+        'l'|'L') echo "RIGHT" ;;
+        '?') echo "HELP" ;;
+        [0-9]) echo "$key" ;;
+        *) echo "$key" ;;
+    esac
+    return 0
 }
 
 #--------------------------------------
