@@ -52,11 +52,13 @@ _autovault() {
                 'config:Interactive configuration wizard'
                 'validate:Validate configuration file'
                 'status:Show current status'
+                'stats:Show detailed statistics dashboard'
+                'diff:Show diff of expected vs actual state'
                 'structure:Create folder structure in vault'
                 'templates:Manage templates (sync/apply/export/preview)'
                 'test:Verify vault structure'
                 'cleanup:Remove vault structure (dangerous!)'
-                'customer:Manage customers (add/remove/list)'
+                'customer:Manage customers (add/remove/list/export/import/clone)'
                 'section:Manage sections (add/remove/list)'
                 'backup:Manage backups (create/list/restore/delete)'
                 'vault:Obsidian setup (init/plugins/check/hub)'
@@ -97,6 +99,9 @@ _autovault_customer() {
         'remove:Remove a customer'
         'list:List all customers'
         'rename:Rename a customer'
+        'export:Export customer to archive'
+        'import:Import customer from archive'
+        'clone:Clone an existing customer'
     )
     
     _arguments \

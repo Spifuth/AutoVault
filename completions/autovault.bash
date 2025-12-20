@@ -40,10 +40,10 @@ _autovault_completions() {
     local global_opts="-v --verbose -q --quiet --silent --no-color --dry-run -h --help --version"
     
     # Subcommands for each command
-    local customer_cmds="add remove list rename"
+    local customer_cmds="add remove list rename export import clone"
     local section_cmds="add remove list"
     local backup_cmds="create list restore delete"
-    local templates_cmds="sync apply export preview"
+    local templates_cmds="sync apply export preview list"
     local vault_cmds="init plugins check hub"
     
     # Get the main command (skip options)
