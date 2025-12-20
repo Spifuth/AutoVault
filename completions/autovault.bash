@@ -40,9 +40,9 @@ _autovault_completions() {
     local global_opts="-v --verbose -q --quiet --silent --no-color --dry-run --diff -h --help --version"
     
     # Subcommands for each command
-    local customer_cmds="add remove list rename export import clone"
+    local customer_cmds="add remove list export import clone"
     local section_cmds="add remove list"
-    local backup_cmds="create list restore delete"
+    local backup_cmds="create list restore cleanup"
     local templates_cmds="sync apply export preview list"
     local vault_cmds="init plugins check hub"
     local hooks_cmds="list init test"
@@ -77,7 +77,7 @@ _autovault_completions() {
     case "$main_cmd" in
         customer|customers)
             case "$prev" in
-                add|remove|rename)
+                add|remove)
                     # Suggest existing customer IDs from config
                     local ids=$(_autovault_get_customer_ids)
                     COMPREPLY=($(compgen -W "$ids" -- "$cur"))
@@ -109,7 +109,7 @@ _autovault_completions() {
         
         backup|backups)
             case "$prev" in
-                restore|delete)
+                restore|cleanup)
                     # Suggest available backup files
                     local backups=$(_autovault_get_backups)
                     COMPREPLY=($(compgen -W "$backups" -- "$cur"))

@@ -61,7 +61,7 @@ _autovault() {
                 'cleanup:Remove vault structure (dangerous!)'
                 'customer:Manage customers (add/remove/list/export/import/clone)'
                 'section:Manage sections (add/remove/list)'
-                'backup:Manage backups (create/list/restore/delete)'
+                'backup:Manage backups (create/list/restore/cleanup)'
                 'vault:Obsidian setup (init/plugins/check/hub)'
                 'remote:Remote vault sync via SSH (push/pull)'
                 'hooks:Manage automation hooks (list/init/test)'
@@ -107,7 +107,6 @@ _autovault_customer() {
         'add:Add a new customer'
         'remove:Remove a customer'
         'list:List all customers'
-        'rename:Rename a customer'
         'export:Export customer to archive'
         'import:Import customer from archive'
         'clone:Clone an existing customer'
@@ -161,7 +160,7 @@ _autovault_backup() {
         'create:Create a new backup'
         'list:List all backups'
         'restore:Restore from a backup'
-        'delete:Delete a backup'
+        'cleanup:Clean old backups'
     )
     
     _arguments \
@@ -174,7 +173,7 @@ _autovault_backup() {
             ;;
         args)
             case "${line[2]}" in
-                restore|delete)
+                restore|cleanup)
                     # Complete with backup files
                     local -a backups
                     backups=(${(f)"$(_autovault_get_backups)"})
