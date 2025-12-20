@@ -64,6 +64,9 @@ setup_colors() {
     GREEN=""
     YELLOW=""
     BLUE=""
+    CYAN=""
+    DIM=""
+    NC=""
   else
     COLOR_BLUE="\033[34m"
     COLOR_YELLOW="\033[33m"
@@ -84,6 +87,12 @@ setup_colors() {
     YELLOW="\033[33m"
     # shellcheck disable=SC2034
     BLUE="\033[34m"
+    # shellcheck disable=SC2034
+    CYAN="\033[36m"
+    # shellcheck disable=SC2034
+    DIM="\033[2m"
+    # shellcheck disable=SC2034
+    NC="\033[0m"
   fi
 }
 
