@@ -1,14 +1,28 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# Manage-Customers.sh - Customer management operations for AutoVault
+#  AUTOVAULT - Manage-Customers.sh
 #
-# Usage: Called from cust-run-config.sh
-#   bash/Manage-Customers.sh add [ID]
-#   bash/Manage-Customers.sh remove [ID]
-#   bash/Manage-Customers.sh list
+#===============================================================================
 #
-# Depends on: bash/lib/logging.sh, bash/lib/config.sh
+#  DESCRIPTION:    Manages customer IDs in the AutoVault configuration.
+#                  Allows adding, removing, and listing customer entries.
+#                  Automatically creates/removes folder structures.
 #
+#  COMMANDS:       add <ID>     - Add a new customer ID
+#                  remove <ID>  - Remove a customer ID (with confirmation)
+#                  list         - List all configured customer IDs
+#
+#  USAGE:          Called via: ./cust-run-config.sh customer [add|remove|list] [ID]
+#                  Direct:     bash/Manage-Customers.sh [command] [args]
+#
+#  EXAMPLES:       ./cust-run-config.sh customer add 42
+#                  ./cust-run-config.sh customer remove 7
+#                  ./cust-run-config.sh customer list
+#
+#  DEPENDENCIES:   bash/lib/logging.sh, bash/lib/config.sh, jq
+#
+#===============================================================================
 
 set -euo pipefail
 

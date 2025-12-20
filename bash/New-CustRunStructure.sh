@@ -1,20 +1,36 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# New-CustRunStructure.sh
+#  AUTOVAULT - New-CustRunStructure.sh
 #
-# Creates the folder structure for customer runs in the Obsidian vault.
+#===============================================================================
 #
-# STRUCTURE CREATED:
-#   <VAULT_ROOT>/Run/
-#       CUST-002/
-#           CUST-002-Index.md
-#           CUST-002-FP/
-#               CUST-002-FP-Index.md
-#           CUST-002-RAISED/
-#               ...
+#  DESCRIPTION:    Creates the folder structure for customer runs in the
+#                  Obsidian vault. Generates CUST-XXX folders with section
+#                  subfolders and index files.
 #
-#   And: <VAULT_ROOT>/Run-Hub.md
+#  STRUCTURE CREATED:
+#                  <VAULT_ROOT>/
+#                  ├── Run/
+#                  │   ├── CUST-001/
+#                  │   │   ├── CUST-001-Index.md
+#                  │   │   ├── CUST-001-FP/
+#                  │   │   │   └── CUST-001-FP-Index.md
+#                  │   │   └── CUST-001-RAISED/
+#                  │   │       └── CUST-001-RAISED-Index.md
+#                  │   └── CUST-002/
+#                  │       └── ...
+#                  └── Run-Hub.md
 #
+#  USAGE:          Called via: ./cust-run-config.sh structure
+#                  Direct:     bash/New-CustRunStructure.sh
+#
+#  DEPENDENCIES:   bash/lib/logging.sh, bash/lib/config.sh
+#
+#  ENVIRONMENT:    CONFIG_JSON - Path to configuration file
+#                  DRY_RUN     - If "true", show what would be done
+#
+#===============================================================================
 
 set -euo pipefail
 

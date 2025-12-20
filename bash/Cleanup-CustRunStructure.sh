@@ -1,9 +1,30 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# Cleanup-CustRunStructure.sh
+#  AUTOVAULT - Cleanup-CustRunStructure.sh
 #
-# DANGEROUS SCRIPT – WILL DELETE CUST STRUCTURE UNDER Run
+#===============================================================================
 #
+#  ⚠️  WARNING: DESTRUCTIVE OPERATION
+#
+#  DESCRIPTION:    Removes the entire Run folder structure from the vault.
+#                  This is a dangerous operation that will DELETE all
+#                  customer folders and their contents.
+#
+#  SAFETY:         - Requires EnableCleanup=true in config
+#                  - Prompts for confirmation before deletion
+#                  - Use --dry-run to preview what would be deleted
+#
+#  WHAT GETS DELETED:
+#                  - <VAULT_ROOT>/Run/ (entire folder tree)
+#                  - <VAULT_ROOT>/Run-Hub.md
+#
+#  USAGE:          Called via: ./cust-run-config.sh cleanup
+#                  With preview: ./cust-run-config.sh --dry-run cleanup
+#
+#  DEPENDENCIES:   bash/lib/logging.sh, bash/lib/config.sh
+#
+#===============================================================================
 
 set -euo pipefail
 

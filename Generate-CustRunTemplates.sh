@@ -1,7 +1,32 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# Generate-CustRunTemplates.sh
-# Create markdown template files under the Vault _templates folder from a JSON spec.
+#  AUTOVAULT - Generate-CustRunTemplates.sh
+#
+#===============================================================================
+#
+#  DESCRIPTION:    Creates markdown template files under the vault's
+#                  _templates folder from a JSON specification file.
+#
+#  INPUT FILE:     cust-run-templates.json (in project root or vault)
+#                  Contains template content for each file type
+#
+#  OUTPUT:         Creates files in <VAULT_ROOT>/_templates/Run/:
+#                  - CUST-Root-Index.md
+#                  - CUST-Section-FP-Index.md
+#                  - CUST-Section-RAISED-Index.md
+#                  - etc.
+#
+#  USAGE:          ./Generate-CustRunTemplates.sh [JSON_FILE]
+#                  ./Generate-CustRunTemplates.sh cust-run-templates.json
+#
+#  NOTE:           This is a standalone utility script.
+#                  For template management, prefer using:
+#                  ./cust-run-config.sh templates sync
+#
+#  DEPENDENCIES:   jq, python3 (optional for complex templates)
+#
+#===============================================================================
 
 set -euo pipefail
 

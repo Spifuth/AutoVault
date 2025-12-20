@@ -1,14 +1,32 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# Manage-Templates.sh
+#  AUTOVAULT - Manage-Templates.sh
 #
-# Manage templates: export from vault, sync to vault, apply to CUST folders
+#===============================================================================
 #
-# Commands:
-#   export  - Read templates from vault/_templates/ and update config/templates.json
-#   sync    - Write templates from config/templates.json to vault/_templates/
-#   apply   - Apply templates to CUST folders (replace placeholders)
+#  DESCRIPTION:    Manages markdown templates for CUST index files.
+#                  Supports bidirectional sync between vault and config,
+#                  and applies templates with placeholder replacement.
 #
+#  COMMANDS:       export  - Read templates from vault/_templates/ and
+#                            update config/templates.json
+#                  sync    - Write templates from config/templates.json
+#                            to vault/_templates/
+#                  apply   - Apply templates to CUST folders, replacing
+#                            placeholders like {{CUST_CODE}}, {{NOW_UTC}}
+#
+#  PLACEHOLDERS:   {{CUST_CODE}}   - Customer code (e.g., CUST-001)
+#                  {{SECTION}}     - Section name (e.g., FP, RAISED)
+#                  {{NOW_UTC}}     - Current UTC timestamp
+#                  {{NOW_LOCAL}}   - Current local timestamp
+#
+#  USAGE:          Called via: ./cust-run-config.sh templates [export|sync|apply]
+#                  Direct:     bash/Manage-Templates.sh [command]
+#
+#  DEPENDENCIES:   bash/lib/logging.sh, bash/lib/config.sh, python3, jq
+#
+#===============================================================================
 
 set -euo pipefail
 

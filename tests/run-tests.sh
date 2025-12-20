@@ -1,9 +1,38 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# run-tests.sh
+#  AUTOVAULT - run-tests.sh
 #
-# Run all AutoVault tests - WITH FANCY ANIMATIONS! 🎬
+#===============================================================================
 #
+#  DESCRIPTION:    Comprehensive test suite for AutoVault.
+#                  Runs all unit tests, integration tests, and edge case
+#                  tests with fancy terminal animations (when available).
+#
+#  TEST CATEGORIES:
+#                  - Unit Tests        (requirements, syntax, JSON validity)
+#                  - Integration Tests (structure creation, templates, validation)
+#                  - Edge Cases        (empty lists, special characters, limits)
+#                  - Idempotence Tests (running commands twice)
+#                  - Invalid Config    (malformed JSON, wrong types)
+#                  - Dry-Run Tests     (no modifications made)
+#                  - Backup Tests      (create, list, restore)
+#                  - Permission Tests  (read-only directories)
+#
+#  FEATURES:       - Animated spinners and progress bars (interactive mode)
+#                  - CI mode detection (disables animations)
+#                  - Colored output with pass/fail indicators
+#                  - Final summary with success rate
+#
+#  USAGE:          ./tests/run-tests.sh
+#
+#  EXIT CODES:     0 - All tests passed
+#                  1 - One or more tests failed
+#
+#  CI SUPPORT:     Automatically detects GitHub Actions and other CI
+#                  environments, switches to simple text output.
+#
+#===============================================================================
 
 set -euo pipefail
 

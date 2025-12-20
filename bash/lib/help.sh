@@ -1,15 +1,32 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# help.sh - Help system for AutoVault
+#  AUTOVAULT LIBRARY - help.sh
 #
-# Usage: source this file from the main script
-#   source "$LIB_DIR/help.sh"
+#===============================================================================
 #
-# Provides:
-#   - usage() - main help dispatcher
-#   - help_main() - main help page
-#   - help_* - per-command help pages
+#  DESCRIPTION:    Help system for AutoVault CLI.
+#                  Provides formatted help pages for all commands
+#                  with color support and examples.
 #
+#  FUNCTIONS:      usage()        - Main help dispatcher
+#                  help_main()    - Main help page (--help)
+#                  help_structure - Help for structure command
+#                  help_templates - Help for templates command
+#                  help_customer  - Help for customer command
+#                  help_section   - Help for section command
+#                  help_backup    - Help for backup command
+#                  help_vault     - Help for vault command
+#                  help_config    - Help for config command
+#
+#  USAGE:          source "$LIB_DIR/help.sh"
+#                  usage              # Show main help
+#                  usage "templates"  # Show templates help
+#
+#  COLORS:         Respects NO_COLOR environment variable
+#                  Uses ANSI colors for headers and highlights
+#
+#===============================================================================
 
 # Prevent multiple sourcing
 [[ -n "${_HELP_SH_LOADED:-}" ]] && return 0

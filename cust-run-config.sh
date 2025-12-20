@@ -1,15 +1,45 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# cust-run-config.sh - Main CLI orchestrator for AutoVault
+#          ___         __       _    __            ____
+#         /   | __  __/ /____  | |  / /___ ___  __/ / /_
+#        / /| |/ / / / __/ _ \ | | / / __ `/ / / / / __/
+#       / ___ / /_/ / /_/ (_) || |/ / /_/ / /_/ / / /_
+#      /_/  |_\__,_/\__/\___/ |___/\__,_/\__,_/_/\__/
 #
-# This is the entry point for all AutoVault operations.
-# It parses CLI arguments and dispatches to the appropriate module.
+#===============================================================================
 #
-# Usage:
-#   cust-run-config.sh [OPTIONS] COMMAND [ARGS]
+#  SCRIPT NAME:    cust-run-config.sh
+#  DESCRIPTION:    Main CLI orchestrator for AutoVault
+#                  Entry point for all AutoVault operations - parses CLI 
+#                  arguments and dispatches to the appropriate module.
 #
-# See --help for full documentation.
+#  USAGE:          ./cust-run-config.sh [OPTIONS] COMMAND [ARGS]
+#                  ./cust-run-config.sh --help
 #
+#  COMMANDS:       structure   - Create folder structure for customers
+#                  templates   - Manage markdown templates (sync/apply/export)
+#                  customer    - Add/remove/list customers
+#                  section     - Add/remove/list sections
+#                  backup      - Backup and restore configuration
+#                  validate    - Validate configuration file
+#                  status      - Show current configuration status
+#                  vault       - Initialize Obsidian vault and plugins
+#
+#  OPTIONS:        -v, --verbose    Increase output verbosity
+#                  -q, --quiet      Suppress non-error output
+#                  --dry-run        Show what would be done without executing
+#                  --no-color       Disable colored output
+#                  -h, --help       Display help information
+#
+#  DEPENDENCIES:   bash >= 4.0, jq, python3
+#
+#  AUTHOR:         AutoVault Project
+#  VERSION:        2.0
+#  CREATED:        2024
+#  REPOSITORY:     https://github.com/Spifuth/AutoVault
+#
+#===============================================================================
 
 # Strict mode only when executed directly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

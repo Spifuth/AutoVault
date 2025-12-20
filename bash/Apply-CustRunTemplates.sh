@@ -1,9 +1,32 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# Apply-CustRunTemplates.sh
+#  AUTOVAULT - Apply-CustRunTemplates.sh
 #
-# APPLY EXTERNAL MARKDOWN TEMPLATES TO ALL CUST RUN INDEX FILES
+#===============================================================================
 #
+#  DESCRIPTION:    Applies external markdown templates to all CUST Run
+#                  index files. Reads templates from the vault's _templates
+#                  folder and writes them to each customer's index files.
+#
+#  TEMPLATES APPLIED:
+#                  - CUST-XXX-Index.md         (from CUST-Root-Index.md)
+#                  - CUST-XXX-SECTION-Index.md (from CUST-Section-SECTION-Index.md)
+#
+#  PLACEHOLDERS REPLACED:
+#                  {{CUST_CODE}}  -> Customer code (e.g., CUST-001)
+#                  {{SECTION}}    -> Section name (e.g., FP, RAISED)
+#                  {{NOW_UTC}}    -> Current UTC timestamp
+#                  {{NOW_LOCAL}}  -> Current local timestamp
+#
+#  NOTE:           This is a legacy script. Prefer using Manage-Templates.sh
+#                  which reads from config/templates.json instead.
+#
+#  USAGE:          bash/Apply-CustRunTemplates.sh
+#
+#  DEPENDENCIES:   bash/lib/logging.sh, bash/lib/config.sh
+#
+#===============================================================================
 
 set -euo pipefail
 

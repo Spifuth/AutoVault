@@ -1,15 +1,37 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# logging.sh - Shared logging utilities for AutoVault
+#  AUTOVAULT LIBRARY - logging.sh
 #
-# Usage: source this file from any script that needs logging
-#   source "$SCRIPT_DIR/lib/logging.sh"
+#===============================================================================
 #
-# Provides:
-#   - LOG_LEVEL control (0=silent, 1=error, 2=warn, 3=info, 4=debug)
-#   - NO_COLOR support (https://no-color.org/)
-#   - Colored log functions: log_debug, log_info, log_warn, log_error, log_success
+#  DESCRIPTION:    Shared logging utilities for all AutoVault scripts.
+#                  Provides colored, leveled logging with support for
+#                  NO_COLOR environment variable.
 #
+#  LOG LEVELS:     0 = silent  (no output)
+#                  1 = error   (errors only)
+#                  2 = warn    (errors + warnings)
+#                  3 = info    (default - errors, warnings, info)
+#                  4 = debug   (verbose - all messages)
+#
+#  FUNCTIONS:      log_debug   - Debug messages (level 4)
+#                  log_info    - Informational messages (level 3)
+#                  log_warn    - Warning messages (level 2)
+#                  log_error   - Error messages (level 1)
+#                  log_success - Success messages (level 3, green)
+#
+#  USAGE:          source "$SCRIPT_DIR/lib/logging.sh"
+#                  LOG_LEVEL=4 log_debug "Verbose message"
+#                  log_info "Processing file..."
+#                  log_error "Something went wrong!"
+#
+#  ENVIRONMENT:    LOG_LEVEL - Set logging verbosity (default: 3)
+#                  NO_COLOR  - Disable colored output if set
+#
+#  REFERENCE:      https://no-color.org/
+#
+#===============================================================================
 
 # Prevent multiple sourcing
 [[ -n "${_LOGGING_SH_LOADED:-}" ]] && return 0
