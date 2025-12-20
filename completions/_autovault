@@ -62,6 +62,7 @@ _autovault() {
                 'section:Manage sections (add/remove/list)'
                 'backup:Manage backups (create/list/restore/delete)'
                 'vault:Obsidian setup (init/plugins/check/hub)'
+                'hooks:Manage automation hooks (list/init/test)'
                 'requirements:Check/install dependencies'
                 'help:Show help for a command'
             )
@@ -83,6 +84,9 @@ _autovault() {
                     ;;
                 vault)
                     _autovault_vault
+                    ;;
+                hooks)
+                    _autovault_hooks
                     ;;
                 *)
                     _arguments '--help[Show help]'
@@ -215,6 +219,41 @@ _autovault_vault() {
         'hub:Open Obsidian plugin hub'
     )
     _describe 'vault command' subcmds
+}
+
+_autovault_hooks() {
+    local state
+    _arguments -C \
+        '--help[Show help]' \
+        '1: :->subcmd' \
+        '*: :->args'
+    
+    case "$state" in
+        subcmd)
+            local -a subcmds
+            subcmds=(
+                'list:List available hooks'
+                'init:Initialize hooks directory with examples'
+                'test:Test a specific hook'
+            )
+            _describe 'hooks command' subcmds
+            ;;
+        args)
+            case "${line[2]}" in
+                test)
+                    # Complete with hook names
+                    local -a hooks
+                    hooks=(
+                        'pre-customer-remove:Before removing a customer'
+                        'post-customer-remove:After removing a customer'
+                        'post-templates-apply:After applying templates'
+                        'on-error:When any error occurs'
+                    )
+                    _describe 'hook name' hooks
+                    ;;
+            esac
+            ;;
+    esac
 }
 
 # Helper functions to get dynamic values

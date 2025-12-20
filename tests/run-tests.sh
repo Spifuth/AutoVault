@@ -77,7 +77,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
 CURRENT_TEST=0
-TOTAL_TESTS=48
+TOTAL_TESTS=53
 
 # Animation frames
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -1244,6 +1244,124 @@ EOF
 }
 
 #######################################
+# Hook Tests
+#######################################
+
+test_hooks_list() {
+    # Test hooks list command
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" hooks list 2>&1)
+    
+    # Should list available hooks
+    echo "$output" | grep -q "pre-customer-remove" && \
+    echo "$output" | grep -q "post-customer-remove" && \
+    echo "$output" | grep -q "post-templates-apply" && \
+    echo "$output" | grep -q "on-error"
+}
+
+test_hooks_init() {
+    # Test hooks init command
+    local test_hooks_dir="$TEST_VAULT/test-hooks-init"
+    # Don't create directory - let init_hooks_dir create it
+    rm -rf "$test_hooks_dir" 2>/dev/null || true
+    
+    (
+        cd "$PROJECT_ROOT"
+        bash ./cust-run-config.sh hooks init "$test_hooks_dir" >/dev/null 2>&1
+    ) || true
+    
+    # Should create example files
+    local result=true
+    [[ -f "$test_hooks_dir/pre-customer-remove.sh.example" ]] || result=false
+    [[ -f "$test_hooks_dir/post-templates-apply.sh.example" ]] || result=false
+    [[ -f "$test_hooks_dir/on-error.sh.example" ]] || result=false
+    [[ -f "$test_hooks_dir/README.md" ]] || result=false
+    
+    rm -rf "$test_hooks_dir"
+    $result
+}
+
+test_hooks_pre_cancel() {
+    # Test that a pre-hook can cancel an operation
+    local test_hooks_dir="$TEST_VAULT/test-hooks-cancel"
+    mkdir -p "$test_hooks_dir"
+    
+    # Create a pre-hook that returns non-zero
+    cat > "$test_hooks_dir/pre-customer-remove.sh" << 'EOF'
+#!/usr/bin/env bash
+echo "Hook cancelling operation"
+exit 1
+EOF
+    chmod +x "$test_hooks_dir/pre-customer-remove.sh"
+    
+    # Create test config with customer
+    local test_config
+    test_config=$(mktemp)
+    cat > "$test_config" <<EOF
+{
+  "VaultRoot": "$TEST_VAULT",
+  "CustomerIdWidth": 3,
+  "CustomerIds": [42],
+  "Sections": ["FP"],
+  "TemplateRelativeRoot": "_templates/Run"
+}
+EOF
+
+    # Try to remove customer - should fail due to hook
+    local output
+    output=$(
+        cd "$PROJECT_ROOT"
+        export CONFIG_JSON="$test_config"
+        export AUTOVAULT_HOOKS_DIR="$test_hooks_dir"
+        echo "y" | bash ./cust-run-config.sh customer remove 42 2>&1
+    ) || true
+    
+    # Should contain cancellation message
+    local result=false
+    echo "$output" | grep -qi "cancel\|hook" && result=true
+    
+    rm -rf "$test_hooks_dir"
+    rm -f "$test_config"
+    $result
+}
+
+test_hooks_disabled() {
+    # Test that hooks can be disabled
+    local test_hooks_dir="$TEST_VAULT/test-hooks-disabled"
+    mkdir -p "$test_hooks_dir"
+    
+    # Create a hook that would fail
+    cat > "$test_hooks_dir/pre-customer-remove.sh" << 'EOF'
+#!/usr/bin/env bash
+exit 1
+EOF
+    chmod +x "$test_hooks_dir/pre-customer-remove.sh"
+    
+    # Test hook with hooks disabled - should not run hook
+    (
+        cd "$PROJECT_ROOT"
+        export AUTOVAULT_HOOKS_ENABLED="false"
+        export AUTOVAULT_HOOKS_DIR="$test_hooks_dir"
+        # Source hooks.sh and test run_hook returns 0 (hook not run)
+        source "$PROJECT_ROOT/bash/lib/hooks.sh"
+        run_hook "pre-customer-remove" "test" 2>/dev/null
+    )
+    local exit_code=$?
+    
+    rm -rf "$test_hooks_dir"
+    [[ $exit_code -eq 0 ]]
+}
+
+test_hooks_help() {
+    # Test hooks help page
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" hooks --help 2>&1)
+    
+    # Should contain hook descriptions
+    echo "$output" | grep -qi "hook\|automation"
+}
+
+#######################################
 # Subcommand Help Tests
 #######################################
 
@@ -1509,6 +1627,14 @@ main() {
     # Permission tests
     show_category "PERMISSION TESTS" "🔐"
     run_test "Read-only vault directory" test_readonly_vault_dir || true
+    
+    # Hook tests
+    show_category "HOOK TESTS" "🪝"
+    run_test "Hooks list command" test_hooks_list || true
+    run_test "Hooks init command" test_hooks_init || true
+    run_test "Hooks pre-hook cancellation" test_hooks_pre_cancel || true
+    run_test "Hooks disabled" test_hooks_disabled || true
+    run_test "Hooks help page" test_hooks_help || true
     
     # Teardown with animation
     echo ""

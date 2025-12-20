@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+#===============================================================================
+# Hook: pre-customer-remove
+# Runs BEFORE a customer is removed
+# 
+# Arguments:
+#   $1 - Customer ID being removed
+#   $2 - Customer code (e.g., CUST-042)
+#
+# Environment:
+#   VAULT_ROOT - Path to the vault
+#   CONFIG_JSON - Path to config file
+#
+# Exit code:
+#   0 - Continue with removal
+#   non-zero - Cancel the removal
+#===============================================================================
+
+CUST_ID="$1"
+CUST_CODE="$2"
+
+echo "[Hook] pre-customer-remove: $CUST_CODE"
+
+# Example: Create backup before removal
+# BACKUP_DIR="$VAULT_ROOT/../_archived_customers"
+# mkdir -p "$BACKUP_DIR"
+# cp -r "$VAULT_ROOT/Run/$CUST_CODE" "$BACKUP_DIR/${CUST_CODE}-$(date +%Y%m%d)"
+
+# Example: Check if customer has active items
+# if grep -rq "status: active" "$VAULT_ROOT/Run/$CUST_CODE"; then
+#     echo "ERROR: Customer has active items, cannot remove"
+#     exit 1
+# fi
+
+# Example: Require confirmation file
+# if [[ ! -f "/tmp/confirm-remove-$CUST_ID" ]]; then
+#     echo "ERROR: Create /tmp/confirm-remove-$CUST_ID to confirm"
+#     exit 1
+# fi
+
+exit 0

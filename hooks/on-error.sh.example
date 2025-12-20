@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+#===============================================================================
+# Hook: on-error
+# Runs when ANY error occurs in AutoVault
+#
+# Arguments:
+#   $1 - Operation that failed
+#   $2 - Error message
+#   $3 - Exit code
+#
+# Environment:
+#   AUTOVAULT_ERROR_MESSAGE - Full error message
+#   AUTOVAULT_ERROR_OPERATION - Operation that failed
+#   AUTOVAULT_ERROR_CODE - Exit code
+#===============================================================================
+
+OPERATION="$1"
+ERROR_MSG="$2"
+EXIT_CODE="$3"
+
+echo "[Hook] on-error: $OPERATION failed with code $EXIT_CODE"
+echo "        Message: $ERROR_MSG"
+
+# Example: Send alert
+# curl -X POST "$ALERT_WEBHOOK" \
+#      -H "Content-Type: application/json" \
+#      -d "{
+#        \"title\": \"AutoVault Error\",
+#        \"operation\": \"$OPERATION\",
+#        \"error\": \"$ERROR_MSG\",
+#        \"code\": $EXIT_CODE,
+#        \"host\": \"$(hostname)\",
+#        \"user\": \"$USER\",
+#        \"time\": \"$(date -Iseconds)\"
+#      }"
+
+# Example: Log to file
+# echo "$(date -Iseconds) ERROR [$OPERATION] $ERROR_MSG (code: $EXIT_CODE)" >> /var/log/autovault-errors.log
+
+exit 0

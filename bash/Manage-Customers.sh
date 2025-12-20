@@ -31,6 +31,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Source libraries
 source "$SCRIPT_DIR/lib/logging.sh"
 source "$SCRIPT_DIR/lib/config.sh"
+source "$SCRIPT_DIR/lib/hooks.sh"
 
 #--------------------------------------
 # ADD CUSTOMER
@@ -166,12 +167,21 @@ remove_customer() {
     return 0
   fi
 
+  # Run pre-hook (can cancel the operation)
+  if ! run_hook "pre-customer-remove" "$id" "$cust_code"; then
+    log_error "Customer removal cancelled by pre-hook"
+    return 1
+  fi
+
   # Update array
   CUSTOMER_IDS=("${new_ids[@]}")
 
   # Save config
   if ensure_config_json; then
     log_success "Removed customer ID $id ($cust_code)"
+    
+    # Run post-hook
+    run_hook "post-customer-remove" "$id" "$cust_code"
   else
     log_error "Failed to save configuration"
     return 1

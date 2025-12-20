@@ -62,6 +62,7 @@ usage() {
     section)    help_section ;;
     backup)     help_backup ;;
     vault)      help_vault ;;
+    hooks)      help_hooks ;;
     *)          help_main ;;
   esac
 }
@@ -120,6 +121,7 @@ $(_h_bold)COMMANDS$(_h_reset)
 
     $(_h_yellow)System$(_h_reset)
     requirements        Check/install dependencies
+    hooks               Manage automation hooks (list/init/test)
 
 $(_h_bold)QUICK START$(_h_reset)
     $(_h_dim)# First time setup$(_h_reset)
@@ -459,5 +461,73 @@ $(_h_bold)EXAMPLES$(_h_reset)
     $script_name vault check          $(_h_dim)# Check plugins installed$(_h_reset)
     $script_name vault plugins        $(_h_dim)# Configure plugins only$(_h_reset)
     $script_name vault hub            $(_h_dim)# Regenerate Run-Hub$(_h_reset)
+EOF
+}
+
+#--------------------------------------
+# HOOKS HELP
+#--------------------------------------
+help_hooks() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - HOOKS$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name hooks [SUBCOMMAND]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Automation hooks allow custom scripts to run before/after operations.
+    Use hooks for notifications, backups, external API calls, etc.
+
+$(_h_bold)SUBCOMMANDS$(_h_reset)
+    $(_h_green)list$(_h_reset) $(_h_dim)(default)$(_h_reset)
+        List available hooks and show which are installed.
+
+    $(_h_green)init$(_h_reset) [path]
+        Create hooks directory with example scripts.
+        Default path: ./hooks/
+
+    $(_h_green)test$(_h_reset) <hook-name> [args...]
+        Test a specific hook with optional arguments.
+
+$(_h_bold)AVAILABLE HOOKS$(_h_reset)
+    $(_h_cyan)pre-customer-remove$(_h_reset)
+        Runs BEFORE a customer is removed.
+        $(_h_yellow)Can cancel the operation$(_h_reset) by returning non-zero.
+
+    $(_h_cyan)post-customer-remove$(_h_reset)
+        Runs AFTER a customer is removed successfully.
+        Exit code is logged but doesn't affect operation.
+
+    $(_h_cyan)post-templates-apply$(_h_reset)
+        Runs AFTER templates are applied to the vault.
+        Receives count of files updated as argument.
+
+    $(_h_cyan)on-error$(_h_reset)
+        Runs when ANY error occurs in AutoVault.
+        Receives: operation, error message, exit code.
+
+$(_h_bold)HOOK INTERFACE$(_h_reset)
+    Hooks receive context as arguments and environment variables:
+    
+    $(_h_yellow)Arguments:$(_h_reset)     \$1, \$2, etc. - Context specific to each hook
+    $(_h_yellow)Environment:$(_h_reset)   VAULT_ROOT, CONFIG_JSON, AUTOVAULT_HOOK
+
+$(_h_bold)CREATING A HOOK$(_h_reset)
+    1. $script_name hooks init
+    2. cp hooks/pre-customer-remove.sh.example hooks/pre-customer-remove.sh
+    3. chmod +x hooks/pre-customer-remove.sh
+    4. Edit the script with your custom logic
+
+$(_h_bold)ENVIRONMENT$(_h_reset)
+    AUTOVAULT_HOOKS_DIR       Custom hooks directory path
+    AUTOVAULT_HOOKS_ENABLED   Set to "false" to disable hooks
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $script_name hooks                  $(_h_dim)# List hooks$(_h_reset)
+    $script_name hooks init             $(_h_dim)# Create hooks directory$(_h_reset)
+    $script_name hooks test on-error    $(_h_dim)# Test on-error hook$(_h_reset)
 EOF
 }
