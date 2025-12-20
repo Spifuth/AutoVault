@@ -86,34 +86,61 @@ tui_move_cursor() {
 tui_save_cursor() { echo -ne "\033[s"; }
 tui_restore_cursor() { echo -ne "\033[u"; }
 
-# Read single key
+# Read single key with proper escape sequence handling
 tui_read_key() {
     local key
-    local escape_seq
+    local seq1 seq2 seq3
     
-    # Read first character
+    # Read first character (blocking)
     IFS= read -rsn1 key 2>/dev/null || return 1
     
-    # Handle escape sequences (arrows, etc.)
-    if [[ "$key" == $'\x1b' ]]; then
-        # Read the bracket
-        IFS= read -rsn1 -t 0.1 escape_seq 2>/dev/null
-        if [[ "$escape_seq" == "[" ]]; then
-            # Read the actual key code
-            IFS= read -rsn1 -t 0.1 escape_seq 2>/dev/null
-            case "$escape_seq" in
-                'A') echo "UP" ; return 0 ;;
-                'B') echo "DOWN" ; return 0 ;;
-                'C') echo "RIGHT" ; return 0 ;;
-                'D') echo "LEFT" ; return 0 ;;
-                'H') echo "HOME" ; return 0 ;;
-                'F') echo "END" ; return 0 ;;
-            esac
+    # Handle escape sequences (arrows, function keys, etc.)
+    if [[ "$key" == $'\x1b' ]] || [[ "$key" == $'\e' ]]; then
+        # Check if more characters are available (escape sequence)
+        if IFS= read -rsn1 -t 0.01 seq1 2>/dev/null; then
+            if [[ "$seq1" == "[" ]]; then
+                # CSI sequence - read the final character
+                if IFS= read -rsn1 -t 0.01 seq2 2>/dev/null; then
+                    case "$seq2" in
+                        'A') echo "UP" ; return 0 ;;
+                        'B') echo "DOWN" ; return 0 ;;
+                        'C') echo "RIGHT" ; return 0 ;;
+                        'D') echo "LEFT" ; return 0 ;;
+                        'H') echo "HOME" ; return 0 ;;
+                        'F') echo "END" ; return 0 ;;
+                        '1'|'2'|'3'|'4'|'5'|'6')
+                            # Extended sequence like [1~ (Home), [4~ (End)
+                            IFS= read -rsn1 -t 0.01 seq3 2>/dev/null
+                            case "${seq2}${seq3}" in
+                                '1~'|'7~') echo "HOME" ; return 0 ;;
+                                '4~'|'8~') echo "END" ; return 0 ;;
+                                '3~') echo "DELETE" ; return 0 ;;
+                                '5~') echo "PAGEUP" ; return 0 ;;
+                                '6~') echo "PAGEDOWN" ; return 0 ;;
+                            esac
+                            ;;
+                    esac
+                fi
+            elif [[ "$seq1" == "O" ]]; then
+                # SS3 sequence (some terminals use this for arrows)
+                if IFS= read -rsn1 -t 0.01 seq2 2>/dev/null; then
+                    case "$seq2" in
+                        'A') echo "UP" ; return 0 ;;
+                        'B') echo "DOWN" ; return 0 ;;
+                        'C') echo "RIGHT" ; return 0 ;;
+                        'D') echo "LEFT" ; return 0 ;;
+                        'H') echo "HOME" ; return 0 ;;
+                        'F') echo "END" ; return 0 ;;
+                    esac
+                fi
+            fi
         fi
+        # Just ESC key pressed alone
         echo "ESC"
         return 0
     fi
     
+    # Regular key handling
     case "$key" in
         '') echo "ENTER" ;;
         ' ') echo "SPACE" ;;
@@ -123,6 +150,7 @@ tui_read_key() {
         'h'|'H') echo "LEFT" ;;
         'l'|'L') echo "RIGHT" ;;
         '?') echo "HELP" ;;
+        $'\x7f'|$'\b') echo "BACKSPACE" ;;
         [0-9]) echo "$key" ;;
         *) echo "$key" ;;
     esac
@@ -513,6 +541,12 @@ tui_run() {
         return 1
     fi
     
+    # Save original terminal settings
+    TUI_ORIGINAL_STTY=$(stty -g)
+    
+    # Setup terminal for raw input (disable line buffering and echo)
+    stty -echo -icanon min 1 time 0
+    
     # Setup
     tui_get_dimensions
     tui_hide_cursor
@@ -861,6 +895,10 @@ tui_run() {
 
 # Cleanup function
 tui_cleanup() {
+    # Restore original terminal settings
+    if [[ -n "${TUI_ORIGINAL_STTY:-}" ]]; then
+        stty "$TUI_ORIGINAL_STTY" 2>/dev/null || true
+    fi
     tui_show_cursor
     tui_clear
     echo "Goodbye! 👋"
