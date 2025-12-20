@@ -212,6 +212,34 @@ prompt_value() {
   fi
 }
 
+prompt_path() {
+  local prompt="$1"
+  local default="$2"
+  local result
+
+  # Enable readline for path completion
+  if [[ -n "$default" ]]; then
+    printf "%s [%s]: " "$prompt" "$default" >&2
+  else
+    printf "%s: " "$prompt" >&2
+  fi
+
+  # Use read -e for readline support (path completion with Tab)
+  read -e -r result
+  
+  if [[ -z "$result" ]]; then
+    result="$default"
+  fi
+  
+  # Expand ~ to $HOME
+  result="${result/#\~/$HOME}"
+  
+  # Remove trailing slash
+  result="${result%/}"
+  
+  echo "$result"
+}
+
 prompt_list() {
   local prompt="$1"
   shift
