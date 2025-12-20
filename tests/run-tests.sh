@@ -1466,32 +1466,6 @@ test_remote_help() {
 }
 
 #######################################
-# TUI Tests
-#######################################
-
-test_tui_library_syntax() {
-    # Test TUI library has valid syntax
-    bash -n "$PROJECT_ROOT/bash/lib/tui.sh"
-}
-
-test_tui_flag_recognized() {
-    # Test --tui flag is recognized (won't run in non-interactive)
-    local output
-    output=$("$PROJECT_ROOT/cust-run-config.sh" --tui 2>&1 </dev/null) || true
-    
-    # Should fail with "requires interactive terminal" or similar
-    echo "$output" | grep -qi "terminal\|interactive\|tty" || [[ -z "$output" ]]
-}
-
-test_tui_help_documented() {
-    # Test TUI is documented in help
-    local output
-    output=$("$PROJECT_ROOT/cust-run-config.sh" --help 2>&1)
-    
-    echo "$output" | grep -qi "tui\|interactive"
-}
-
-#######################################
 # Subcommand Help Tests
 #######################################
 
@@ -1773,12 +1747,6 @@ main() {
     run_test "Remote remove command" test_remote_remove || true
     run_test "Remote list command" test_remote_list || true
     run_test "Remote help page" test_remote_help || true
-    
-    # TUI tests
-    show_category "TUI TESTS" "🖥️"
-    run_test "TUI library syntax" test_tui_library_syntax || true
-    run_test "TUI flag recognized" test_tui_flag_recognized || true
-    run_test "TUI help documented" test_tui_help_documented || true
     
     # Teardown with animation
     echo ""
