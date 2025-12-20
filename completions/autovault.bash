@@ -34,7 +34,7 @@ _autovault_completions() {
     _init_completion || return
     
     # All main commands
-    local commands="config validate status structure templates test cleanup customer section backup vault requirements help"
+    local commands="config validate status diff stats structure templates test cleanup customer section backup vault hooks requirements help"
     
     # Global options
     local global_opts="-v --verbose -q --quiet --silent --no-color --dry-run -h --help --version"
@@ -45,6 +45,7 @@ _autovault_completions() {
     local backup_cmds="create list restore delete"
     local templates_cmds="sync apply export preview list"
     local vault_cmds="init plugins check hub"
+    local hooks_cmds="list init test"
     
     # Get the main command (skip options)
     local main_cmd=""
@@ -139,6 +140,21 @@ _autovault_completions() {
         
         vault)
             COMPREPLY=($(compgen -W "$vault_cmds --help" -- "$cur"))
+            ;;
+        
+        hooks)
+            case "$prev" in
+                test)
+                    # Suggest available hooks
+                    COMPREPLY=($(compgen -W "pre-customer-remove post-customer-remove post-templates-apply on-error" -- "$cur"))
+                    ;;
+                hooks)
+                    COMPREPLY=($(compgen -W "$hooks_cmds --help" -- "$cur"))
+                    ;;
+                *)
+                    COMPREPLY=($(compgen -W "$hooks_cmds --help" -- "$cur"))
+                    ;;
+            esac
             ;;
         
         structure|new)

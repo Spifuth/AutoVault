@@ -62,6 +62,7 @@ source "$LIB_DIR/config.sh"
 source "$LIB_DIR/help.sh"
 source "$LIB_DIR/version.sh"
 source "$LIB_DIR/diff.sh"
+source "$LIB_DIR/hooks.sh"
 
 #--------------------------------------
 # GLOBAL FLAGS (can be set via CLI)
@@ -69,6 +70,30 @@ source "$LIB_DIR/diff.sh"
 DRY_RUN="${DRY_RUN:-false}"
 VERBOSE="${VERBOSE:-false}"
 DIFF_MODE="${DIFF_MODE:-false}"
+
+#--------------------------------------
+# ERROR HANDLER
+#--------------------------------------
+handle_error() {
+  local exit_code=$?
+  local line_number="$1"
+  local command="${BASH_COMMAND:-unknown}"
+  local operation="${CURRENT_OPERATION:-unknown}"
+  
+  # Don't trigger hook for expected exits
+  [[ $exit_code -eq 0 ]] && return 0
+  
+  # Trigger on-error hook
+  trigger_error_hook "Command '$command' failed at line $line_number" "$operation" "$exit_code"
+}
+
+# Set up error trap (only when executed directly)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  trap 'handle_error ${LINENO}' ERR
+fi
+
+# Track current operation for error hook
+CURRENT_OPERATION="init"
 
 #--------------------------------------
 # HELPER: RUN BASH SCRIPTS
@@ -500,6 +525,44 @@ main() {
         *)
           log_error "Unknown vault subcommand: $subcmd"
           log_info "Available: init, plugins, check, hub"
+          exit 1
+          ;;
+      esac
+      ;;
+
+    #--- Hooks Management ---
+    hooks)
+      CURRENT_OPERATION="hooks"
+      local subcmd="${1:-list}"
+      shift || true
+      case "$subcmd" in
+        --help|-h)
+          usage "hooks"
+          ;;
+        list)
+          list_hooks
+          ;;
+        init)
+          init_hooks_dir "${1:-}"
+          ;;
+        test)
+          local hook_name="${1:-}"
+          if [[ -z "$hook_name" ]]; then
+            log_error "Usage: cust-run-config.sh hooks test <hook-name> [args...]"
+            exit 1
+          fi
+          shift
+          log_info "Testing hook: $hook_name"
+          if run_hook "$hook_name" "$@"; then
+            log_success "Hook test completed successfully"
+          else
+            log_error "Hook test failed"
+            exit 1
+          fi
+          ;;
+        *)
+          log_error "Unknown hooks subcommand: $subcmd"
+          log_info "Available: list, init, test"
           exit 1
           ;;
       esac

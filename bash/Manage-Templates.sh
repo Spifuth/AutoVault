@@ -35,6 +35,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Source shared libraries
 source "$SCRIPT_DIR/lib/logging.sh"
 source "$SCRIPT_DIR/lib/config.sh"
+source "$SCRIPT_DIR/lib/hooks.sh"
 
 # Templates JSON file
 TEMPLATES_JSON="${TEMPLATES_JSON:-"$SCRIPT_DIR/../config/templates.json"}"
@@ -377,6 +378,11 @@ print("Template application completed.")
 PYTHON
 
     log_success "Templates applied to all CUST folders"
+    
+    # Run post-hook with count of files updated
+    local files_updated
+    files_updated=$(( ${#CUSTOMER_IDS[@]} * (1 + ${#SECTIONS[@]}) ))
+    run_hook "post-templates-apply" "$files_updated"
 }
 
 #######################################
