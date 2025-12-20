@@ -4,7 +4,7 @@
 
 AutoVault creates and maintains a standardized folder structure in your Obsidian vault, complete with templates and plugin configuration.
 
-[![Version](https://img.shields.io/badge/version-2.0-blue)](https://github.com/Spifuth/AutoVault)
+[![Version](https://img.shields.io/badge/version-2.2.0-blue)](https://github.com/Spifuth/AutoVault)
 [![Bash](https://img.shields.io/badge/bash-4%2B-green)](https://www.gnu.org/software/bash/)
 [![Tests](https://github.com/Spifuth/AutoVault/actions/workflows/tests.yml/badge.svg)](https://github.com/Spifuth/AutoVault/actions)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20WSL-lightgrey)](https://github.com/Spifuth/AutoVault)
@@ -69,6 +69,7 @@ YourVault/
 - **Bash 4+** (Linux, macOS, WSL)
 - **jq** - JSON processor
 - **Python 3** - For JSON/template operations
+- **rsync** + **ssh** - For remote sync feature (optional)
 
 ```bash
 # Check requirements

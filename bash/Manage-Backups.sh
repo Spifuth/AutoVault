@@ -1,13 +1,31 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# Manage-Backups.sh - Backup management operations for AutoVault
+#  AUTOVAULT - Manage-Backups.sh
 #
-# Usage: Called from cust-run-config.sh
-#   bash/Manage-Backups.sh list
-#   bash/Manage-Backups.sh restore [BACKUP_FILE]
+#===============================================================================
 #
-# Depends on: bash/lib/logging.sh, bash/lib/config.sh
+#  DESCRIPTION:    Manages configuration backups for AutoVault.
+#                  Creates timestamped backups, lists available backups,
+#                  and restores previous configurations.
 #
+#  COMMANDS:       create [name]     - Create a new backup (optional name)
+#                  list              - List all available backups
+#                  restore <file>    - Restore from a specific backup
+#                  cleanup [keep]    - Remove old backups, keep N most recent
+#
+#  BACKUP FORMAT:  cust-run-config.YYYY-MM-DD_HH-MM-SS[.name].json
+#
+#  USAGE:          Called via: ./cust-run-config.sh backup [command] [args]
+#                  Direct:     bash/Manage-Backups.sh [command] [args]
+#
+#  EXAMPLES:       ./cust-run-config.sh backup create before-migration
+#                  ./cust-run-config.sh backup list
+#                  ./cust-run-config.sh backup restore backup-file.json
+#
+#  DEPENDENCIES:   bash/lib/logging.sh, bash/lib/config.sh, jq
+#
+#===============================================================================
 
 set -euo pipefail
 

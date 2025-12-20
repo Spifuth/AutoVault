@@ -1,13 +1,29 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# Show-Status.sh - Display comprehensive status for AutoVault
+#  AUTOVAULT - Show-Status.sh
 #
-# Usage: Called from cust-run-config.sh
-#   bash/Show-Status.sh
-#   bash/Show-Status.sh --verbose
+#===============================================================================
 #
-# Depends on: bash/lib/logging.sh, bash/lib/config.sh
+#  DESCRIPTION:    Displays comprehensive status information for AutoVault.
+#                  Shows configuration summary, vault statistics, and
+#                  structure health check results.
 #
+#  OUTPUT:         - Configuration file location and validity
+#                  - Vault root path and existence
+#                  - Customer count and IDs
+#                  - Section types configured
+#                  - Template sync status
+#                  - Folder structure statistics
+#
+#  OPTIONS:        --verbose, -v    Show detailed information
+#
+#  USAGE:          Called via: ./cust-run-config.sh status [--verbose]
+#                  Direct:     bash/Show-Status.sh [--verbose]
+#
+#  DEPENDENCIES:   bash/lib/logging.sh, bash/lib/config.sh, jq
+#
+#===============================================================================
 
 set -euo pipefail
 

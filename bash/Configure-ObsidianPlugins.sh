@@ -1,15 +1,35 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# Configure-ObsidianPlugins.sh
+#  AUTOVAULT - Configure-ObsidianPlugins.sh
 #
-# Configure Obsidian plugins (Templater, Dataview) and settings
-# by writing to the vault's .obsidian/ directory.
+#===============================================================================
 #
-# Commands:
-#   plugins   - Configure all plugin settings
-#   check     - Check if plugins are installed
-#   init      - Full vault initialization (structure + templates + plugins)
+#  DESCRIPTION:    Configures Obsidian plugins and settings for the vault.
+#                  Sets up Templater, Dataview, and other recommended
+#                  plugins by writing to the .obsidian/ directory.
 #
+#  COMMANDS:       init      - Full vault initialization
+#                              (structure + templates + plugins)
+#                  plugins   - Configure all plugin settings only
+#                  check     - Check if required plugins are installed
+#                  hub       - Regenerate Run-Hub.md with all customers
+#
+#  PLUGINS CONFIGURED:
+#                  - Templater (template folder, trigger key)
+#                  - Dataview (enable inline queries)
+#                  - Core plugins (templates, daily notes)
+#
+#  FILES CREATED:  .obsidian/plugins/templater-obsidian/data.json
+#                  .obsidian/plugins/dataview/data.json
+#                  .obsidian/app.json (settings)
+#
+#  USAGE:          Called via: ./cust-run-config.sh vault [init|plugins|check]
+#                  Direct:     bash/Configure-ObsidianPlugins.sh [command]
+#
+#  DEPENDENCIES:   bash/lib/logging.sh, bash/lib/config.sh, jq
+#
+#===============================================================================
 
 set -euo pipefail
 

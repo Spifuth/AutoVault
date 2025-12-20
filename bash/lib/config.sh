@@ -1,18 +1,41 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# config.sh - Configuration management for AutoVault
+#  AUTOVAULT LIBRARY - config.sh
 #
-# Usage: source this file from any script that needs config access
-#   source "$SCRIPT_DIR/lib/config.sh"
+#===============================================================================
 #
-# Provides:
-#   - Config file path (CONFIG_JSON)
-#   - Default values for VAULT_ROOT, CUSTOMER_ID_WIDTH, etc.
-#   - load_config() - reads config from JSON
-#   - ensure_config_json() - writes config to JSON
-#   - render_config_json() - generates JSON from current values
-#   - Interactive config helpers: prompt_value(), prompt_list()
+#  DESCRIPTION:    Configuration management library for AutoVault.
+#                  Handles loading, saving, and accessing configuration
+#                  values from the JSON config file.
 #
+#  CONFIG FILE:    config/cust-run-config.json
+#
+#  VARIABLES PROVIDED:
+#                  CONFIG_JSON            - Path to config file
+#                  VAULT_ROOT             - Obsidian vault path
+#                  CUSTOMER_ID_WIDTH      - Zero-padding width (default: 3)
+#                  CUSTOMER_IDS[]         - Array of customer IDs
+#                  SECTIONS[]             - Array of section names
+#                  TEMPLATE_RELATIVE_ROOT - Template folder path
+#                  ENABLE_CLEANUP         - Safety flag for deletions
+#                  BACKUP_DIR             - Backup storage directory
+#
+#  FUNCTIONS:      load_config()        - Load config from JSON file
+#                  ensure_config_json() - Write current config to JSON
+#                  render_config_json() - Generate JSON from variables
+#                  get_cust_code()      - Format customer ID (e.g., CUST-001)
+#                  prompt_value()       - Interactive value prompt
+#                  prompt_list()        - Interactive list prompt
+#                  export_cust_env()    - Export vars for child scripts
+#
+#  USAGE:          source "$SCRIPT_DIR/lib/config.sh"
+#                  load_config
+#                  echo "Vault: $VAULT_ROOT"
+#
+#  DEPENDENCIES:   bash/lib/logging.sh, jq, python3
+#
+#===============================================================================
 
 # Prevent multiple sourcing
 [[ -n "${_CONFIG_SH_LOADED:-}" ]] && return 0
@@ -187,6 +210,34 @@ prompt_value() {
   else
     echo "$result"
   fi
+}
+
+prompt_path() {
+  local prompt="$1"
+  local default="$2"
+  local result
+
+  # Enable readline for path completion
+  if [[ -n "$default" ]]; then
+    printf "%s [%s]: " "$prompt" "$default" >&2
+  else
+    printf "%s: " "$prompt" >&2
+  fi
+
+  # Use read -e for readline support (path completion with Tab)
+  read -e -r result
+  
+  if [[ -z "$result" ]]; then
+    result="$default"
+  fi
+  
+  # Expand ~ to $HOME
+  result="${result/#\~/$HOME}"
+  
+  # Remove trailing slash
+  result="${result%/}"
+  
+  echo "$result"
 }
 
 prompt_list() {

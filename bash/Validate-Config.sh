@@ -1,13 +1,32 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# Validate-Config.sh - Configuration validation for AutoVault
+#  AUTOVAULT - Validate-Config.sh
 #
-# Usage: Called from cust-run-config.sh
-#   bash/Validate-Config.sh
-#   bash/Validate-Config.sh --fix
+#===============================================================================
 #
-# Depends on: bash/lib/logging.sh, bash/lib/config.sh
+#  DESCRIPTION:    Validates the AutoVault configuration file.
+#                  Checks JSON syntax, required fields, field types,
+#                  and value constraints. Optionally fixes common issues.
 #
+#  VALIDATIONS:    - JSON syntax validity
+#                  - Required fields presence (VaultRoot, CustomerIds, etc.)
+#                  - Field types (arrays, strings, numbers)
+#                  - Value constraints (positive IDs, no duplicates)
+#                  - Vault path existence
+#
+#  OPTIONS:        --fix, -f    Automatically fix common issues
+#                               (remove duplicates, sort IDs)
+#
+#  USAGE:          Called via: ./cust-run-config.sh validate [--fix]
+#                  Direct:     bash/Validate-Config.sh [--fix]
+#
+#  EXIT CODES:     0 - Configuration is valid
+#                  1 - Validation errors found
+#
+#  DEPENDENCIES:   bash/lib/logging.sh, bash/lib/config.sh, jq
+#
+#===============================================================================
 
 set -euo pipefail
 

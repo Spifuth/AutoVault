@@ -1,13 +1,32 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# Install-Requirements.sh - Dependency management for AutoVault
+#  AUTOVAULT - Install-Requirements.sh
 #
-# Usage: Called from cust-run-config.sh
-#   bash/Install-Requirements.sh check
-#   bash/Install-Requirements.sh install
+#===============================================================================
 #
-# Depends on: bash/lib/logging.sh
+#  DESCRIPTION:    Manages system dependencies required by AutoVault.
+#                  Checks for required tools and optionally installs them.
 #
+#  REQUIRED TOOLS: - jq       (JSON processor)
+#                  - python3  (Template rendering)
+#                  - bash 4+  (Associative arrays, mapfile)
+#
+#  OPTIONAL TOOLS: - shellcheck (Script linting)
+#                  - md5sum    (Checksum verification)
+#
+#  COMMANDS:       check     - Check if all requirements are met
+#                  install   - Install missing dependencies
+#                              (requires sudo on Linux)
+#
+#  USAGE:          Called via: ./cust-run-config.sh requirements [check|install]
+#                  Direct:     bash/Install-Requirements.sh [command]
+#
+#  PLATFORMS:      Linux (apt-get), macOS (brew)
+#
+#  DEPENDENCIES:   bash/lib/logging.sh
+#
+#===============================================================================
 
 set -euo pipefail
 

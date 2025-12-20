@@ -1,15 +1,32 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# help.sh - Help system for AutoVault
+#  AUTOVAULT LIBRARY - help.sh
 #
-# Usage: source this file from the main script
-#   source "$LIB_DIR/help.sh"
+#===============================================================================
 #
-# Provides:
-#   - usage() - main help dispatcher
-#   - help_main() - main help page
-#   - help_* - per-command help pages
+#  DESCRIPTION:    Help system for AutoVault CLI.
+#                  Provides formatted help pages for all commands
+#                  with color support and examples.
 #
+#  FUNCTIONS:      usage()        - Main help dispatcher
+#                  help_main()    - Main help page (--help)
+#                  help_structure - Help for structure command
+#                  help_templates - Help for templates command
+#                  help_customer  - Help for customer command
+#                  help_section   - Help for section command
+#                  help_backup    - Help for backup command
+#                  help_vault     - Help for vault command
+#                  help_config    - Help for config command
+#
+#  USAGE:          source "$LIB_DIR/help.sh"
+#                  usage              # Show main help
+#                  usage "templates"  # Show templates help
+#
+#  COLORS:         Respects NO_COLOR environment variable
+#                  Uses ANSI colors for headers and highlights
+#
+#===============================================================================
 
 # Prevent multiple sourcing
 [[ -n "${_HELP_SH_LOADED:-}" ]] && return 0
@@ -18,18 +35,18 @@ _HELP_SH_LOADED=1
 #--------------------------------------
 # HELP COLORS (respects NO_COLOR)
 #--------------------------------------
-_h_bold()   { [[ -z "${NO_COLOR:-}" ]] && echo -ne "\033[1m"  || true; }
-_h_dim()    { [[ -z "${NO_COLOR:-}" ]] && echo -ne "\033[2m"  || true; }
-_h_cyan()   { [[ -z "${NO_COLOR:-}" ]] && echo -ne "\033[36m" || true; }
-_h_green()  { [[ -z "${NO_COLOR:-}" ]] && echo -ne "\033[32m" || true; }
-_h_yellow() { [[ -z "${NO_COLOR:-}" ]] && echo -ne "\033[33m" || true; }
-_h_blue()   { [[ -z "${NO_COLOR:-}" ]] && echo -ne "\033[34m" || true; }
-_h_reset()  { [[ -z "${NO_COLOR:-}" ]] && echo -ne "\033[0m"  || true; }
+_h_bold()   { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[1m";  fi; }
+_h_dim()    { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[2m";  fi; }
+_h_cyan()   { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[36m"; fi; }
+_h_green()  { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[32m"; fi; }
+_h_yellow() { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[33m"; fi; }
+_h_blue()   { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[34m"; fi; }
+_h_reset()  { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[0m";  fi; }
 
 #--------------------------------------
 # VERSION
 #--------------------------------------
-AUTOVAULT_VERSION="2.0"
+AUTOVAULT_VERSION="2.1.0"
 
 #--------------------------------------
 # USAGE DISPATCHER
@@ -45,6 +62,8 @@ usage() {
     section)    help_section ;;
     backup)     help_backup ;;
     vault)      help_vault ;;
+    hooks)      help_hooks ;;
+    remote)     help_remote ;;
     *)          help_main ;;
   esac
 }
@@ -76,6 +95,8 @@ $(_h_bold)OPTIONS$(_h_reset)
     $(_h_green)--silent$(_h_reset)          Suppress all output
     $(_h_green)--no-color$(_h_reset)        Disable colored output
     $(_h_green)--dry-run$(_h_reset)         Preview changes without applying
+    $(_h_green)--diff$(_h_reset)            Show what would change (diff mode)
+    $(_h_green)--version$(_h_reset)         Show version and check for updates
     $(_h_green)-h, --help$(_h_reset)        Show this help message
 
 $(_h_bold)COMMANDS$(_h_reset)
@@ -83,6 +104,7 @@ $(_h_bold)COMMANDS$(_h_reset)
     config              Interactive configuration wizard
     validate            Validate configuration file
     status              Show current status
+    diff                Show diff of expected vs actual state
 
     $(_h_yellow)Structure$(_h_reset)
     structure           Create folder structure in vault
@@ -97,9 +119,11 @@ $(_h_bold)COMMANDS$(_h_reset)
 
     $(_h_yellow)Vault$(_h_reset)
     vault               Obsidian setup (init/plugins/check/hub)
+    remote              Remote vault sync via SSH (push/pull)
 
     $(_h_yellow)System$(_h_reset)
     requirements        Check/install dependencies
+    hooks               Manage automation hooks (list/init/test)
 
 $(_h_bold)QUICK START$(_h_reset)
     $(_h_dim)# First time setup$(_h_reset)
@@ -439,5 +463,143 @@ $(_h_bold)EXAMPLES$(_h_reset)
     $script_name vault check          $(_h_dim)# Check plugins installed$(_h_reset)
     $script_name vault plugins        $(_h_dim)# Configure plugins only$(_h_reset)
     $script_name vault hub            $(_h_dim)# Regenerate Run-Hub$(_h_reset)
+EOF
+}
+
+#--------------------------------------
+# HOOKS HELP
+#--------------------------------------
+help_hooks() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - HOOKS$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name hooks [SUBCOMMAND]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Automation hooks allow custom scripts to run before/after operations.
+    Use hooks for notifications, backups, external API calls, etc.
+
+$(_h_bold)SUBCOMMANDS$(_h_reset)
+    $(_h_green)list$(_h_reset) $(_h_dim)(default)$(_h_reset)
+        List available hooks and show which are installed.
+
+    $(_h_green)init$(_h_reset) [path]
+        Create hooks directory with example scripts.
+        Default path: ./hooks/
+
+    $(_h_green)test$(_h_reset) <hook-name> [args...]
+        Test a specific hook with optional arguments.
+
+$(_h_bold)AVAILABLE HOOKS$(_h_reset)
+    $(_h_cyan)pre-customer-remove$(_h_reset)
+        Runs BEFORE a customer is removed.
+        $(_h_yellow)Can cancel the operation$(_h_reset) by returning non-zero.
+
+    $(_h_cyan)post-customer-remove$(_h_reset)
+        Runs AFTER a customer is removed successfully.
+        Exit code is logged but doesn't affect operation.
+
+    $(_h_cyan)post-templates-apply$(_h_reset)
+        Runs AFTER templates are applied to the vault.
+        Receives count of files updated as argument.
+
+    $(_h_cyan)on-error$(_h_reset)
+        Runs when ANY error occurs in AutoVault.
+        Receives: operation, error message, exit code.
+
+$(_h_bold)HOOK INTERFACE$(_h_reset)
+    Hooks receive context as arguments and environment variables:
+    
+    $(_h_yellow)Arguments:$(_h_reset)     \$1, \$2, etc. - Context specific to each hook
+    $(_h_yellow)Environment:$(_h_reset)   VAULT_ROOT, CONFIG_JSON, AUTOVAULT_HOOK
+
+$(_h_bold)CREATING A HOOK$(_h_reset)
+    1. $script_name hooks init
+    2. cp hooks/pre-customer-remove.sh.example hooks/pre-customer-remove.sh
+    3. chmod +x hooks/pre-customer-remove.sh
+    4. Edit the script with your custom logic
+
+$(_h_bold)ENVIRONMENT$(_h_reset)
+    AUTOVAULT_HOOKS_DIR       Custom hooks directory path
+    AUTOVAULT_HOOKS_ENABLED   Set to "false" to disable hooks
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $script_name hooks                  $(_h_dim)# List hooks$(_h_reset)
+    $script_name hooks init             $(_h_dim)# Create hooks directory$(_h_reset)
+    $script_name hooks test on-error    $(_h_dim)# Test on-error hook$(_h_reset)
+EOF
+}
+
+#--------------------------------------
+# REMOTE HELP
+#--------------------------------------
+help_remote() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - REMOTE$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name remote [SUBCOMMAND] [ARGS]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Synchronize your Obsidian vault with remote servers via SSH/rsync.
+    Supports multiple remotes with individual configuration.
+
+$(_h_bold)SUBCOMMANDS$(_h_reset)
+    $(_h_green)list$(_h_reset) $(_h_dim)(default)$(_h_reset)
+        List all configured remotes with connection status.
+
+    $(_h_green)init$(_h_reset)
+        Create remotes configuration file (config/remotes.json).
+
+    $(_h_green)add$(_h_reset) <name> <user@host> <path> [port]
+        Add a new remote configuration.
+
+    $(_h_green)remove$(_h_reset) <name>
+        Remove a remote configuration.
+
+    $(_h_green)test$(_h_reset) <name>
+        Test SSH connection and rsync availability.
+
+    $(_h_green)push$(_h_reset) <name>
+        Push local vault to remote (upload).
+
+    $(_h_green)pull$(_h_reset) <name>
+        Pull remote vault to local (download).
+
+    $(_h_green)status$(_h_reset) <name>
+        Compare local and remote vault stats.
+
+$(_h_bold)REQUIREMENTS$(_h_reset)
+    - SSH key-based authentication (recommended)
+    - rsync installed locally and on remote
+    - Remote server accessible via SSH
+
+$(_h_bold)CONFIGURATION$(_h_reset)
+    Remotes are stored in: config/remotes.json
+    
+    Default excludes (not synced):
+    - .obsidian/workspace.json
+    - .obsidian/workspace-mobile.json
+    - .trash/
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $(_h_dim)# Setup a remote$(_h_reset)
+    $script_name remote add server me@myserver.com /home/me/vault
+    $script_name remote test server
+    
+    $(_h_dim)# Sync operations$(_h_reset)
+    $script_name remote push server         $(_h_dim)# Upload to remote$(_h_reset)
+    $script_name remote pull server         $(_h_dim)# Download from remote$(_h_reset)
+    $script_name --dry-run remote push srv  $(_h_dim)# Preview changes$(_h_reset)
+    
+    $(_h_dim)# With custom SSH port$(_h_reset)
+    $script_name remote add vps user@vps.example.com /vault 2222
 EOF
 }

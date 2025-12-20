@@ -1,13 +1,30 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# Test-CustRunStructure.sh
+#  AUTOVAULT - Test-CustRunStructure.sh
 #
-# VERIFICATION SCRIPT – CHECKS Run STRUCTURE AND INDEX FILES
+#===============================================================================
 #
-# EXIT CODES:
-#   0 if everything is OK
-#   1 if there are missing elements
+#  DESCRIPTION:    Verification script that checks the Run folder structure
+#                  and index files integrity. Reports missing or malformed
+#                  elements.
 #
+#  CHECKS:         - Run/ folder exists
+#                  - Run-Hub.md exists
+#                  - Each CUST-XXX folder exists for configured customers
+#                  - Each CUST-XXX-Index.md exists
+#                  - Each section subfolder exists (CUST-XXX-SECTION/)
+#                  - Each section index exists (CUST-XXX-SECTION-Index.md)
+#
+#  EXIT CODES:     0 - All checks passed, structure is valid
+#                  1 - Missing or invalid elements found
+#
+#  USAGE:          Called via: ./cust-run-config.sh test
+#                  Direct:     bash/Test-CustRunStructure.sh
+#
+#  DEPENDENCIES:   bash/lib/logging.sh, bash/lib/config.sh
+#
+#===============================================================================
 
 set -euo pipefail
 

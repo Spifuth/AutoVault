@@ -1,14 +1,28 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# Manage-Sections.sh - Section management operations for AutoVault
+#  AUTOVAULT - Manage-Sections.sh
 #
-# Usage: Called from cust-run-config.sh
-#   bash/Manage-Sections.sh add [SECTION]
-#   bash/Manage-Sections.sh remove [SECTION]
-#   bash/Manage-Sections.sh list
+#===============================================================================
 #
-# Depends on: bash/lib/logging.sh, bash/lib/config.sh
+#  DESCRIPTION:    Manages section types in the AutoVault configuration.
+#                  Sections define the subfolder categories for each customer
+#                  (e.g., FP, RAISED, INFORMATIONS, DIVERS).
 #
+#  COMMANDS:       add <NAME>     - Add a new section type
+#                  remove <NAME>  - Remove a section type (with confirmation)
+#                  list           - List all configured sections
+#
+#  USAGE:          Called via: ./cust-run-config.sh section [add|remove|list] [NAME]
+#                  Direct:     bash/Manage-Sections.sh [command] [args]
+#
+#  EXAMPLES:       ./cust-run-config.sh section add ARCHIVES
+#                  ./cust-run-config.sh section remove DIVERS
+#                  ./cust-run-config.sh section list
+#
+#  DEPENDENCIES:   bash/lib/logging.sh, bash/lib/config.sh, jq
+#
+#===============================================================================
 
 set -euo pipefail
 

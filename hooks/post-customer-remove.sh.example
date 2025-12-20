@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+#===============================================================================
+# Hook: post-customer-remove
+# Runs AFTER a customer is removed
+#
+# Arguments:
+#   $1 - Customer ID that was removed
+#   $2 - Customer code (e.g., CUST-042)
+#
+# Exit code: Logged but doesn't affect operation
+#===============================================================================
+
+CUST_ID="$1"
+CUST_CODE="$2"
+
+echo "[Hook] post-customer-remove: $CUST_CODE"
+
+# Example: Send notification
+# curl -X POST "$SLACK_WEBHOOK" \
+#      -H "Content-Type: application/json" \
+#      -d "{\"text\": \"🗑️ Customer removed: $CUST_CODE\"}"
+
+# Example: Update external system
+# curl -X DELETE "https://api.example.com/customers/$CUST_ID"
+
+# Example: Log to audit file
+# echo "$(date -Iseconds) REMOVED $CUST_CODE by $USER" >> "$VAULT_ROOT/../audit.log"
+
+exit 0

@@ -1,15 +1,37 @@
 #!/usr/bin/env bash
+#===============================================================================
 #
-# logging.sh - Shared logging utilities for AutoVault
+#  AUTOVAULT LIBRARY - logging.sh
 #
-# Usage: source this file from any script that needs logging
-#   source "$SCRIPT_DIR/lib/logging.sh"
+#===============================================================================
 #
-# Provides:
-#   - LOG_LEVEL control (0=silent, 1=error, 2=warn, 3=info, 4=debug)
-#   - NO_COLOR support (https://no-color.org/)
-#   - Colored log functions: log_debug, log_info, log_warn, log_error, log_success
+#  DESCRIPTION:    Shared logging utilities for all AutoVault scripts.
+#                  Provides colored, leveled logging with support for
+#                  NO_COLOR environment variable.
 #
+#  LOG LEVELS:     0 = silent  (no output)
+#                  1 = error   (errors only)
+#                  2 = warn    (errors + warnings)
+#                  3 = info    (default - errors, warnings, info)
+#                  4 = debug   (verbose - all messages)
+#
+#  FUNCTIONS:      log_debug   - Debug messages (level 4)
+#                  log_info    - Informational messages (level 3)
+#                  log_warn    - Warning messages (level 2)
+#                  log_error   - Error messages (level 1)
+#                  log_success - Success messages (level 3, green)
+#
+#  USAGE:          source "$SCRIPT_DIR/lib/logging.sh"
+#                  LOG_LEVEL=4 log_debug "Verbose message"
+#                  log_info "Processing file..."
+#                  log_error "Something went wrong!"
+#
+#  ENVIRONMENT:    LOG_LEVEL - Set logging verbosity (default: 3)
+#                  NO_COLOR  - Disable colored output if set
+#
+#  REFERENCE:      https://no-color.org/
+#
+#===============================================================================
 
 # Prevent multiple sourcing
 [[ -n "${_LOGGING_SH_LOADED:-}" ]] && return 0
@@ -29,27 +51,19 @@ NO_COLOR="${NO_COLOR:-}"
 #--------------------------------------
 setup_colors() {
   if [[ -n "$NO_COLOR" ]] || [[ ! -t 2 ]]; then
-    COLOR_BLUE=""
-    COLOR_YELLOW=""
-    COLOR_RED=""
-    COLOR_GREEN=""
-    COLOR_GRAY=""
-    COLOR_RESET=""
-    # Short aliases for scripts
+    # No colors
     BOLD=""
     RESET=""
     RED=""
     GREEN=""
     YELLOW=""
     BLUE=""
+    CYAN=""
+    GRAY=""
+    DIM=""
+    NC=""
   else
-    COLOR_BLUE="\033[34m"
-    COLOR_YELLOW="\033[33m"
-    COLOR_RED="\033[31m"
-    COLOR_GREEN="\033[32m"
-    COLOR_GRAY="\033[90m"
-    COLOR_RESET="\033[0m"
-    # Short aliases for scripts (used in printf format strings)
+    # ANSI color codes
     # shellcheck disable=SC2034  # These are used by sourcing scripts
     BOLD="\033[1m"
     # shellcheck disable=SC2034
@@ -62,7 +76,29 @@ setup_colors() {
     YELLOW="\033[33m"
     # shellcheck disable=SC2034
     BLUE="\033[34m"
+    # shellcheck disable=SC2034
+    CYAN="\033[36m"
+    # shellcheck disable=SC2034
+    GRAY="\033[90m"
+    # shellcheck disable=SC2034
+    DIM="\033[2m"
+    # shellcheck disable=SC2034
+    NC="\033[0m"
   fi
+  
+  # Legacy aliases (for backward compatibility)
+  # shellcheck disable=SC2034
+  COLOR_BLUE="$BLUE"
+  # shellcheck disable=SC2034
+  COLOR_YELLOW="$YELLOW"
+  # shellcheck disable=SC2034
+  COLOR_RED="$RED"
+  # shellcheck disable=SC2034
+  COLOR_GREEN="$GREEN"
+  # shellcheck disable=SC2034
+  COLOR_GRAY="$GRAY"
+  # shellcheck disable=SC2034
+  COLOR_RESET="$RESET"
 }
 
 # Initialize colors (may be re-called after parsing --no-color flag)
