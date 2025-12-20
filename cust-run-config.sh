@@ -60,6 +60,7 @@ CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/config/cust-run-config.json"}"
 source "$LIB_DIR/logging.sh"
 source "$LIB_DIR/config.sh"
 source "$LIB_DIR/help.sh"
+source "$LIB_DIR/version.sh"
 
 #--------------------------------------
 # GLOBAL FLAGS (can be set via CLI)
@@ -198,6 +199,10 @@ main() {
         usage
         exit 0
         ;;
+      --version)
+        show_version
+        exit 0
+        ;;
       -*)
         log_error "Unknown option: $1"
         echo ""
@@ -262,7 +267,7 @@ main() {
       local subcmd="${1:-apply}"
       shift || true
       case "$subcmd" in
-        export|sync|apply)
+        export|sync|apply|preview|list)
           run_bash "Manage-Templates.sh" "$subcmd" "$@"
           ;;
         *)

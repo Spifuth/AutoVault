@@ -46,7 +46,7 @@ _h_reset()  { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[0m";  fi; }
 #--------------------------------------
 # VERSION
 #--------------------------------------
-AUTOVAULT_VERSION="2.0"
+AUTOVAULT_VERSION="2.1.0"
 
 #--------------------------------------
 # USAGE DISPATCHER
@@ -93,6 +93,7 @@ $(_h_bold)OPTIONS$(_h_reset)
     $(_h_green)--silent$(_h_reset)          Suppress all output
     $(_h_green)--no-color$(_h_reset)        Disable colored output
     $(_h_green)--dry-run$(_h_reset)         Preview changes without applying
+    $(_h_green)--version$(_h_reset)         Show version and check for updates
     $(_h_green)-h, --help$(_h_reset)        Show this help message
 
 $(_h_bold)COMMANDS$(_h_reset)
