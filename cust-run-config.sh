@@ -35,7 +35,6 @@
 #  DEPENDENCIES:   bash >= 4.0, jq, python3
 #
 #  AUTHOR:         AutoVault Project
-#  VERSION:        2.1.0
 #  CREATED:        2024
 #  REPOSITORY:     https://github.com/Spifuth/AutoVault
 #

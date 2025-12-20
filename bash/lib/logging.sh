@@ -51,13 +51,7 @@ NO_COLOR="${NO_COLOR:-}"
 #--------------------------------------
 setup_colors() {
   if [[ -n "$NO_COLOR" ]] || [[ ! -t 2 ]]; then
-    COLOR_BLUE=""
-    COLOR_YELLOW=""
-    COLOR_RED=""
-    COLOR_GREEN=""
-    COLOR_GRAY=""
-    COLOR_RESET=""
-    # Short aliases for scripts
+    # No colors
     BOLD=""
     RESET=""
     RED=""
@@ -65,16 +59,11 @@ setup_colors() {
     YELLOW=""
     BLUE=""
     CYAN=""
+    GRAY=""
     DIM=""
     NC=""
   else
-    COLOR_BLUE="\033[34m"
-    COLOR_YELLOW="\033[33m"
-    COLOR_RED="\033[31m"
-    COLOR_GREEN="\033[32m"
-    COLOR_GRAY="\033[90m"
-    COLOR_RESET="\033[0m"
-    # Short aliases for scripts (used in printf format strings)
+    # ANSI color codes
     # shellcheck disable=SC2034  # These are used by sourcing scripts
     BOLD="\033[1m"
     # shellcheck disable=SC2034
@@ -90,10 +79,26 @@ setup_colors() {
     # shellcheck disable=SC2034
     CYAN="\033[36m"
     # shellcheck disable=SC2034
+    GRAY="\033[90m"
+    # shellcheck disable=SC2034
     DIM="\033[2m"
     # shellcheck disable=SC2034
     NC="\033[0m"
   fi
+  
+  # Legacy aliases (for backward compatibility)
+  # shellcheck disable=SC2034
+  COLOR_BLUE="$BLUE"
+  # shellcheck disable=SC2034
+  COLOR_YELLOW="$YELLOW"
+  # shellcheck disable=SC2034
+  COLOR_RED="$RED"
+  # shellcheck disable=SC2034
+  COLOR_GREEN="$GREEN"
+  # shellcheck disable=SC2034
+  COLOR_GRAY="$GRAY"
+  # shellcheck disable=SC2034
+  COLOR_RESET="$RESET"
 }
 
 # Initialize colors (may be re-called after parsing --no-color flag)
