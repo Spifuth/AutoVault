@@ -584,9 +584,11 @@ tui_run() {
         tui_move_cursor $((TUI_ROWS - 1)) 2
         echo -ne "${TUI_COLOR_DIM}↑↓:Navigate  Enter:Select  q:Quit  ?:Help${TUI_COLOR_RESET}"
         
-        # Handle input
-        local result=0
-        action=$(tui_menu_handle) || result=$?
+        # Handle input - disable errexit temporarily for this call
+        set +e
+        action=$(tui_menu_handle)
+        local result=$?
+        set -e
         
         if [[ $result -eq 2 ]]; then
             # Just redraw (navigation) - return code 2 means redraw
