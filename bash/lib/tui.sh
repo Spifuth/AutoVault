@@ -273,13 +273,12 @@ tui_menu_handle() {
         
         case "$key" in
             UP)
-                ((TUI_MENU_SELECTED--))
-                [[ $TUI_MENU_SELECTED -lt 0 ]] && TUI_MENU_SELECTED=$((count - 1))
+                # Use || true to prevent errexit on zero decrement
+                TUI_MENU_SELECTED=$(( (TUI_MENU_SELECTED - 1 + count) % count ))
                 return 1  # Redraw needed
                 ;;
             DOWN)
-                ((TUI_MENU_SELECTED++))
-                [[ $TUI_MENU_SELECTED -ge $count ]] && TUI_MENU_SELECTED=0
+                TUI_MENU_SELECTED=$(( (TUI_MENU_SELECTED + 1) % count ))
                 return 1  # Redraw needed
                 ;;
             ENTER|SPACE)
