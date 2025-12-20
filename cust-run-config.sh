@@ -64,6 +64,7 @@ source "$LIB_DIR/version.sh"
 source "$LIB_DIR/diff.sh"
 source "$LIB_DIR/hooks.sh"
 source "$LIB_DIR/remote.sh"
+source "$LIB_DIR/tui.sh"
 
 #--------------------------------------
 # GLOBAL FLAGS (can be set via CLI)
@@ -71,6 +72,7 @@ source "$LIB_DIR/remote.sh"
 DRY_RUN="${DRY_RUN:-false}"
 VERBOSE="${VERBOSE:-false}"
 DIFF_MODE="${DIFF_MODE:-false}"
+TUI_MODE="${TUI_MODE:-false}"
 
 #--------------------------------------
 # ERROR HANDLER
@@ -349,6 +351,11 @@ main() {
         export DIFF_MODE
         shift
         ;;
+      -i|--tui|--interactive)
+        TUI_MODE=true
+        export TUI_MODE
+        shift
+        ;;
       -h|--help)
         usage
         exit 0
@@ -371,6 +378,16 @@ main() {
 
   local cmd="${1:-}"
   shift || true
+
+  # If TUI mode requested (via flag or no command), launch TUI
+  if [[ "$TUI_MODE" == "true" ]] || [[ "$cmd" == "tui" ]]; then
+    # Load config for TUI
+    if ! load_config 2>/dev/null; then
+      log_warn "No configuration found, some features may be limited"
+    fi
+    tui_run
+    exit $?
+  fi
 
   if [[ -z "$cmd" ]]; then
     usage

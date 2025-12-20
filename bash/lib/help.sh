@@ -87,6 +87,7 @@ $(_h_cyan)┌──────────────────────�
 
 $(_h_bold)USAGE$(_h_reset)
     $script_name [OPTIONS] COMMAND [ARGS]
+    $script_name --tui                     $(_h_dim)# Interactive mode$(_h_reset)
     $script_name COMMAND --help
 
 $(_h_bold)OPTIONS$(_h_reset)
@@ -96,6 +97,7 @@ $(_h_bold)OPTIONS$(_h_reset)
     $(_h_green)--no-color$(_h_reset)        Disable colored output
     $(_h_green)--dry-run$(_h_reset)         Preview changes without applying
     $(_h_green)--diff$(_h_reset)            Show what would change (diff mode)
+    $(_h_green)-i, --tui$(_h_reset)         Launch interactive TUI mode
     $(_h_green)--version$(_h_reset)         Show version and check for updates
     $(_h_green)-h, --help$(_h_reset)        Show this help message
 
@@ -105,6 +107,7 @@ $(_h_bold)COMMANDS$(_h_reset)
     validate            Validate configuration file
     status              Show current status
     diff                Show diff of expected vs actual state
+    tui                 Launch interactive TUI mode
 
     $(_h_yellow)Structure$(_h_reset)
     structure           Create folder structure in vault

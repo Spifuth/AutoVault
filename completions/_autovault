@@ -35,6 +35,10 @@ _autovault() {
         '--silent[Suppress all output]'
         '--no-color[Disable colored output]'
         '--dry-run[Preview changes without applying]'
+        '--diff[Show what would change]'
+        '-i[Launch interactive TUI mode]'
+        '--tui[Launch interactive TUI mode]'
+        '--interactive[Launch interactive TUI mode]'
         '-h[Show help]'
         '--help[Show help]'
         '--version[Show version information]'
@@ -64,6 +68,7 @@ _autovault() {
                 'vault:Obsidian setup (init/plugins/check/hub)'
                 'remote:Remote vault sync via SSH (push/pull)'
                 'hooks:Manage automation hooks (list/init/test)'
+                'tui:Launch interactive TUI mode'
                 'requirements:Check/install dependencies'
                 'help:Show help for a command'
             )

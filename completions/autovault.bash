@@ -34,10 +34,10 @@ _autovault_completions() {
     _init_completion || return
     
     # All main commands
-    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks requirements help"
+    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks tui requirements help"
     
     # Global options
-    local global_opts="-v --verbose -q --quiet --silent --no-color --dry-run -h --help --version"
+    local global_opts="-v --verbose -q --quiet --silent --no-color --dry-run --diff -i --tui --interactive -h --help --version"
     
     # Subcommands for each command
     local customer_cmds="add remove list rename export import clone"
