@@ -10,17 +10,38 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-MAGENTA='\033[0;35m'
-WHITE='\033[1;37m'
-BOLD='\033[1m'
-DIM='\033[2m'
-NC='\033[0m' # No Color
+# Detect CI environment (no TTY, no TERM, or CI variable set)
+CI_MODE=false
+if [[ -n "${CI:-}" ]] || [[ -n "${GITHUB_ACTIONS:-}" ]] || [[ ! -t 1 ]] || [[ -z "${TERM:-}" ]]; then
+    CI_MODE=true
+    TERM="${TERM:-dumb}"
+    export TERM
+fi
+
+# Colors (disabled in CI mode)
+if [[ "$CI_MODE" == "true" ]]; then
+    RED=''
+    GREEN=''
+    YELLOW=''
+    BLUE=''
+    CYAN=''
+    MAGENTA=''
+    WHITE=''
+    BOLD=''
+    DIM=''
+    NC=''
+else
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[0;33m'
+    BLUE='\033[0;34m'
+    CYAN='\033[0;36m'
+    MAGENTA='\033[0;35m'
+    WHITE='\033[1;37m'
+    BOLD='\033[1m'
+    DIM='\033[2m'
+    NC='\033[0m' # No Color
+fi
 
 # Counters
 TESTS_PASSED=0
@@ -37,9 +58,15 @@ PROGRESS_CHARS=("░" "▒" "▓" "█")
 # Animation utilities
 #######################################
 
-# Hide/show cursor
-hide_cursor() { echo -ne "\033[?25l"; }
-show_cursor() { echo -ne "\033[?25h"; }
+# Hide/show cursor (no-op in CI mode)
+hide_cursor() { 
+    [[ "$CI_MODE" == "true" ]] && return
+    echo -ne "\033[?25l"
+}
+show_cursor() { 
+    [[ "$CI_MODE" == "true" ]] && return
+    echo -ne "\033[?25h"
+}
 
 # Trap to restore cursor on exit
 trap 'show_cursor' EXIT
@@ -51,15 +78,18 @@ spin() {
     local frame=0
     
     while kill -0 "$pid" 2>/dev/null; do
-        echo -ne "\r  ${CYAN}${SPINNER_FRAMES[$frame]}${NC} "
-        frame=$(( (frame + 1) % ${#SPINNER_FRAMES[@]} ))
+        if [[ "$CI_MODE" == "false" ]]; then
+            echo -ne "\r  ${CYAN}${SPINNER_FRAMES[$frame]}${NC} "
+            frame=$(( (frame + 1) % ${#SPINNER_FRAMES[@]} ))
+        fi
         sleep $delay
     done
-    echo -ne "\r"
+    [[ "$CI_MODE" == "false" ]] && echo -ne "\r"
 }
 
 # Progress bar
 draw_progress_bar() {
+    [[ "$CI_MODE" == "true" ]] && return
     local current=$1
     local total=$2
     local width=30
@@ -79,6 +109,14 @@ draw_progress_bar() {
 
 # Animated banner
 show_banner() {
+    if [[ "$CI_MODE" == "true" ]]; then
+        echo ""
+        echo "========================================"
+        echo "       AUTOVAULT TEST SUITE"
+        echo "========================================"
+        echo ""
+        return
+    fi
     clear
     echo ""
     echo -e "${CYAN}"
@@ -97,12 +135,16 @@ show_banner() {
     ╚═══════════════════════════════════════════════════════════════╝
 EOF
     echo -e "${NC}"
-    sleep 0.5
+    [[ "$CI_MODE" == "false" ]] && sleep 0.5
 }
 
 # Typing effect
 type_text() {
     local text="$1"
+    if [[ "$CI_MODE" == "true" ]]; then
+        echo "$text"
+        return
+    fi
     local delay="${2:-0.03}"
     for ((i=0; i<${#text}; i++)); do
         echo -n "${text:$i:1}"
@@ -116,9 +158,13 @@ show_category() {
     local name="$1"
     local icon="$2"
     echo ""
-    echo -e "  ${MAGENTA}━━━${NC} ${icon} ${BOLD}${WHITE}${name}${NC}"
-    echo -e "  ${MAGENTA}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    sleep 0.2
+    if [[ "$CI_MODE" == "true" ]]; then
+        echo "--- ${icon} ${name} ---"
+    else
+        echo -e "  ${MAGENTA}━━━${NC} ${icon} ${BOLD}${WHITE}${name}${NC}"
+        echo -e "  ${MAGENTA}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        sleep 0.2
+    fi
 }
 
 # Result animation
@@ -170,6 +216,25 @@ run_test() {
     local test_name="$1"
     local test_func="$2"
     
+    if [[ "$CI_MODE" == "true" ]]; then
+        # CI mode: simple output without animations
+        echo -n "    Testing: ${test_name}... "
+        
+        local result=0
+        $test_func &>/dev/null || result=1
+        
+        if [[ $result -eq 0 ]]; then
+            echo "PASSED"
+            ((TESTS_PASSED++))
+        else
+            echo "FAILED"
+            ((TESTS_FAILED++))
+        fi
+        ((CURRENT_TEST++))
+        return 0
+    fi
+    
+    # Interactive mode with animations
     echo -ne "    ${CYAN}◉${NC} ${DIM}${test_name}${NC} "
     
     # Run test in background for spinner
@@ -1035,6 +1100,33 @@ show_final_summary() {
     echo ""
     echo ""
     
+    # Calculate percentage
+    local total=$((TESTS_PASSED + TESTS_FAILED + TESTS_SKIPPED))
+    local success_rate=0
+    if [[ $total -gt 0 ]]; then
+        success_rate=$((TESTS_PASSED * 100 / total))
+    fi
+    
+    if [[ "$CI_MODE" == "true" ]]; then
+        # Simple CI output
+        echo "========================================"
+        echo "           TEST RESULTS"
+        echo "========================================"
+        echo "  Passed:  $TESTS_PASSED"
+        echo "  Failed:  $TESTS_FAILED"
+        echo "  Skipped: $TESTS_SKIPPED"
+        echo "  Success: ${success_rate}%"
+        echo "========================================"
+        echo ""
+        if [[ $TESTS_FAILED -eq 0 ]]; then
+            echo "All tests passed!"
+        else
+            echo "Some tests failed. Check the output above."
+        fi
+        echo ""
+        return
+    fi
+    
     # Drum roll effect
     echo -ne "  ${DIM}Calculating results"
     for i in {1..5}; do
@@ -1072,13 +1164,6 @@ show_final_summary() {
     echo -e "  ${CYAN}║${NC}"
     
     echo -e "  ${CYAN}╠═══════════════════════════════════════════════╣${NC}"
-    
-    # Calculate percentage
-    local total=$((TESTS_PASSED + TESTS_FAILED + TESTS_SKIPPED))
-    local success_rate=0
-    if [[ $total -gt 0 ]]; then
-        success_rate=$((TESTS_PASSED * 100 / total))
-    fi
     
     # Success rate with visual bar
     local bar_width=25
@@ -1149,23 +1234,31 @@ main() {
     show_banner
     
     # Setup phase with animation  
-    echo -ne "  ${CYAN}⚙${NC} Setting up test environment"
-    
-    # Show spinner for visual effect
-    local frame=0
-    for i in {1..10}; do
-        echo -ne "\r  ${CYAN}${SPINNER_FRAMES[$frame]}${NC} Setting up test environment"
-        frame=$(( (frame + 1) % ${#SPINNER_FRAMES[@]} ))
-        sleep 0.08
-    done
-    
-    # Actually run setup (needs to be in foreground for variable export)
-    setup
-    
-    echo -e "\r  ${GREEN}✓${NC} Test environment ready!              "
-    echo -e "  ${DIM}Test vault: $TEST_VAULT${NC}"
-    echo ""
-    sleep 0.3
+    if [[ "$CI_MODE" == "true" ]]; then
+        echo "Setting up test environment..."
+        setup
+        echo "Test environment ready!"
+        echo "Test vault: $TEST_VAULT"
+        echo ""
+    else
+        echo -ne "  ${CYAN}⚙${NC} Setting up test environment"
+        
+        # Show spinner for visual effect
+        local frame=0
+        for i in {1..10}; do
+            echo -ne "\r  ${CYAN}${SPINNER_FRAMES[$frame]}${NC} Setting up test environment"
+            frame=$(( (frame + 1) % ${#SPINNER_FRAMES[@]} ))
+            sleep 0.08
+        done
+        
+        # Actually run setup (needs to be in foreground for variable export)
+        setup
+        
+        echo -e "\r  ${GREEN}✓${NC} Test environment ready!              "
+        echo -e "  ${DIM}Test vault: $TEST_VAULT${NC}"
+        echo ""
+        sleep 0.3
+    fi
     
     # Unit tests
     show_category "UNIT TESTS" "🔬"
@@ -1229,18 +1322,24 @@ main() {
     
     # Teardown with animation
     echo ""
-    echo -ne "  ${CYAN}⚙${NC} Cleaning up"
-    
-    # Show spinner for visual effect
-    frame=0
-    for i in {1..8}; do
-        echo -ne "\r  ${CYAN}${SPINNER_FRAMES[$frame]}${NC} Cleaning up"
-        frame=$(( (frame + 1) % ${#SPINNER_FRAMES[@]} ))
-        sleep 0.06
-    done
-    
-    teardown
-    echo -e "\r  ${GREEN}✓${NC} Cleanup complete!              "
+    if [[ "$CI_MODE" == "true" ]]; then
+        echo "Cleaning up..."
+        teardown
+        echo "Cleanup complete!"
+    else
+        echo -ne "  ${CYAN}⚙${NC} Cleaning up"
+        
+        # Show spinner for visual effect
+        local frame=0
+        for i in {1..8}; do
+            echo -ne "\r  ${CYAN}${SPINNER_FRAMES[$frame]}${NC} Cleaning up"
+            frame=$(( (frame + 1) % ${#SPINNER_FRAMES[@]} ))
+            sleep 0.06
+        done
+        
+        teardown
+        echo -e "\r  ${GREEN}✓${NC} Cleanup complete!              "
+    fi
     
     # Show final summary
     show_final_summary
