@@ -383,12 +383,10 @@ tui_select() {
         
         case "$key" in
             UP)
-                ((selected--))
-                [[ $selected -lt 0 ]] && selected=$((count - 1))
+                selected=$(( (selected - 1 + count) % count ))
                 ;;
             DOWN)
-                ((selected++))
-                [[ $selected -ge $count ]] && selected=0
+                selected=$(( (selected + 1) % count ))
                 ;;
             ENTER|SPACE)
                 # Clear and return
