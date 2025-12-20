@@ -273,13 +273,13 @@ tui_menu_handle() {
         
         case "$key" in
             UP)
-                # Use || true to prevent errexit on zero decrement
+                # Use modulo to prevent errexit on zero decrement
                 TUI_MENU_SELECTED=$(( (TUI_MENU_SELECTED - 1 + count) % count ))
-                return 1  # Redraw needed
+                return 2  # Redraw needed (use 2 to avoid errexit issues with 1)
                 ;;
             DOWN)
                 TUI_MENU_SELECTED=$(( (TUI_MENU_SELECTED + 1) % count ))
-                return 1  # Redraw needed
+                return 2  # Redraw needed
                 ;;
             ENTER|SPACE)
                 echo "${TUI_MENU_ACTIONS[$TUI_MENU_SELECTED]}"
@@ -585,11 +585,11 @@ tui_run() {
         echo -ne "${TUI_COLOR_DIM}↑↓:Navigate  Enter:Select  q:Quit  ?:Help${TUI_COLOR_RESET}"
         
         # Handle input
-        action=$(tui_menu_handle)
-        local result=$?
+        local result=0
+        action=$(tui_menu_handle) || result=$?
         
-        if [[ $result -eq 1 ]]; then
-            # Just redraw (navigation)
+        if [[ $result -eq 2 ]]; then
+            # Just redraw (navigation) - return code 2 means redraw
             continue
         fi
         
