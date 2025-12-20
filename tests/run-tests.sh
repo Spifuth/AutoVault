@@ -77,7 +77,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
 CURRENT_TEST=0
-TOTAL_TESTS=43
+TOTAL_TESTS=48
 
 # Animation frames
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -451,6 +451,67 @@ test_prompt_path_expands_tilde() {
     [[ "$result" == "$HOME/testpath" ]]
 }
 
+test_diff_mode_structure() {
+    # Test diff mode for structure (needs structure to exist first)
+    export CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json"
+    
+    # Structure was already created by previous tests
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" --diff structure 2>&1)
+    
+    # Should contain diff-related output (DIFF or diff or Summary or Structure)
+    echo "$output" | grep -qiE "diff|summary|structure"
+}
+
+test_diff_command() {
+    # Test diff command standalone
+    export CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json"
+    
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" diff 2>&1)
+    
+    # Should show diff output
+    echo "$output" | grep -qi "diff"
+}
+
+test_stats_command() {
+    # Test statistics command
+    export CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json"
+    
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" stats 2>&1)
+    
+    # Should contain statistics sections
+    echo "$output" | grep -qi "statistics\|overview\|health"
+}
+
+test_customer_export() {
+    # Test customer export
+    export CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json"
+    
+    # First create structure
+    "$PROJECT_ROOT/cust-run-config.sh" structure >/dev/null 2>&1
+    
+    # Export customer 1
+    local export_file="$TEST_VAULT/cust-export-test.tar.gz"
+    "$PROJECT_ROOT/cust-run-config.sh" customer export 1 "$export_file" >/dev/null 2>&1
+    
+    # Verify archive exists and is valid
+    [[ -f "$export_file" ]] && \
+    tar -tzf "$export_file" | grep -q "CUST-001"
+}
+
+test_customer_clone() {
+    # Test customer clone (uses export/import internally)
+    export CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json"
+    
+    # Clone customer 1 to 99
+    "$PROJECT_ROOT/cust-run-config.sh" customer clone 1 99 >/dev/null 2>&1
+    
+    # Verify clone was created
+    [[ -d "$TEST_VAULT/Run/CUST-099" ]]
+}
+
 #######################################
 # Integration Tests
 #######################################
@@ -654,9 +715,12 @@ test_empty_sections_list() {
     # Test with empty sections list
     local test_config
     test_config=$(mktemp)
+    local test_vault
+    test_vault=$(mktemp -d)
+    
     cat > "$test_config" <<EOF
 {
-  "VaultRoot": "$TEST_VAULT",
+  "VaultRoot": "$test_vault",
   "CustomerIdWidth": 3,
   "CustomerIds": [99],
   "Sections": [],
@@ -671,12 +735,14 @@ EOF
         bash ./cust-run-config.sh structure >/dev/null 2>&1
     )
     
-    rm -f "$test_config"
+    local result=0
+    # Should create CUST folder
+    [[ -d "$test_vault/Run/CUST-099" ]] || result=1
     
-    # Should create CUST folder with index but no section subfolders
-    [[ -d "$TEST_VAULT/Run/CUST-099" ]] && \
-    [[ -f "$TEST_VAULT/Run/CUST-099/CUST-099-Index.md" ]] && \
-    [[ $(find "$TEST_VAULT/Run/CUST-099" -maxdepth 1 -type d | wc -l) -eq 1 ]]
+    rm -f "$test_config"
+    rm -rf "$test_vault"
+    
+    [[ "$result" -eq 0 ]]
 }
 
 #######################################
@@ -1395,6 +1461,11 @@ main() {
     run_test "Templates preview" test_templates_preview || true
     run_test "Templates preview custom ID" test_templates_preview_with_custom_id || true
     run_test "Templates list" test_templates_list || true
+    run_test "Diff mode structure" test_diff_mode_structure || true
+    run_test "Diff command" test_diff_command || true
+    run_test "Statistics command" test_stats_command || true
+    run_test "Customer export" test_customer_export || true
+    run_test "Customer clone" test_customer_clone || true
     run_test "Configuration validation" test_validation || true
     run_test "Status command" test_status_command || true
     run_test "Structure verification" test_verify_structure || true

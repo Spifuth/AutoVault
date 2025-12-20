@@ -61,12 +61,14 @@ source "$LIB_DIR/logging.sh"
 source "$LIB_DIR/config.sh"
 source "$LIB_DIR/help.sh"
 source "$LIB_DIR/version.sh"
+source "$LIB_DIR/diff.sh"
 
 #--------------------------------------
 # GLOBAL FLAGS (can be set via CLI)
 #--------------------------------------
 DRY_RUN="${DRY_RUN:-false}"
 VERBOSE="${VERBOSE:-false}"
+DIFF_MODE="${DIFF_MODE:-false}"
 
 #--------------------------------------
 # HELPER: RUN BASH SCRIPTS
@@ -316,6 +318,11 @@ main() {
         export DRY_RUN
         shift
         ;;
+      --diff)
+        DIFF_MODE=true
+        export DIFF_MODE
+        shift
+        ;;
       -h|--help)
         usage
         exit 0
@@ -377,16 +384,35 @@ main() {
     status)
       VERBOSE="$VERBOSE" bash "$BASH_DIR/Show-Status.sh" "$@"
       ;;
+    stats|statistics)
+      bash "$BASH_DIR/Show-Statistics.sh" "$@"
+      ;;
+
+    #--- Diff Mode ---
+    diff)
+      local diff_target="${1:-all}"
+      run_full_diff "$VAULT_ROOT" "$diff_target"
+      ;;
 
     #--- Structure Management ---
     structure|new)
       log_info "Using configuration from $CONFIG_JSON"
+      # If diff mode, show diff and exit
+      if [[ "$DIFF_MODE" == "true" ]]; then
+        run_full_diff "$VAULT_ROOT" "structure"
+        exit 0
+      fi
       run_bash "New-CustRunStructure.sh" "$@"
       ;;
     templates|apply)
       log_info "Using configuration from $CONFIG_JSON"
       local subcmd="${1:-apply}"
       shift || true
+      # If diff mode for templates apply
+      if [[ "$DIFF_MODE" == "true" ]] && [[ "$subcmd" == "apply" ]]; then
+        run_full_diff "$VAULT_ROOT" "templates"
+        exit 0
+      fi
       case "$subcmd" in
         export|sync|apply|preview|list)
           run_bash "Manage-Templates.sh" "$subcmd" "$@"
