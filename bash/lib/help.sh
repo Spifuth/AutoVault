@@ -65,6 +65,8 @@ usage() {
     doctor)       help_doctor ;;
     search)       help_search ;;
     archive)      help_archive ;;
+    theme)        help_theme ;;
+    demo)         help_demo ;;
     *)            help_main ;;
   esac
 }
@@ -127,12 +129,15 @@ $(_h_bold)COMMANDS$(_h_reset)
     $(_h_yellow)Utilities$(_h_reset)
     doctor              Run diagnostics (config, structure, perms)
     search              Search across all customers/notes
+    stats               Show vault statistics
 
     $(_h_yellow)System$(_h_reset)
     requirements        Check/install dependencies
     completions         Install shell completions (bash/zsh)
     alias               Create system alias (autovault, av, etc.)
     hooks               Manage automation hooks (list/init/test)
+    theme               Configure color theme (dark/light/auto)
+    demo                UI components demo (progress/spinner/etc.)
 
 $(_h_bold)QUICK START$(_h_reset)
     $(_h_dim)# First time setup$(_h_reset)
@@ -1000,5 +1005,95 @@ $(_h_bold)EXAMPLES$(_h_reset)
 
     $(_h_dim)# Archive with encryption$(_h_reset)
     $script_name archive ACME --encrypt
+EOF
+}
+
+#--------------------------------------
+# THEME HELP
+#--------------------------------------
+help_theme() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - THEME$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name theme [SUBCOMMAND]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Configure AutoVault's color theme and UI preferences.
+    Theme settings are saved to ~/.config/autovault/theme.conf
+
+$(_h_bold)SUBCOMMANDS$(_h_reset)
+    $(_h_green)status$(_h_reset)     Show current theme settings (default)
+    $(_h_green)set$(_h_reset)        Set theme (dark/light/auto)
+    $(_h_green)preview$(_h_reset)    Preview all available themes
+    $(_h_green)config$(_h_reset)     Interactive theme configuration
+    $(_h_green)reset$(_h_reset)      Reset to default settings
+
+$(_h_bold)THEMES$(_h_reset)
+    $(_h_cyan)dark$(_h_reset)       Optimized for dark terminal backgrounds (default)
+    $(_h_cyan)light$(_h_reset)      Optimized for light terminal backgrounds  
+    $(_h_cyan)auto$(_h_reset)       Auto-detect based on terminal settings
+
+$(_h_bold)ENVIRONMENT$(_h_reset)
+    $(_h_green)AUTOVAULT_THEME$(_h_reset)    Override theme (dark/light/auto)
+    $(_h_green)AUTOVAULT_NOTIFY$(_h_reset)   Enable desktop notifications (true/false)
+    $(_h_green)NO_COLOR$(_h_reset)           Disable all colors
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $(_h_dim)# Show current theme settings$(_h_reset)
+    $script_name theme
+
+    $(_h_dim)# Set light theme$(_h_reset)
+    $script_name theme set light
+
+    $(_h_dim)# Preview all themes$(_h_reset)
+    $script_name theme preview
+
+    $(_h_dim)# Interactive configuration$(_h_reset)
+    $script_name theme config
+EOF
+}
+
+#--------------------------------------
+# DEMO HELP
+#--------------------------------------
+help_demo() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - DEMO$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name demo [COMPONENT]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Demonstrate AutoVault's UI components and features.
+    Useful for testing themes and terminal compatibility.
+
+$(_h_bold)COMPONENTS$(_h_reset)
+    $(_h_green)all$(_h_reset)        Run all demos (default)
+    $(_h_green)progress$(_h_reset)   Progress bar demonstration
+    $(_h_green)spinner$(_h_reset)    Spinner/loading animations
+    $(_h_green)theme$(_h_reset)      Theme switching preview
+    $(_h_green)menu$(_h_reset)       Interactive menu selection
+    $(_h_green)notify$(_h_reset)     Desktop notifications
+    $(_h_green)box$(_h_reset)        Box and section formatting
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $(_h_dim)# Run all demos$(_h_reset)
+    $script_name demo
+
+    $(_h_dim)# Show progress bar demo$(_h_reset)
+    $script_name demo progress
+
+    $(_h_dim)# Test spinner animations$(_h_reset)
+    $script_name demo spinner
+
+    $(_h_dim)# Preview themes$(_h_reset)
+    $script_name demo theme
 EOF
 }
