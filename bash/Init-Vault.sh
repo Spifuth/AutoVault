@@ -338,13 +338,13 @@ This vault is managed by [AutoVault](https://github.com/Spifuth/AutoVault).
 
 \`\`\`bash
 # Add a new client
-av customer add <id> "Client Name"
+cust-run-config.sh customer add <id> "Client Name"
 
 # List clients
-av customer list
+cust-run-config.sh customer list
 
 # Show status
-av status
+cust-run-config.sh status
 \`\`\`
 
 ## Profile
@@ -375,9 +375,9 @@ print_summary() {
   echo -e "  Config:      ${DIM}$SCRIPT_DIR/../config/cust-run-config.json${NC}"
   echo ""
   echo -e "${BOLD}Next steps:${NC}"
-  echo -e "  1. Review configuration: ${CYAN}av validate${NC}"
-  echo -e "  2. Add your first client: ${CYAN}av customer add 1 \"Client Name\"${NC}"
-  echo -e "  3. Check status: ${CYAN}av status${NC}"
+  echo -e "  1. Review configuration: ${CYAN}cust-run-config.sh validate${NC}"
+  echo -e "  2. Add your first client: ${CYAN}cust-run-config.sh customer add 1 \"Client Name\"${NC}"
+  echo -e "  3. Check status: ${CYAN}cust-run-config.sh status${NC}"
   echo ""
 }
 
