@@ -314,6 +314,10 @@ cmd_install() {
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
+            --dry-run)
+                DRY_RUN=true
+                export DRY_RUN
+                ;;
             --name=*)
                 alias_name="${1#*=}"
                 ;;
@@ -386,6 +390,10 @@ cmd_uninstall() {
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
+            --dry-run)
+                DRY_RUN=true
+                export DRY_RUN
+                ;;
             --all)
                 remove_all=true
                 ;;
