@@ -62,8 +62,12 @@ _autovault() {
                 'customer:Manage customers (add/remove/list/export/import/clone)'
                 'section:Manage sections (add/remove/list)'
                 'backup:Manage backups (create/list/restore/cleanup)'
+                'archive:Archive a customer (zip + optional remove)'
+                'init:Initialize new vault from scratch'
                 'vault:Obsidian setup (init/plugins/check/hub)'
                 'remote:Remote vault sync via SSH (push/pull)'
+                'doctor:Run diagnostics (config, structure, perms)'
+                'search:Search across all customers/notes'
                 'hooks:Manage automation hooks (list/init/test)'
                 'completions:Install shell completions (bash/zsh)'
                 'alias:Create system alias (autovault, av, etc.)'
@@ -100,6 +104,18 @@ _autovault() {
                     ;;
                 alias)
                     _autovault_alias_cmd
+                    ;;
+                init)
+                    _autovault_init
+                    ;;
+                doctor|diagnose|check)
+                    _autovault_doctor
+                    ;;
+                search|find|grep)
+                    _autovault_search
+                    ;;
+                archive)
+                    _autovault_archive
                     ;;
                 *)
                     _arguments '--help[Show help]'
@@ -395,6 +411,62 @@ _autovault_alias_cmd() {
             esac
             ;;
     esac
+}
+
+_autovault_init() {
+    _arguments \
+        '--path=[Vault path]:directory:_files -/' \
+        '--profile=[Use profile template]:profile:(minimal pentest audit bugbounty)' \
+        '--force[Overwrite existing configuration]' \
+        '--no-structure[Skip creating initial folder structure]' \
+        '--help[Show help]'
+}
+
+_autovault_doctor() {
+    _arguments \
+        '--fix[Attempt to fix issues automatically]' \
+        '--verbose[Show detailed diagnostic information]' \
+        '--json[Output results as JSON]' \
+        '--help[Show help]'
+}
+
+_autovault_search() {
+    _arguments \
+        '-c[Search in specific customer]:customer ID:($(_autovault_get_customer_ids))' \
+        '--customer=[Search in specific customer]:customer ID:($(_autovault_get_customer_ids))' \
+        '-s[Search in specific section]:section:($(_autovault_get_sections))' \
+        '--section=[Search in specific section]:section:($(_autovault_get_sections))' \
+        '-t[Filter by file type]:type:(md txt all json yaml)' \
+        '--type=[Filter by file type]:type:(md txt all json yaml)' \
+        '-r[Treat query as regex]' \
+        '--regex[Treat query as regex]' \
+        '-i[Case-sensitive search]' \
+        '--case-sensitive[Case-sensitive search]' \
+        '-n[Show only matching filenames]' \
+        '--names-only[Show only matching filenames]' \
+        '-C[Lines of context]:lines:' \
+        '--context=[Lines of context]:lines:' \
+        '-m[Maximum results]:max:' \
+        '--max=[Maximum results]:max:' \
+        '--json[Output as JSON]' \
+        '--help[Show help]' \
+        '*:query:'
+}
+
+_autovault_archive() {
+    _arguments \
+        '-r[Remove after archiving]' \
+        '--remove[Remove after archiving]' \
+        '-o[Output path]:file:_files' \
+        '--output=[Output path]:file:_files' \
+        '-f[Archive format]:format:(zip tar tar.gz tar.bz2)' \
+        '--format=[Archive format]:format:(zip tar tar.gz tar.bz2)' \
+        '--no-compress[Create uncompressed tar]' \
+        '-e[Encrypt archive (zip only)]' \
+        '--encrypt[Encrypt archive (zip only)]' \
+        '--force[Overwrite existing archive]' \
+        '--help[Show help]' \
+        '*:customer ID:($(_autovault_get_customer_ids))'
 }
 
 # Helper functions to get dynamic values

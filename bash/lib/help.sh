@@ -61,6 +61,10 @@ usage() {
     completions)  help_completions ;;
     alias)        help_alias ;;
     remote)       help_remote ;;
+    init)         help_init ;;
+    doctor)       help_doctor ;;
+    search)       help_search ;;
+    archive)      help_archive ;;
     *)            help_main ;;
   esac
 }
@@ -113,10 +117,16 @@ $(_h_bold)COMMANDS$(_h_reset)
     customer            Manage customers (add/remove/list)
     section             Manage sections (add/remove/list)
     backup              Manage backups (list/restore/create)
+    archive             Archive a customer (zip + optional remove)
 
     $(_h_yellow)Vault$(_h_reset)
+    init                Initialize new vault from scratch
     vault               Obsidian setup (init/plugins/check/hub)
     remote              Remote vault sync via SSH (push/pull)
+
+    $(_h_yellow)Utilities$(_h_reset)
+    doctor              Run diagnostics (config, structure, perms)
+    search              Search across all customers/notes
 
     $(_h_yellow)System$(_h_reset)
     requirements        Check/install dependencies
@@ -714,5 +724,281 @@ $(_h_bold)EXAMPLES$(_h_reset)
     
     $(_h_dim)# With custom SSH port$(_h_reset)
     $script_name remote add vps user@vps.example.com /vault 2222
+EOF
+}
+
+#--------------------------------------
+# INIT HELP
+#--------------------------------------
+help_init() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - INIT$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name init [OPTIONS]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Initialize a new AutoVault from scratch. Creates the vault directory,
+    configuration files, templates, and initial folder structure.
+
+    This is the recommended way to start a new AutoVault installation.
+
+$(_h_bold)OPTIONS$(_h_reset)
+    $(_h_green)--path <dir>$(_h_reset)
+        Vault path (default: ~/Obsidian/CustRunVault)
+
+    $(_h_green)--profile <name>$(_h_reset)
+        Use a profile template. Available profiles:
+        - $(_h_yellow)minimal$(_h_reset)    Basic structure, few sections
+        - $(_h_yellow)pentest$(_h_reset)    Penetration testing workflow
+        - $(_h_yellow)audit$(_h_reset)      Security audit workflow
+        - $(_h_yellow)bugbounty$(_h_reset)  Bug bounty hunting workflow
+
+    $(_h_green)--force$(_h_reset)
+        Overwrite existing configuration
+
+    $(_h_green)--no-structure$(_h_reset)
+        Skip creating initial folder structure
+
+$(_h_bold)WHAT IT CREATES$(_h_reset)
+    vault/
+    ├── _templates/
+    │   └── run/
+    │       ├── root/          # Customer-level templates
+    │       └── section/       # Section-level templates
+    ├── _archive/              # For archived customers
+    └── CustRun-001/           # First customer (unless --no-structure)
+
+    config/
+    ├── cust-run-config.json   # Main configuration
+    └── templates.json         # Template definitions
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $(_h_dim)# Quick start with defaults$(_h_reset)
+    $script_name init
+
+    $(_h_dim)# Initialize with pentest profile$(_h_reset)
+    $script_name init --profile pentest
+
+    $(_h_dim)# Custom path$(_h_reset)
+    $script_name init --path ~/Documents/SecurityVault
+
+    $(_h_dim)# Reinitialize existing vault$(_h_reset)
+    $script_name init --force
+EOF
+}
+
+#--------------------------------------
+# DOCTOR HELP
+#--------------------------------------
+help_doctor() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - DOCTOR$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name doctor [OPTIONS]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Run comprehensive diagnostics on your AutoVault installation.
+    Checks dependencies, configuration, structure, permissions, and more.
+
+$(_h_bold)OPTIONS$(_h_reset)
+    $(_h_green)--fix$(_h_reset)
+        Attempt to automatically fix detected issues
+
+    $(_h_green)--verbose$(_h_reset)
+        Show detailed diagnostic information
+
+    $(_h_green)--json$(_h_reset)
+        Output results as JSON (for scripting)
+
+$(_h_bold)CHECKS PERFORMED$(_h_reset)
+    $(_h_yellow)Dependencies$(_h_reset)
+        - Bash version (>= 4.0 required)
+        - jq (required for JSON processing)
+        - Git, rsync, SSH (optional)
+
+    $(_h_yellow)Configuration$(_h_reset)
+        - Config file existence and validity
+        - Required fields (vault_root, sections)
+        - Templates and remotes configuration
+
+    $(_h_yellow)Vault Structure$(_h_reset)
+        - Vault directory existence
+        - Customer folders
+        - Templates directory
+        - Archive directory
+
+    $(_h_yellow)Permissions$(_h_reset)
+        - Main script executable
+        - Bash scripts executable
+        - Hook scripts executable
+
+    $(_h_yellow)Disk Space$(_h_reset)
+        - Config directory disk usage
+        - Vault directory disk usage
+
+    $(_h_yellow)Integrations$(_h_reset)
+        - System alias (av, autovault)
+        - Shell completions
+
+$(_h_bold)EXIT CODES$(_h_reset)
+    0  All checks passed
+    1  One or more checks failed
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $(_h_dim)# Run diagnostics$(_h_reset)
+    $script_name doctor
+
+    $(_h_dim)# Run with auto-fix$(_h_reset)
+    $script_name doctor --fix
+
+    $(_h_dim)# Get JSON output$(_h_reset)
+    $script_name doctor --json
+EOF
+}
+
+#--------------------------------------
+# SEARCH HELP
+#--------------------------------------
+help_search() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - SEARCH$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name search <query> [OPTIONS]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Search across all customers and notes in your AutoVault.
+    Supports text and regex search with various filters.
+
+$(_h_bold)ARGUMENTS$(_h_reset)
+    $(_h_green)<query>$(_h_reset)
+        The text or pattern to search for
+
+$(_h_bold)OPTIONS$(_h_reset)
+    $(_h_green)-c, --customer <id>$(_h_reset)
+        Search only in specific customer
+
+    $(_h_green)-s, --section <name>$(_h_reset)
+        Search only in specific section
+
+    $(_h_green)-t, --type <ext>$(_h_reset)
+        Filter by file extension (default: md)
+        Use 'all' to search all file types
+
+    $(_h_green)-r, --regex$(_h_reset)
+        Treat query as regular expression
+
+    $(_h_green)-i, --case-sensitive$(_h_reset)
+        Enable case-sensitive search
+
+    $(_h_green)-n, --names-only$(_h_reset)
+        Show only matching filenames
+
+    $(_h_green)-C, --context <n>$(_h_reset)
+        Lines of context to show (default: 2)
+
+    $(_h_green)-m, --max <n>$(_h_reset)
+        Maximum results (default: 100)
+
+    $(_h_green)--json$(_h_reset)
+        Output results as JSON
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $(_h_dim)# Search for "password" in all notes$(_h_reset)
+    $script_name search password
+
+    $(_h_dim)# Search in specific customer$(_h_reset)
+    $script_name search "SQL injection" --customer ACME
+
+    $(_h_dim)# Search with regex$(_h_reset)
+    $script_name search "CVE-[0-9]{4}-[0-9]+" --regex
+
+    $(_h_dim)# Search only filenames$(_h_reset)
+    $script_name search report --names-only
+
+    $(_h_dim)# Search in reconnaissance section$(_h_reset)
+    $script_name search nmap --section Recon
+
+    $(_h_dim)# Case-sensitive with more context$(_h_reset)
+    $script_name search TODO --case-sensitive --context 5
+EOF
+}
+
+#--------------------------------------
+# ARCHIVE HELP
+#--------------------------------------
+help_archive() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - ARCHIVE$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name archive <customer_id> [OPTIONS]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Archive a customer's data to a compressed file.
+    Archives are stored in the vault's _archive directory by default.
+
+    This is useful for:
+    - Cleaning up completed engagements
+    - Freeing disk space
+    - Creating deliverables
+
+$(_h_bold)ARGUMENTS$(_h_reset)
+    $(_h_green)<customer_id>$(_h_reset)
+        The customer ID to archive (without prefix)
+
+$(_h_bold)OPTIONS$(_h_reset)
+    $(_h_green)-r, --remove$(_h_reset)
+        Remove customer from vault after archiving
+
+    $(_h_green)-o, --output <path>$(_h_reset)
+        Custom output path for the archive file
+
+    $(_h_green)-f, --format <type>$(_h_reset)
+        Archive format (default: zip)
+        Supported: zip, tar, tar.gz, tar.bz2
+
+    $(_h_green)--no-compress$(_h_reset)
+        Create uncompressed tar archive
+
+    $(_h_green)-e, --encrypt$(_h_reset)
+        Encrypt archive with password (zip only)
+
+    $(_h_green)--force$(_h_reset)
+        Overwrite existing archive without asking
+
+$(_h_bold)OUTPUT$(_h_reset)
+    Default archive location:
+    vault/_archive/CustRun-<ID>_<DATE>.<format>
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $(_h_dim)# Archive customer ACME$(_h_reset)
+    $script_name archive ACME
+
+    $(_h_dim)# Archive and remove from vault$(_h_reset)
+    $script_name archive ACME --remove
+
+    $(_h_dim)# Archive with custom format$(_h_reset)
+    $script_name archive ACME --format tar.gz
+
+    $(_h_dim)# Archive to specific location$(_h_reset)
+    $script_name archive ACME --output ~/backups/acme-archive.zip
+
+    $(_h_dim)# Archive with encryption$(_h_reset)
+    $script_name archive ACME --encrypt
 EOF
 }
