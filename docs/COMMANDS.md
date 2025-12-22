@@ -292,12 +292,67 @@ Install missing dependencies.
 
 ---
 
+## Shell Completions Commands
+
+### `completions status`
+
+Show current completion installation status.
+
+```bash
+./cust-run-config.sh completions
+./cust-run-config.sh completions status
+```
+
+Displays:
+- Current shell detected
+- Installed completions (Bash/Zsh)
+- Installation locations
+- Source files status
+
+### `completions install`
+
+Install shell completions for tab-completion support.
+
+```bash
+# Install for current shell (auto-detected)
+./cust-run-config.sh completions install
+
+# Install for specific shell
+./cust-run-config.sh completions install bash
+./cust-run-config.sh completions install zsh
+./cust-run-config.sh completions install all
+
+# Install system-wide (requires sudo)
+./cust-run-config.sh completions install --system
+```
+
+Installation locations:
+- **Bash (user)**: `~/.local/share/bash-completion/completions/`
+- **Bash (system)**: `/etc/bash_completion.d/`
+- **Zsh (user)**: `~/.zsh/completions/` or `~/.oh-my-zsh/completions/`
+- **Zsh (system)**: `/usr/share/zsh/site-functions/`
+
+### `completions uninstall`
+
+Remove installed completion scripts.
+
+```bash
+./cust-run-config.sh completions uninstall
+./cust-run-config.sh completions uninstall bash
+./cust-run-config.sh completions uninstall zsh
+```
+
+---
+
 ## Examples
 
 ```bash
 # Initial setup
 ./cust-run-config.sh config
 ./cust-run-config.sh vault init
+
+# Enable shell completions
+./cust-run-config.sh completions install
 
 # Add a new customer with structure
 ./cust-run-config.sh customer add 42 --create

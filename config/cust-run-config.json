@@ -23,6 +23,6 @@
     "INFORMATIONS",
     "DIVERS"
   ],
-  "TemplateRelativeRoot": "_templates/Run",
+  "TemplateRelativeRoot": "_templates/run",
   "EnableCleanup": false
 }

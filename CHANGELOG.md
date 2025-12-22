@@ -5,6 +5,23 @@ All notable changes to AutoVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2024-12-21
+
+### Added
+- **Shell Completions Installer** - New `completions` command to install tab-completion
+  - `completions status` - Show installation status
+  - `completions install` - Install for current shell (auto-detect Bash/Zsh)
+  - `completions uninstall` - Remove installed completions
+  - Supports `--user` (default) and `--system` modes
+  - Auto-detects Oh-My-Zsh for optimal installation path
+
+### Changed
+- **Template Structure** - Templates now organized in sub-folders
+  - `_templates/run/index/` - Index templates
+  - `_templates/run/notes/` - Note templates (for Templater)
+  - Updated `templates.json` to version 1.1 with `subFolders` configuration
+- Template folder path changed from `_templates/Run` to `_templates/run` (lowercase)
+
 ## [2.2.0] - 2024-12-20
 
 ### Added

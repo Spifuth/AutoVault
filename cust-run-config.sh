@@ -143,7 +143,7 @@ interactive_config() {
     CUSTOMER_ID_WIDTH=3
     CUSTOMER_IDS=(1 2 3)
     SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
-    TEMPLATE_RELATIVE_ROOT="_templates/Run"
+    TEMPLATE_RELATIVE_ROOT="_templates/run"
     ENABLE_CLEANUP=false
   fi
 
@@ -391,6 +391,14 @@ main() {
     local subcmd="${1:-check}"
     shift || true
     bash "$BASH_DIR/Install-Requirements.sh" "$subcmd" "$@"
+    exit $?
+  fi
+
+  # Handle completions command (doesn't need config)
+  if [[ "$cmd" == "completions" ]]; then
+    local subcmd="${1:-status}"
+    shift || true
+    DRY_RUN="$DRY_RUN" bash "$BASH_DIR/Install-Completions.sh" "$subcmd" "$@"
     exit $?
   fi
 

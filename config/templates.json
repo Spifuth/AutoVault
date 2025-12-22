@@ -1,8 +1,12 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "description": "AutoVault templates for CUST Run structure",
   "obsidian": {
-    "templateFolder": "_templates/Run"
+    "templateFolder": "_templates/run",
+    "subFolders": {
+      "index": "index",
+      "notes": "notes"
+    }
   },
   "templates": {
     "index": {

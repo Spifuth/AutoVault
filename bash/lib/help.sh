@@ -55,16 +55,17 @@ usage() {
   local cmd="${1:-}"
   
   case "$cmd" in
-    config)     help_config ;;
-    structure)  help_structure ;;
-    templates)  help_templates ;;
-    customer)   help_customer ;;
-    section)    help_section ;;
-    backup)     help_backup ;;
-    vault)      help_vault ;;
-    hooks)      help_hooks ;;
-    remote)     help_remote ;;
-    *)          help_main ;;
+    config)       help_config ;;
+    structure)    help_structure ;;
+    templates)    help_templates ;;
+    customer)     help_customer ;;
+    section)      help_section ;;
+    backup)       help_backup ;;
+    vault)        help_vault ;;
+    hooks)        help_hooks ;;
+    completions)  help_completions ;;
+    remote)       help_remote ;;
+    *)            help_main ;;
   esac
 }
 
@@ -123,6 +124,7 @@ $(_h_bold)COMMANDS$(_h_reset)
 
     $(_h_yellow)System$(_h_reset)
     requirements        Check/install dependencies
+    completions         Install shell completions (bash/zsh)
     hooks               Manage automation hooks (list/init/test)
 
 $(_h_bold)QUICK START$(_h_reset)
@@ -531,6 +533,56 @@ $(_h_bold)EXAMPLES$(_h_reset)
     $script_name hooks                  $(_h_dim)# List hooks$(_h_reset)
     $script_name hooks init             $(_h_dim)# Create hooks directory$(_h_reset)
     $script_name hooks test on-error    $(_h_dim)# Test on-error hook$(_h_reset)
+EOF
+}
+
+#--------------------------------------
+# COMPLETIONS HELP
+#--------------------------------------
+help_completions() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - COMPLETIONS$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name completions [SUBCOMMAND] [OPTIONS]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Install or manage shell tab-completion scripts for AutoVault.
+    Supports Bash and Zsh with automatic shell detection.
+
+$(_h_bold)SUBCOMMANDS$(_h_reset)
+    $(_h_green)status$(_h_reset) $(_h_dim)(default)$(_h_reset)
+        Show current completion installation status.
+
+    $(_h_green)install$(_h_reset) [shell] [--user|--system]
+        Install completions for the specified shell.
+        Auto-detects current shell if not specified.
+
+    $(_h_green)uninstall$(_h_reset) [shell]
+        Remove installed completion scripts.
+
+$(_h_bold)OPTIONS$(_h_reset)
+    --shell=<bash|zsh|all>    Target specific shell
+    --user                    Install for current user only (default)
+    --system                  Install system-wide (requires sudo)
+
+$(_h_bold)INSTALL LOCATIONS$(_h_reset)
+    Bash (user):    ~/.local/share/bash-completion/completions/
+    Bash (system):  /etc/bash_completion.d/
+    Zsh (user):     ~/.zsh/completions/ or ~/.oh-my-zsh/completions/
+    Zsh (system):   /usr/share/zsh/site-functions/
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $script_name completions                $(_h_dim)# Show status$(_h_reset)
+    $script_name completions install        $(_h_dim)# Install for current shell$(_h_reset)
+    $script_name completions install bash   $(_h_dim)# Install Bash completions$(_h_reset)
+    $script_name completions install zsh    $(_h_dim)# Install Zsh completions$(_h_reset)
+    $script_name completions install all    $(_h_dim)# Install for all shells$(_h_reset)
+    $script_name completions install --system  $(_h_dim)# System-wide install$(_h_reset)
+    $script_name completions uninstall      $(_h_dim)# Remove all completions$(_h_reset)
 EOF
 }
 

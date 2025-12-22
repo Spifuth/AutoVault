@@ -4,7 +4,7 @@
 
 AutoVault creates and maintains a standardized folder structure in your Obsidian vault, complete with templates and plugin configuration.
 
-[![Version](https://img.shields.io/badge/version-2.2.0-blue)](https://github.com/Spifuth/AutoVault)
+[![Version](https://img.shields.io/badge/version-2.3.0-blue)](https://github.com/Spifuth/AutoVault)
 [![Bash](https://img.shields.io/badge/bash-4%2B-green)](https://www.gnu.org/software/bash/)
 [![Tests](https://github.com/Spifuth/AutoVault/actions/workflows/tests.yml/badge.svg)](https://github.com/Spifuth/AutoVault/actions)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20WSL-lightgrey)](https://github.com/Spifuth/AutoVault)
@@ -23,6 +23,9 @@ cd AutoVault
 
 # 3. Initialize everything
 ./cust-run-config.sh vault init
+
+# 4. (Optional) Enable shell completions
+./cust-run-config.sh completions install
 ```
 
 That's it! Your vault is ready with:
@@ -95,6 +98,9 @@ YourVault/
 ./cust-run-config.sh structure    # Create folder structure only
 ./cust-run-config.sh templates apply  # Apply templates to folders
 ./cust-run-config.sh vault plugins    # Configure Obsidian plugins
+
+# Shell Completions
+./cust-run-config.sh completions install  # Enable tab-completion
 ```
 
 See [docs/COMMANDS.md](docs/COMMANDS.md) for the complete reference.

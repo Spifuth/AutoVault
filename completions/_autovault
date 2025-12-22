@@ -65,6 +65,7 @@ _autovault() {
                 'vault:Obsidian setup (init/plugins/check/hub)'
                 'remote:Remote vault sync via SSH (push/pull)'
                 'hooks:Manage automation hooks (list/init/test)'
+                'completions:Install shell completions (bash/zsh)'
                 'requirements:Check/install dependencies'
                 'help:Show help for a command'
             )
@@ -92,6 +93,9 @@ _autovault() {
                     ;;
                 remote)
                     _autovault_remote
+                    ;;
+                completions)
+                    _autovault_completions_cmd
                     ;;
                 *)
                     _arguments '--help[Show help]'
@@ -289,6 +293,52 @@ _autovault_remote() {
                     local -a remotes
                     remotes=(${(f)"$(_autovault_get_remotes)"})
                     [[ -n "$remotes" ]] && _describe 'remote name' remotes
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_autovault_completions_cmd() {
+    local -a subcmds
+    subcmds=(
+        'install:Install shell completions'
+        'uninstall:Remove installed completions'
+        'status:Show completion installation status'
+    )
+    
+    _arguments \
+        '1: :->subcmd' \
+        '*: :->args'
+    
+    case "$state" in
+        subcmd)
+            _describe 'completions command' subcmds
+            ;;
+        args)
+            case "${line[2]}" in
+                install)
+                    local -a shells opts
+                    shells=(
+                        'bash:Install Bash completions'
+                        'zsh:Install Zsh completions'
+                        'all:Install for all shells'
+                    )
+                    opts=(
+                        '--user[Install for current user only (default)]'
+                        '--system[Install system-wide (requires sudo)]'
+                    )
+                    _describe 'shell' shells
+                    _arguments $opts
+                    ;;
+                uninstall)
+                    local -a shells
+                    shells=(
+                        'bash:Remove Bash completions'
+                        'zsh:Remove Zsh completions'
+                        'all:Remove all completions'
+                    )
+                    _describe 'shell' shells
                     ;;
             esac
             ;;

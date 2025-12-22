@@ -28,7 +28,7 @@ _VERSION_SH_LOADED=1
 #--------------------------------------
 # VERSION INFO
 #--------------------------------------
-AUTOVAULT_VERSION="2.2.0"
+AUTOVAULT_VERSION="2.3.0"
 AUTOVAULT_REPO="Spifuth/AutoVault"
 AUTOVAULT_RELEASE_URL="https://api.github.com/repos/${AUTOVAULT_REPO}/releases/latest"
 AUTOVAULT_REPO_URL="https://github.com/${AUTOVAULT_REPO}"

@@ -312,7 +312,7 @@ setup() {
   "CustomerIdWidth": 3,
   "CustomerIds": [1, 2, 3],
   "Sections": ["FP", "RAISED"],
-  "TemplateRelativeRoot": "_templates/Run",
+  "TemplateRelativeRoot": "_templates/run",
   "EnableCleanup": true
 }
 EOF
@@ -536,7 +536,8 @@ test_structure_creation() {
 
 test_templates_sync() {
     # Test syncing templates
-    mkdir -p "$TEST_VAULT/_templates/Run"
+    mkdir -p "$TEST_VAULT/_templates/run/index"
+    mkdir -p "$TEST_VAULT/_templates/run/notes"
     
     (
         cd "$PROJECT_ROOT"
@@ -544,9 +545,9 @@ test_templates_sync() {
         bash ./cust-run-config.sh templates sync >/dev/null 2>&1
     )
     
-    # Verify templates exist
-    [[ -f "$TEST_VAULT/_templates/Run/CUST-Root-Index.md" ]] && \
-    [[ -f "$TEST_VAULT/_templates/Run/CUST-Section-FP-Index.md" ]]
+    # Verify templates exist in new structure
+    [[ -f "$TEST_VAULT/_templates/run/index/CUST-Root-Index.md" ]] && \
+    [[ -f "$TEST_VAULT/_templates/run/index/CUST-Section-FP-Index.md" ]]
 }
 
 test_templates_apply() {
