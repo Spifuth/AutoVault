@@ -510,7 +510,7 @@ check_integrations() {
     fi
   done
   if [[ "$alias_found" != "true" ]]; then
-    check_warn "System alias" "not installed (run: av alias install av)"
+    check_warn "System alias" "not installed (run: cust-run-config.sh alias install)"
   fi
 
   # Check for completions
@@ -529,7 +529,7 @@ check_integrations() {
   fi
 
   if [[ "$completions_installed" != "true" ]]; then
-    check_warn "Shell completions" "not installed (run: av completions install)"
+    check_warn "Shell completions" "not installed (run: cust-run-config.sh completions install)"
   fi
 }
 

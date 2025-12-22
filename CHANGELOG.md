@@ -8,24 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - Phase 2.1
 
 ### Added
-- **Init Command** (`av init`) - Initialize a new vault from scratch
+- **Init Command** (`init`) - Initialize a new vault from scratch
   - Profile templates: `minimal`, `pentest`, `audit`, `bugbounty`
   - Creates vault directory, config files, templates, initial structure
   - Options: `--path`, `--profile`, `--force`, `--no-structure`
 
-- **Doctor Command** (`av doctor`) - Comprehensive diagnostic tool
+- **Doctor Command** (`doctor`) - Comprehensive diagnostic tool
   - Checks: dependencies, config, vault structure, permissions, disk space
   - Auto-fix mode with `--fix` flag
   - JSON output for scripting with `--json`
   - Detailed output with `--verbose`
 
-- **Search Command** (`av search`) - Search across all customers/notes
+- **Search Command** (`search`) - Search across all customers/notes
   - Text and regex search (`--regex`)
   - Filter by customer (`-c`), section (`-s`), file type (`-t`)
   - Context lines (`-C`), max results (`-m`)
   - Case-sensitive option, JSON output
 
-- **Archive Command** (`av archive`) - Archive a customer to compressed file
+- **Archive Command** (`archive`) - Archive a customer to compressed file
   - Formats: zip (default), tar, tar.gz, tar.bz2
   - Encryption support (zip only) with `--encrypt`
   - Remove after archive with `--remove`
