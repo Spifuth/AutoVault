@@ -27,6 +27,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/logging.sh"
 source "$SCRIPT_DIR/lib/config.sh"
 
+# Source UI library if available
+if [[ -f "$SCRIPT_DIR/lib/ui.sh" ]]; then
+    source "$SCRIPT_DIR/lib/ui.sh"
+    UI_AVAILABLE=true
+else
+    UI_AVAILABLE=false
+fi
+
 #--------------------------------------
 # CONFIGURATION
 #--------------------------------------
@@ -438,8 +446,25 @@ main() {
   local search_path
   search_path=$(get_search_path)
 
+  # Use spinner if UI available and not JSON output
+  if [[ "$UI_AVAILABLE" == "true" ]] && [[ "$JSON_OUTPUT" != "true" ]]; then
+    spinner_start "Searching files..."
+  fi
+  
   search_files "$search_path"
+  
+  if [[ "$UI_AVAILABLE" == "true" ]] && [[ "$JSON_OUTPUT" != "true" ]]; then
+    spinner_stop
+  fi
+  
   print_results
+  
+  # Send notification with results
+  if [[ "$UI_AVAILABLE" == "true" ]] && [[ "$JSON_OUTPUT" != "true" ]]; then
+    if [[ "$FILE_COUNT" -gt 0 ]]; then
+      notify "AutoVault Search" "Found $MATCH_COUNT matches in $FILE_COUNT files"
+    fi
+  fi
 }
 
 main "$@"

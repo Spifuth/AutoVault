@@ -22,6 +22,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/logging.sh"
 source "$SCRIPT_DIR/lib/config.sh"
 
+# Source UI library if available
+if [[ -f "$SCRIPT_DIR/lib/ui.sh" ]]; then
+    source "$SCRIPT_DIR/lib/ui.sh"
+    UI_AVAILABLE=true
+else
+    UI_AVAILABLE=false
+fi
+
 #--------------------------------------
 # CONFIGURATION
 #--------------------------------------
@@ -598,11 +606,19 @@ main() {
 
   if [[ "$JSON_OUTPUT" != "true" ]]; then
     echo ""
-    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${NC}                                                              ${CYAN}║${NC}"
-    echo -e "${CYAN}║${NC}    ${BOLD}🏥 AutoVault Doctor${NC}                                       ${CYAN}║${NC}"
-    echo -e "${CYAN}║${NC}                                                              ${CYAN}║${NC}"
-    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
+    if [[ "$UI_AVAILABLE" == "true" ]]; then
+      echo -e "${THEME[primary]}╔══════════════════════════════════════════════════════════════╗${THEME[reset]}"
+      echo -e "${THEME[primary]}║${THEME[reset]}                                                              ${THEME[primary]}║${THEME[reset]}"
+      echo -e "${THEME[primary]}║${THEME[reset]}    ${THEME[bold]}🏥 AutoVault Doctor${THEME[reset]}                                       ${THEME[primary]}║${THEME[reset]}"
+      echo -e "${THEME[primary]}║${THEME[reset]}                                                              ${THEME[primary]}║${THEME[reset]}"
+      echo -e "${THEME[primary]}╚══════════════════════════════════════════════════════════════╝${THEME[reset]}"
+    else
+      echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
+      echo -e "${CYAN}║${NC}                                                              ${CYAN}║${NC}"
+      echo -e "${CYAN}║${NC}    ${BOLD}🏥 AutoVault Doctor${NC}                                       ${CYAN}║${NC}"
+      echo -e "${CYAN}║${NC}                                                              ${CYAN}║${NC}"
+      echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
+    fi
     
     if [[ "$FIX_MODE" == "true" ]]; then
       echo ""
@@ -618,6 +634,15 @@ main() {
   check_integrations
 
   print_summary
+  
+  # Send notification if UI available
+  if [[ "$UI_AVAILABLE" == "true" ]] && [[ "$JSON_OUTPUT" != "true" ]]; then
+    if [[ "$CHECKS_FAILED" -eq 0 ]]; then
+      notify_success "AutoVault Doctor" "All $CHECKS_PASSED checks passed!"
+    else
+      notify_error "AutoVault Doctor" "$CHECKS_FAILED issues found"
+    fi
+  fi
 
   # Exit code based on failures
   if [[ "$CHECKS_FAILED" -gt 0 ]]; then

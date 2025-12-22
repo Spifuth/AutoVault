@@ -34,7 +34,7 @@ _autovault_completions() {
     _init_completion || return
     
     # All main commands
-    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks completions alias requirements help init doctor search archive"
+    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks completions alias requirements help init doctor search archive theme demo"
     
     # Global options
     local global_opts="-v --verbose -q --quiet --silent --no-color --dry-run --diff -h --help --version"
@@ -49,6 +49,8 @@ _autovault_completions() {
     local remote_cmds="list init add remove test push pull status"
     local completions_cmds="install uninstall status"
     local alias_cmds="install uninstall status"
+    local theme_cmds="status set preview config reset"
+    local demo_cmds="all progress spinner theme menu notify box"
     
     # Get the main command (skip options)
     local main_cmd=""
@@ -277,6 +279,24 @@ _autovault_completions() {
                     COMPREPLY=($(compgen -W "-r --remove -o --output -f --format --no-compress -e --encrypt --force --help" -- "$cur"))
                     ;;
             esac
+            ;;
+        
+        theme)
+            case "$prev" in
+                set)
+                    COMPREPLY=($(compgen -W "dark light auto" -- "$cur"))
+                    ;;
+                theme)
+                    COMPREPLY=($(compgen -W "$theme_cmds --help" -- "$cur"))
+                    ;;
+                *)
+                    COMPREPLY=($(compgen -W "$theme_cmds --help" -- "$cur"))
+                    ;;
+            esac
+            ;;
+        
+        demo)
+            COMPREPLY=($(compgen -W "$demo_cmds --help" -- "$cur"))
             ;;
         
         validate|status|test|cleanup|requirements)
