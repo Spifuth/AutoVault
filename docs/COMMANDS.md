@@ -401,6 +401,189 @@ Remove installed alias(es).
 
 ---
 
+## Init Command
+
+### `init`
+
+Initialize a new vault from scratch. The recommended way to start fresh.
+
+```bash
+# Quick start with defaults
+./cust-run-config.sh init
+
+# Initialize with a specific profile
+./cust-run-config.sh init --profile pentest
+
+# Custom vault path
+./cust-run-config.sh init --path ~/Documents/SecurityVault
+
+# Reinitialize existing (overwrite config)
+./cust-run-config.sh init --force
+
+# Skip creating initial structure
+./cust-run-config.sh init --no-structure
+```
+
+**Available Profiles:**
+
+| Profile | Description | Sections |
+|---------|-------------|----------|
+| `minimal` | Basic structure | Notes, Archive |
+| `pentest` | Penetration testing | Recon, Enum, Exploit, Post, Findings, Reporting |
+| `audit` | Security audit | Scope, Evidence, Findings, Recommendations, Reporting |
+| `bugbounty` | Bug bounty hunting | Programs, Targets, Findings, POC, Reporting |
+
+**What it creates:**
+- Vault directory
+- `config/cust-run-config.json` - Main configuration
+- `config/templates.json` - Template definitions
+- `_templates/run/root/` - Customer-level templates
+- `_templates/run/section/` - Section-level templates
+- `_archive/` - For archived customers
+- Initial customer folder (unless `--no-structure`)
+
+---
+
+## Doctor Command
+
+### `doctor`
+
+Run comprehensive diagnostics on your AutoVault installation.
+
+```bash
+# Run diagnostics
+./cust-run-config.sh doctor
+
+# Attempt to fix issues automatically
+./cust-run-config.sh doctor --fix
+
+# Verbose output
+./cust-run-config.sh doctor --verbose
+
+# JSON output (for scripting)
+./cust-run-config.sh doctor --json
+```
+
+**Checks performed:**
+
+| Category | Checks |
+|----------|--------|
+| Dependencies | Bash (>= 4.0), jq (required), Git, rsync, SSH (optional) |
+| Configuration | Config file exists/valid, required fields, templates.json, remotes.json |
+| Vault Structure | Vault directory, customer folders, templates dir, archive dir |
+| Permissions | Main script, bash scripts, hook scripts executable |
+| Disk Space | Config disk, vault disk usage and free space |
+| Integrations | System alias (av/autovault), shell completions |
+
+**Exit codes:**
+- `0` - All checks passed
+- `1` - One or more checks failed
+
+---
+
+## Search Command
+
+### `search`
+
+Search across all customers and notes in your vault.
+
+```bash
+# Search for text in all notes
+./cust-run-config.sh search "password"
+
+# Search in specific customer
+./cust-run-config.sh search "SQL injection" --customer ACME
+./cust-run-config.sh search "SQLi" -c 001
+
+# Search in specific section
+./cust-run-config.sh search "nmap" --section Recon
+
+# Search with regex
+./cust-run-config.sh search "CVE-[0-9]{4}-[0-9]+" --regex
+
+# Show only matching filenames
+./cust-run-config.sh search report --names-only
+
+# Case-sensitive search
+./cust-run-config.sh search "TODO" --case-sensitive
+
+# More context lines
+./cust-run-config.sh search "vulnerability" --context 5
+
+# Limit results
+./cust-run-config.sh search "error" --max 50
+
+# JSON output
+./cust-run-config.sh search "password" --json
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `-c, --customer <id>` | Search only in specific customer |
+| `-s, --section <name>` | Search only in specific section |
+| `-t, --type <ext>` | Filter by file type (default: md, use 'all' for all) |
+| `-r, --regex` | Treat query as regular expression |
+| `-i, --case-sensitive` | Enable case-sensitive search |
+| `-n, --names-only` | Show only matching filenames |
+| `-C, --context <n>` | Lines of context to show (default: 2) |
+| `-m, --max <n>` | Maximum results (default: 100) |
+| `--json` | Output as JSON |
+
+---
+
+## Archive Command
+
+### `archive`
+
+Archive a customer's data to a compressed file.
+
+```bash
+# Archive customer to default location
+./cust-run-config.sh archive ACME
+
+# Archive and remove from vault
+./cust-run-config.sh archive ACME --remove
+
+# Custom archive format
+./cust-run-config.sh archive ACME --format tar.gz
+
+# Custom output path
+./cust-run-config.sh archive ACME --output ~/backups/acme.zip
+
+# Encrypted archive (zip only)
+./cust-run-config.sh archive ACME --encrypt
+
+# Force overwrite existing
+./cust-run-config.sh archive ACME --force
+```
+
+**Supported formats:**
+
+| Format | Extension | Compression |
+|--------|-----------|-------------|
+| `zip` | .zip | Yes (default) |
+| `tar` | .tar | No |
+| `tar.gz` | .tar.gz | Yes (gzip) |
+| `tar.bz2` | .tar.bz2 | Yes (bzip2) |
+
+**Default output:**
+```
+vault/_archive/CustRun-<ID>_<YYYYMMDD>.<format>
+```
+
+**Restore archived customer:**
+```bash
+# Restore from zip
+unzip -d /path/to/vault archive.zip
+
+# Restore from tar.gz
+tar -xzf archive.tar.gz -C /path/to/vault
+```
+
+---
+
 ## Examples
 
 ```bash

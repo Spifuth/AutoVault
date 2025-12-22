@@ -428,7 +428,7 @@ main() {
   # Dispatch to appropriate handler
   case "$cmd" in
     #--- Configuration ---
-    config|setup|init)
+    config|setup)
       interactive_config
       ;;
     validate)
@@ -556,6 +556,26 @@ main() {
           exit 1
           ;;
       esac
+      ;;
+
+    #--- Init (New Vault) ---
+    init)
+      run_bash "Init-Vault.sh" "$@"
+      ;;
+
+    #--- Doctor (Diagnostics) ---
+    doctor|diagnose|check)
+      run_bash "Doctor.sh" "$@"
+      ;;
+
+    #--- Search ---
+    search|find|grep)
+      run_bash "Search-Vault.sh" "$@"
+      ;;
+
+    #--- Archive ---
+    archive)
+      run_bash "Archive-Customer.sh" "$@"
       ;;
 
     #--- Hooks Management ---

@@ -34,7 +34,7 @@ _autovault_completions() {
     _init_completion || return
     
     # All main commands
-    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks completions alias requirements help"
+    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks completions alias requirements help init doctor search archive"
     
     # Global options
     local global_opts="-v --verbose -q --quiet --silent --no-color --dry-run --diff -h --help --version"
@@ -214,8 +214,69 @@ _autovault_completions() {
             COMPREPLY=($(compgen -W "--help" -- "$cur"))
             ;;
         
-        config|setup|init)
+        config|setup)
             COMPREPLY=($(compgen -W "--help" -- "$cur"))
+            ;;
+        
+        init)
+            case "$prev" in
+                --profile)
+                    COMPREPLY=($(compgen -W "minimal pentest audit bugbounty" -- "$cur"))
+                    ;;
+                --path)
+                    _filedir -d
+                    ;;
+                init)
+                    COMPREPLY=($(compgen -W "--path --profile --force --no-structure --help" -- "$cur"))
+                    ;;
+                *)
+                    COMPREPLY=($(compgen -W "--path --profile --force --no-structure --help" -- "$cur"))
+                    ;;
+            esac
+            ;;
+        
+        doctor|diagnose|check)
+            COMPREPLY=($(compgen -W "--fix --verbose --json --help" -- "$cur"))
+            ;;
+        
+        search|find|grep)
+            case "$prev" in
+                -c|--customer)
+                    local ids=$(_autovault_get_customer_ids)
+                    COMPREPLY=($(compgen -W "$ids" -- "$cur"))
+                    ;;
+                -s|--section)
+                    local sections=$(_autovault_get_sections)
+                    COMPREPLY=($(compgen -W "$sections" -- "$cur"))
+                    ;;
+                -t|--type)
+                    COMPREPLY=($(compgen -W "md txt all json yaml" -- "$cur"))
+                    ;;
+                -C|--context|-m|--max)
+                    COMPREPLY=()  # Numbers
+                    ;;
+                *)
+                    COMPREPLY=($(compgen -W "-c --customer -s --section -t --type -r --regex -i --case-sensitive -n --names-only -C --context -m --max --json --help" -- "$cur"))
+                    ;;
+            esac
+            ;;
+        
+        archive)
+            case "$prev" in
+                -f|--format)
+                    COMPREPLY=($(compgen -W "zip tar tar.gz tar.bz2" -- "$cur"))
+                    ;;
+                -o|--output)
+                    _filedir
+                    ;;
+                archive)
+                    local ids=$(_autovault_get_customer_ids)
+                    COMPREPLY=($(compgen -W "$ids -r --remove -o --output -f --format --no-compress -e --encrypt --force --help" -- "$cur"))
+                    ;;
+                *)
+                    COMPREPLY=($(compgen -W "-r --remove -o --output -f --format --no-compress -e --encrypt --force --help" -- "$cur"))
+                    ;;
+            esac
             ;;
         
         validate|status|test|cleanup|requirements)

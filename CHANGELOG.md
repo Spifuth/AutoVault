@@ -5,6 +5,36 @@ All notable changes to AutoVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - Phase 2.1
+
+### Added
+- **Init Command** (`init`) - Initialize a new vault from scratch
+  - Profile templates: `minimal`, `pentest`, `audit`, `bugbounty`
+  - Creates vault directory, config files, templates, initial structure
+  - Options: `--path`, `--profile`, `--force`, `--no-structure`
+
+- **Doctor Command** (`doctor`) - Comprehensive diagnostic tool
+  - Checks: dependencies, config, vault structure, permissions, disk space
+  - Auto-fix mode with `--fix` flag
+  - JSON output for scripting with `--json`
+  - Detailed output with `--verbose`
+
+- **Search Command** (`search`) - Search across all customers/notes
+  - Text and regex search (`--regex`)
+  - Filter by customer (`-c`), section (`-s`), file type (`-t`)
+  - Context lines (`-C`), max results (`-m`)
+  - Case-sensitive option, JSON output
+
+- **Archive Command** (`archive`) - Archive a customer to compressed file
+  - Formats: zip (default), tar, tar.gz, tar.bz2
+  - Encryption support (zip only) with `--encrypt`
+  - Remove after archive with `--remove`
+  - Custom output path with `--output`
+
+### Changed
+- Help system reorganized with new categories (Management, Vault, Utilities)
+- Shell completions updated for new commands (Bash and Zsh)
+
 ## [2.3.0] - 2024-12-21
 
 ### Added
