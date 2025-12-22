@@ -428,7 +428,7 @@ main() {
   # Dispatch to appropriate handler
   case "$cmd" in
     #--- Configuration ---
-    config|setup|init)
+    config|setup)
       interactive_config
       ;;
     validate)
