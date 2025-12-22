@@ -584,6 +584,74 @@ tar -xzf archive.tar.gz -C /path/to/vault
 
 ---
 
+## Theme Command
+
+### `theme`
+
+Configure AutoVault's color theme and UI preferences.
+
+```bash
+# Show current theme settings
+./cust-run-config.sh theme
+
+# Set theme
+./cust-run-config.sh theme set dark    # Dark terminal (default)
+./cust-run-config.sh theme set light   # Light terminal
+./cust-run-config.sh theme set auto    # Auto-detect
+
+# Preview all themes
+./cust-run-config.sh theme preview
+
+# Interactive configuration
+./cust-run-config.sh theme config
+
+# Reset to defaults
+./cust-run-config.sh theme reset
+```
+
+**Configuration file:** `~/.config/autovault/theme.conf`
+
+**Environment variables:**
+
+| Variable | Description |
+|----------|-------------|
+| `AUTOVAULT_THEME` | Override theme (dark/light/auto) |
+| `AUTOVAULT_NOTIFY` | Enable notifications (true/false) |
+| `NO_COLOR` | Disable all colors (standard) |
+
+---
+
+## Demo Command
+
+### `demo`
+
+Demonstrate AutoVault's UI components. Useful for testing themes and terminal compatibility.
+
+```bash
+# Run all demos
+./cust-run-config.sh demo
+
+# Progress bar demonstration
+./cust-run-config.sh demo progress
+
+# Spinner/loading animation
+./cust-run-config.sh demo spinner
+
+# Theme switching preview
+./cust-run-config.sh demo theme
+
+# Interactive menu selection
+./cust-run-config.sh demo menu
+
+# Desktop notifications
+./cust-run-config.sh demo notify
+
+# Box and section formatting
+./cust-run-config.sh demo box
+```
+
+---
+
 ## Examples
 
 ```bash

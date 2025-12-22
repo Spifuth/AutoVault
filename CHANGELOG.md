@@ -5,7 +5,46 @@ All notable changes to AutoVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - Phase 2.1
+## [Unreleased] - Phase 2.2
+
+### Added
+- **UI Library** (`bash/lib/ui.sh`) - Comprehensive UI utilities
+  - Theme system with dark/light/auto modes
+  - Progress bars with customizable width and labels
+  - Background spinners with cleanup on exit
+  - Interactive menus with fzf fallback
+  - Desktop notifications (Linux notify-send, macOS terminal-notifier)
+  - Box formatting, tables, key-value output
+
+- **Theme Command** (`theme`) - Configure UI appearance
+  - `theme status` - Show current theme settings
+  - `theme set <dark|light|auto>` - Set color theme
+  - `theme preview` - Preview all themes
+  - `theme config` - Interactive configuration
+  - `theme reset` - Reset to defaults
+  - Persistent config in `~/.config/autovault/theme.conf`
+
+- **Demo Command** (`demo`) - UI component demonstrations
+  - `demo progress` - Progress bar demo
+  - `demo spinner` - Spinner/loading animation
+  - `demo theme` - Theme switching preview
+  - `demo menu` - Interactive menu selection
+  - `demo notify` - Desktop notifications
+  - `demo box` - Box and section formatting
+
+### Changed
+- **New-CustRunStructure.sh** - Now shows progress bar during customer creation
+- **Doctor.sh** - Uses themed output and sends notifications on completion
+- **Search-Vault.sh** - Shows spinner during search, notifies on results
+- Help system updated with theme and demo documentation
+- Shell completions updated for new commands (Bash and Zsh)
+
+### Environment Variables
+- `AUTOVAULT_THEME` - Override theme (dark/light/auto)
+- `AUTOVAULT_NOTIFY` - Enable/disable desktop notifications (true/false)
+- `NO_COLOR` - Disable all colors (standard)
+
+## [2.4.0] - 2024-12-22 - Phase 2.1
 
 ### Added
 - **Init Command** (`init`) - Initialize a new vault from scratch
