@@ -52,9 +52,13 @@ source "$SCRIPT_DIR/lib/logging.sh"
 BASH_COMPLETION_FILE="$COMPLETIONS_DIR/autovault.bash"
 ZSH_COMPLETION_FILE="$COMPLETIONS_DIR/_autovault"
 
-# Target filenames
-BASH_TARGET_NAME="cust-run-config.sh"
-ZSH_TARGET_NAME="_cust-run-config.sh"
+# Target filenames (main file)
+BASH_TARGET_NAME="autovault"
+ZSH_TARGET_NAME="_autovault"
+
+# Additional alias names to create symlinks for (bash-completion auto-loads by command name)
+BASH_ALIAS_NAMES=("cust-run-config.sh" "cust-run-config" "av" "vault" "custrun")
+ZSH_ALIAS_NAMES=("_cust-run-config.sh" "_cust-run-config" "_av" "_vault" "_custrun")
 
 # Installation locations
 declare -A BASH_LOCATIONS=(
@@ -242,12 +246,26 @@ install_bash_completion() {
     
     log_success "Bash completion installed: $target_file"
     
+    # Create symlinks for alias names (bash-completion auto-loads by command name)
+    for alias_name in "${BASH_ALIAS_NAMES[@]}"; do
+        local alias_file="$target_dir/$alias_name"
+        if [[ ! -e "$alias_file" ]]; then
+            if [[ "$mode" == "system" ]]; then
+                sudo ln -sf "$BASH_TARGET_NAME" "$alias_file"
+            else
+                ln -sf "$BASH_TARGET_NAME" "$alias_file"
+            fi
+            log_debug "Created symlink: $alias_file → $BASH_TARGET_NAME"
+        fi
+    done
+    
     # Show activation hint
     echo ""
     echo -e "  ${BOLD}To activate now:${RESET}"
     echo "    source $target_file"
     echo ""
     echo -e "  ${DIM}Completions will be auto-loaded in new shells.${RESET}"
+    echo -e "  ${DIM}Works with: autovault, av, vault, custrun, cust-run-config.sh${RESET}"
 }
 
 install_zsh_completion() {
@@ -286,6 +304,19 @@ install_zsh_completion() {
     
     log_success "Zsh completion installed: $target_file"
     
+    # Create symlinks for alias names
+    for alias_name in "${ZSH_ALIAS_NAMES[@]}"; do
+        local alias_file="$target_dir/$alias_name"
+        if [[ ! -e "$alias_file" ]]; then
+            if [[ "$mode" == "system" ]]; then
+                sudo ln -sf "$ZSH_TARGET_NAME" "$alias_file"
+            else
+                ln -sf "$ZSH_TARGET_NAME" "$alias_file"
+            fi
+            log_debug "Created symlink: $alias_file → $ZSH_TARGET_NAME"
+        fi
+    done
+    
     # Show activation hints based on mode
     echo ""
     if [[ "$mode" == "ohmyzsh" ]]; then
@@ -302,6 +333,7 @@ install_zsh_completion() {
         echo -e "  ${BOLD}To activate:${RESET}"
         echo "    Restart your shell or run: exec zsh"
     fi
+    echo -e "  ${DIM}Works with: autovault, av, vault, custrun, cust-run-config.sh${RESET}"
 }
 
 cmd_install() {

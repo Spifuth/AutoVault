@@ -64,6 +64,7 @@ usage() {
     vault)        help_vault ;;
     hooks)        help_hooks ;;
     completions)  help_completions ;;
+    alias)        help_alias ;;
     remote)       help_remote ;;
     *)            help_main ;;
   esac
@@ -125,6 +126,7 @@ $(_h_bold)COMMANDS$(_h_reset)
     $(_h_yellow)System$(_h_reset)
     requirements        Check/install dependencies
     completions         Install shell completions (bash/zsh)
+    alias               Create system alias (autovault, av, etc.)
     hooks               Manage automation hooks (list/init/test)
 
 $(_h_bold)QUICK START$(_h_reset)
@@ -583,6 +585,70 @@ $(_h_bold)EXAMPLES$(_h_reset)
     $script_name completions install all    $(_h_dim)# Install for all shells$(_h_reset)
     $script_name completions install --system  $(_h_dim)# System-wide install$(_h_reset)
     $script_name completions uninstall      $(_h_dim)# Remove all completions$(_h_reset)
+EOF
+}
+
+#--------------------------------------
+# ALIAS HELP
+#--------------------------------------
+help_alias() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - ALIAS$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name alias [SUBCOMMAND] [OPTIONS]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Create a system alias or symlink so you can run AutoVault from
+    anywhere with a short command like 'autovault' or 'av'.
+
+$(_h_bold)SUBCOMMANDS$(_h_reset)
+    $(_h_green)status$(_h_reset) $(_h_dim)(default)$(_h_reset)
+        Show current alias installation status.
+
+    $(_h_green)install$(_h_reset) [name] [--method=<method>] [--system]
+        Create an alias with the specified name.
+        Default name: autovault
+
+    $(_h_green)uninstall$(_h_reset) [name] [--all]
+        Remove installed alias(es).
+
+$(_h_bold)OPTIONS$(_h_reset)
+    --name=<alias>      Custom alias name (default: autovault)
+    --method=<method>   Installation method:
+                          symlink - Symlink in PATH (default, recommended)
+                          alias   - Shell alias in rc file
+    --user              Install for current user only (default)
+    --system            Install system-wide (requires sudo)
+    --all               Remove all aliases (with uninstall)
+
+$(_h_bold)INSTALLATION METHODS$(_h_reset)
+    $(_h_yellow)symlink$(_h_reset) (recommended)
+        Creates a symbolic link in ~/.local/bin or /usr/local/bin.
+        Works across all shells, survives shell restarts.
+
+    $(_h_yellow)alias$(_h_reset)
+        Adds an alias to your ~/.bashrc or ~/.zshrc.
+        Shell-specific, requires sourcing rc file after install.
+
+$(_h_bold)SUGGESTED NAMES$(_h_reset)
+    autovault   Full name (default)
+    av          Short and quick
+    vault       If you don't use Hashicorp Vault
+    custrun     Descriptive
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $script_name alias                      $(_h_dim)# Show status$(_h_reset)
+    $script_name alias install              $(_h_dim)# Install as 'autovault'$(_h_reset)
+    $script_name alias install av           $(_h_dim)# Install as 'av'$(_h_reset)
+    $script_name alias install --name=vault $(_h_dim)# Install as 'vault'$(_h_reset)
+    $script_name alias install --system     $(_h_dim)# System-wide (/usr/local/bin)$(_h_reset)
+    $script_name alias install --method=alias  $(_h_dim)# Shell alias instead$(_h_reset)
+    $script_name alias uninstall av         $(_h_dim)# Remove 'av' alias$(_h_reset)
+    $script_name alias uninstall --all      $(_h_dim)# Remove all aliases$(_h_reset)
 EOF
 }
 

@@ -15,12 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Supports `--user` (default) and `--system` modes
   - Auto-detects Oh-My-Zsh for optimal installation path
 
+- **System Alias Installer** - New `alias` command to create system aliases
+  - `alias status` - Show installed aliases
+  - `alias install [name]` - Create symlink or shell alias (default: `autovault`)
+  - `alias uninstall` - Remove installed aliases
+  - Supports custom names (`av`, `vault`, etc.)
+  - Methods: `symlink` (recommended) or `alias` (shell rc file)
+
 ### Changed
 - **Template Structure** - Templates now organized in sub-folders
   - `_templates/run/index/` - Index templates
   - `_templates/run/notes/` - Note templates (for Templater)
   - Updated `templates.json` to version 1.1 with `subFolders` configuration
 - Template folder path changed from `_templates/Run` to `_templates/run` (lowercase)
+- Main script now resolves symlinks to find its real location (required for alias feature)
 
 ## [2.2.0] - 2024-12-20
 

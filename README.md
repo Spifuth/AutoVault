@@ -24,8 +24,12 @@ cd AutoVault
 # 3. Initialize everything
 ./cust-run-config.sh vault init
 
-# 4. (Optional) Enable shell completions
+# 4. (Optional) Create a short alias and enable completions
+./cust-run-config.sh alias install av
 ./cust-run-config.sh completions install
+
+# Now use 'av' from anywhere!
+av status
 ```
 
 That's it! Your vault is ready with:
@@ -99,7 +103,8 @@ YourVault/
 ./cust-run-config.sh templates apply  # Apply templates to folders
 ./cust-run-config.sh vault plugins    # Configure Obsidian plugins
 
-# Shell Completions
+# System Integration
+./cust-run-config.sh alias install av   # Create 'av' command
 ./cust-run-config.sh completions install  # Enable tab-completion
 ```
 

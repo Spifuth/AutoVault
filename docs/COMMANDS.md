@@ -344,6 +344,63 @@ Remove installed completion scripts.
 
 ---
 
+## Alias Commands
+
+### `alias status`
+
+Show current alias installation status.
+
+```bash
+./cust-run-config.sh alias
+./cust-run-config.sh alias status
+```
+
+Displays:
+- Script location
+- Current shell
+- PATH directories status
+- Installed aliases (symlinks and shell aliases)
+
+### `alias install`
+
+Create a system alias or symlink for AutoVault.
+
+```bash
+# Install with default name (autovault)
+./cust-run-config.sh alias install
+
+# Install with custom name
+./cust-run-config.sh alias install av
+./cust-run-config.sh alias install --name=vault
+
+# Install as shell alias instead of symlink
+./cust-run-config.sh alias install --method=alias
+
+# System-wide installation
+./cust-run-config.sh alias install --system
+```
+
+Methods:
+- **symlink** (default): Creates a symbolic link in `~/.local/bin` or `/usr/local/bin`
+- **alias**: Adds an alias to your `~/.bashrc` or `~/.zshrc`
+
+Suggested names:
+- `autovault` - Full name (default)
+- `av` - Short and quick
+- `vault` - If you don't use Hashicorp Vault
+- `custrun` - Descriptive
+
+### `alias uninstall`
+
+Remove installed alias(es).
+
+```bash
+./cust-run-config.sh alias uninstall av
+./cust-run-config.sh alias uninstall --all
+```
+
+---
+
 ## Examples
 
 ```bash
@@ -351,10 +408,13 @@ Remove installed completion scripts.
 ./cust-run-config.sh config
 ./cust-run-config.sh vault init
 
-# Enable shell completions
+# Enable shell completions and create alias
 ./cust-run-config.sh completions install
+./cust-run-config.sh alias install av
 
-# Add a new customer with structure
+# Now you can use 'av' instead of './cust-run-config.sh'
+av status
+av customer add 42 --create
 ./cust-run-config.sh customer add 42 --create
 ./cust-run-config.sh templates apply
 
