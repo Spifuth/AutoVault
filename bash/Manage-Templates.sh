@@ -155,28 +155,36 @@ def read_file(path):
         return path.read_text(encoding='utf-8')
     return ""
 
+# Define sub-folders
+index_dir = template_dir / "index"
+notes_dir = template_dir / "notes"
+
 # Read all templates
 templates = {
-    "version": "1.0",
+    "version": "1.1",
     "description": "AutoVault templates for CUST Run structure",
     "obsidian": {
-        "templateFolder": template_folder
+        "templateFolder": template_folder,
+        "subFolders": {
+            "index": "index",
+            "notes": "notes"
+        }
     },
     "templates": {
         "index": {
-            "root": read_file(template_dir / "CUST-Root-Index.md"),
+            "root": read_file(index_dir / "CUST-Root-Index.md"),
             "sections": {
-                "FP": read_file(template_dir / "CUST-Section-FP-Index.md"),
-                "RAISED": read_file(template_dir / "CUST-Section-RAISED-Index.md"),
-                "INFORMATIONS": read_file(template_dir / "CUST-Section-INFORMATIONS-Index.md"),
-                "DIVERS": read_file(template_dir / "CUST-Section-DIVERS-Index.md")
+                "FP": read_file(index_dir / "CUST-Section-FP-Index.md"),
+                "RAISED": read_file(index_dir / "CUST-Section-RAISED-Index.md"),
+                "INFORMATIONS": read_file(index_dir / "CUST-Section-INFORMATIONS-Index.md"),
+                "DIVERS": read_file(index_dir / "CUST-Section-DIVERS-Index.md")
             }
         },
         "notes": {
-            "FP": read_file(template_dir / "RUN - New FP note.md"),
-            "RAISED": read_file(template_dir / "RUN - New RAISED note.md"),
-            "INFORMATIONS": read_file(template_dir / "RUN - New INFORMATIONS note.md"),
-            "DIVERS": read_file(template_dir / "RUN - New DIVERS note.md")
+            "FP": read_file(notes_dir / "RUN - New FP note.md"),
+            "RAISED": read_file(notes_dir / "RUN - New RAISED note.md"),
+            "INFORMATIONS": read_file(notes_dir / "RUN - New INFORMATIONS note.md"),
+            "DIVERS": read_file(notes_dir / "RUN - New DIVERS note.md")
         }
     }
 }
@@ -230,23 +238,35 @@ with open(templates_file, 'r', encoding='utf-8') as f:
     data = json.load(f)
 
 templates = data.get("templates", {})
+obsidian_cfg = data.get("obsidian", {})
+sub_folders = obsidian_cfg.get("subFolders", {"index": "index", "notes": "notes"})
+
+# Define sub-directories
+index_dir = template_dir / sub_folders.get("index", "index")
+notes_dir = template_dir / sub_folders.get("notes", "notes")
+
+# Create sub-directories if needed
+for subdir in [index_dir, notes_dir]:
+    if not dry_run:
+        subdir.mkdir(parents=True, exist_ok=True)
+    else:
+        print(f"[DRY-RUN] Would create directory: {subdir}")
 
 # Index templates
 index = templates.get("index", {})
 files_to_write = [
-    ("CUST-Root-Index.md", index.get("root", "")),
+    (index_dir / "CUST-Root-Index.md", index.get("root", "")),
 ]
 
 for section, content in index.get("sections", {}).items():
-    files_to_write.append((f"CUST-Section-{section}-Index.md", content))
+    files_to_write.append((index_dir / f"CUST-Section-{section}-Index.md", content))
 
 # Note templates
 notes = templates.get("notes", {})
 for section, content in notes.items():
-    files_to_write.append((f"RUN - New {section} note.md", content))
+    files_to_write.append((notes_dir / f"RUN - New {section} note.md", content))
 
-for filename, content in files_to_write:
-    filepath = template_dir / filename
+for filepath, content in files_to_write:
     if dry_run:
         print(f"[DRY-RUN] Would write: {filepath}")
     else:
@@ -267,28 +287,34 @@ with open(templates_file, 'r', encoding='utf-8') as f:
     data = json.load(f)
 
 templates = data.get("templates", {})
+obsidian_cfg = data.get("obsidian", {})
+sub_folders = obsidian_cfg.get("subFolders", {"index": "index", "notes": "notes"})
+
+# Define sub-directories
+index_dir = template_dir / sub_folders.get("index", "index")
+notes_dir = template_dir / sub_folders.get("notes", "notes")
+
+# Create sub-directories if needed
+for subdir in [index_dir, notes_dir]:
+    subdir.mkdir(parents=True, exist_ok=True)
 
 # Index templates
 index = templates.get("index", {})
 files_to_write = [
-    ("CUST-Root-Index.md", index.get("root", "")),
+    (index_dir / "CUST-Root-Index.md", index.get("root", "")),
 ]
 
 for section, content in index.get("sections", {}).items():
-    files_to_write.append((f"CUST-Section-{section}-Index.md", content))
+    files_to_write.append((index_dir / f"CUST-Section-{section}-Index.md", content))
 
 # Note templates
 notes = templates.get("notes", {})
 for section, content in notes.items():
-    files_to_write.append((f"RUN - New {section} note.md", content))
+    files_to_write.append((notes_dir / f"RUN - New {section} note.md", content))
 
-for filename, content in files_to_write:
-    filepath = template_dir / filename
-    if dry_run:
-        print(f"[DRY-RUN] Would write: {filepath}")
-    else:
-        filepath.write_text(content, encoding='utf-8')
-        print(f"Written: {filepath}")
+for filepath, content in files_to_write:
+    filepath.write_text(content, encoding='utf-8')
+    print(f"Written: {filepath}")
 PYTHON
     fi
     

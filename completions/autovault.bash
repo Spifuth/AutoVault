@@ -34,7 +34,7 @@ _autovault_completions() {
     _init_completion || return
     
     # All main commands
-    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks requirements help"
+    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks completions alias requirements help"
     
     # Global options
     local global_opts="-v --verbose -q --quiet --silent --no-color --dry-run --diff -h --help --version"
@@ -47,6 +47,8 @@ _autovault_completions() {
     local vault_cmds="init plugins check hub"
     local hooks_cmds="list init test"
     local remote_cmds="list init add remove test push pull status"
+    local completions_cmds="install uninstall status"
+    local alias_cmds="install uninstall status"
     
     # Get the main command (skip options)
     local main_cmd=""
@@ -174,6 +176,40 @@ _autovault_completions() {
             esac
             ;;
         
+        completions)
+            case "$prev" in
+                install)
+                    COMPREPLY=($(compgen -W "bash zsh all --user --system" -- "$cur"))
+                    ;;
+                uninstall)
+                    COMPREPLY=($(compgen -W "bash zsh all" -- "$cur"))
+                    ;;
+                completions)
+                    COMPREPLY=($(compgen -W "$completions_cmds --help" -- "$cur"))
+                    ;;
+                *)
+                    COMPREPLY=($(compgen -W "$completions_cmds --help" -- "$cur"))
+                    ;;
+            esac
+            ;;
+        
+        alias)
+            case "$prev" in
+                install)
+                    COMPREPLY=($(compgen -W "autovault av vault custrun --name= --method=symlink --method=alias --user --system" -- "$cur"))
+                    ;;
+                uninstall)
+                    COMPREPLY=($(compgen -W "--all --name=" -- "$cur"))
+                    ;;
+                alias)
+                    COMPREPLY=($(compgen -W "$alias_cmds --help" -- "$cur"))
+                    ;;
+                *)
+                    COMPREPLY=($(compgen -W "$alias_cmds --help" -- "$cur"))
+                    ;;
+            esac
+            ;;
+        
         structure|new)
             COMPREPLY=($(compgen -W "--help" -- "$cur"))
             ;;
@@ -235,7 +271,10 @@ _autovault_get_templates() {
     fi
 }
 
-# Register completion for multiple command names
+# Register completion for multiple command names (including common aliases)
 complete -F _autovault_completions cust-run-config.sh
 complete -F _autovault_completions cust-run-config
 complete -F _autovault_completions autovault
+complete -F _autovault_completions av
+complete -F _autovault_completions vault
+complete -F _autovault_completions custrun

@@ -44,27 +44,24 @@ _h_blue()   { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[34m"; fi; }
 _h_reset()  { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[0m";  fi; }
 
 #--------------------------------------
-# VERSION
-#--------------------------------------
-AUTOVAULT_VERSION="2.1.0"
-
-#--------------------------------------
 # USAGE DISPATCHER
 #--------------------------------------
 usage() {
   local cmd="${1:-}"
   
   case "$cmd" in
-    config)     help_config ;;
-    structure)  help_structure ;;
-    templates)  help_templates ;;
-    customer)   help_customer ;;
-    section)    help_section ;;
-    backup)     help_backup ;;
-    vault)      help_vault ;;
-    hooks)      help_hooks ;;
-    remote)     help_remote ;;
-    *)          help_main ;;
+    config)       help_config ;;
+    structure)    help_structure ;;
+    templates)    help_templates ;;
+    customer)     help_customer ;;
+    section)      help_section ;;
+    backup)       help_backup ;;
+    vault)        help_vault ;;
+    hooks)        help_hooks ;;
+    completions)  help_completions ;;
+    alias)        help_alias ;;
+    remote)       help_remote ;;
+    *)            help_main ;;
   esac
 }
 
@@ -123,6 +120,8 @@ $(_h_bold)COMMANDS$(_h_reset)
 
     $(_h_yellow)System$(_h_reset)
     requirements        Check/install dependencies
+    completions         Install shell completions (bash/zsh)
+    alias               Create system alias (autovault, av, etc.)
     hooks               Manage automation hooks (list/init/test)
 
 $(_h_bold)QUICK START$(_h_reset)
@@ -531,6 +530,120 @@ $(_h_bold)EXAMPLES$(_h_reset)
     $script_name hooks                  $(_h_dim)# List hooks$(_h_reset)
     $script_name hooks init             $(_h_dim)# Create hooks directory$(_h_reset)
     $script_name hooks test on-error    $(_h_dim)# Test on-error hook$(_h_reset)
+EOF
+}
+
+#--------------------------------------
+# COMPLETIONS HELP
+#--------------------------------------
+help_completions() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - COMPLETIONS$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name completions [SUBCOMMAND] [OPTIONS]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Install or manage shell tab-completion scripts for AutoVault.
+    Supports Bash and Zsh with automatic shell detection.
+
+$(_h_bold)SUBCOMMANDS$(_h_reset)
+    $(_h_green)status$(_h_reset) $(_h_dim)(default)$(_h_reset)
+        Show current completion installation status.
+
+    $(_h_green)install$(_h_reset) [shell] [--user|--system]
+        Install completions for the specified shell.
+        Auto-detects current shell if not specified.
+
+    $(_h_green)uninstall$(_h_reset) [shell]
+        Remove installed completion scripts.
+
+$(_h_bold)OPTIONS$(_h_reset)
+    --shell=<bash|zsh|all>    Target specific shell
+    --user                    Install for current user only (default)
+    --system                  Install system-wide (requires sudo)
+
+$(_h_bold)INSTALL LOCATIONS$(_h_reset)
+    Bash (user):    ~/.local/share/bash-completion/completions/
+    Bash (system):  /etc/bash_completion.d/
+    Zsh (user):     ~/.zsh/completions/ or ~/.oh-my-zsh/completions/
+    Zsh (system):   /usr/share/zsh/site-functions/
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $script_name completions                $(_h_dim)# Show status$(_h_reset)
+    $script_name completions install        $(_h_dim)# Install for current shell$(_h_reset)
+    $script_name completions install bash   $(_h_dim)# Install Bash completions$(_h_reset)
+    $script_name completions install zsh    $(_h_dim)# Install Zsh completions$(_h_reset)
+    $script_name completions install all    $(_h_dim)# Install for all shells$(_h_reset)
+    $script_name completions install --system  $(_h_dim)# System-wide install$(_h_reset)
+    $script_name completions uninstall      $(_h_dim)# Remove all completions$(_h_reset)
+EOF
+}
+
+#--------------------------------------
+# ALIAS HELP
+#--------------------------------------
+help_alias() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - ALIAS$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name alias [SUBCOMMAND] [OPTIONS]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Create a system alias or symlink so you can run AutoVault from
+    anywhere with a short command like 'autovault' or 'av'.
+
+$(_h_bold)SUBCOMMANDS$(_h_reset)
+    $(_h_green)status$(_h_reset) $(_h_dim)(default)$(_h_reset)
+        Show current alias installation status.
+
+    $(_h_green)install$(_h_reset) [name] [--method=<method>] [--system]
+        Create an alias with the specified name.
+        Default name: autovault
+
+    $(_h_green)uninstall$(_h_reset) [name] [--all]
+        Remove installed alias(es).
+
+$(_h_bold)OPTIONS$(_h_reset)
+    --name=<alias>      Custom alias name (default: autovault)
+    --method=<method>   Installation method:
+                          symlink - Symlink in PATH (default, recommended)
+                          alias   - Shell alias in rc file
+    --user              Install for current user only (default)
+    --system            Install system-wide (requires sudo)
+    --all               Remove all aliases (with uninstall)
+
+$(_h_bold)INSTALLATION METHODS$(_h_reset)
+    $(_h_yellow)symlink$(_h_reset) (recommended)
+        Creates a symbolic link in ~/.local/bin or /usr/local/bin.
+        Works across all shells, survives shell restarts.
+
+    $(_h_yellow)alias$(_h_reset)
+        Adds an alias to your ~/.bashrc or ~/.zshrc.
+        Shell-specific, requires sourcing rc file after install.
+
+$(_h_bold)SUGGESTED NAMES$(_h_reset)
+    autovault   Full name (default)
+    av          Short and quick
+    vault       If you don't use Hashicorp Vault
+    custrun     Descriptive
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $script_name alias                      $(_h_dim)# Show status$(_h_reset)
+    $script_name alias install              $(_h_dim)# Install as 'autovault'$(_h_reset)
+    $script_name alias install av           $(_h_dim)# Install as 'av'$(_h_reset)
+    $script_name alias install --name=vault $(_h_dim)# Install as 'vault'$(_h_reset)
+    $script_name alias install --system     $(_h_dim)# System-wide (/usr/local/bin)$(_h_reset)
+    $script_name alias install --method=alias  $(_h_dim)# Shell alias instead$(_h_reset)
+    $script_name alias uninstall av         $(_h_dim)# Remove 'av' alias$(_h_reset)
+    $script_name alias uninstall --all      $(_h_dim)# Remove all aliases$(_h_reset)
 EOF
 }
 

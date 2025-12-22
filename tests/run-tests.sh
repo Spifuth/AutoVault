@@ -77,7 +77,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
 CURRENT_TEST=0
-TOTAL_TESTS=61
+TOTAL_TESTS=69
 
 # Animation frames
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -312,7 +312,7 @@ setup() {
   "CustomerIdWidth": 3,
   "CustomerIds": [1, 2, 3],
   "Sections": ["FP", "RAISED"],
-  "TemplateRelativeRoot": "_templates/Run",
+  "TemplateRelativeRoot": "_templates/run",
   "EnableCleanup": true
 }
 EOF
@@ -536,7 +536,8 @@ test_structure_creation() {
 
 test_templates_sync() {
     # Test syncing templates
-    mkdir -p "$TEST_VAULT/_templates/Run"
+    mkdir -p "$TEST_VAULT/_templates/run/index"
+    mkdir -p "$TEST_VAULT/_templates/run/notes"
     
     (
         cd "$PROJECT_ROOT"
@@ -544,9 +545,9 @@ test_templates_sync() {
         bash ./cust-run-config.sh templates sync >/dev/null 2>&1
     )
     
-    # Verify templates exist
-    [[ -f "$TEST_VAULT/_templates/Run/CUST-Root-Index.md" ]] && \
-    [[ -f "$TEST_VAULT/_templates/Run/CUST-Section-FP-Index.md" ]]
+    # Verify templates exist in new structure
+    [[ -f "$TEST_VAULT/_templates/run/index/CUST-Root-Index.md" ]] && \
+    [[ -f "$TEST_VAULT/_templates/run/index/CUST-Section-FP-Index.md" ]]
 }
 
 test_templates_apply() {
@@ -1466,12 +1467,112 @@ test_remote_help() {
 }
 
 #######################################
+# Completions Tests
+#######################################
+
+test_completions_help() {
+    # Test completions help page
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" completions --help 2>&1)
+    
+    # Should contain completion descriptions
+    echo "$output" | grep -qi "bash\|zsh\|shell"
+}
+
+test_completions_status() {
+    # Test completions status command
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" completions status 2>&1) || true
+    
+    # Should report status for both shells
+    echo "$output" | grep -qi "bash\|zsh"
+}
+
+test_completions_dry_run() {
+    # Test completions install dry-run mode
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" completions install --dry-run 2>&1) || true
+    
+    # Should show dry-run messages
+    echo "$output" | grep -qi "dry-run\|would"
+}
+
+test_completions_files_exist() {
+    # Test that completion files exist in source
+    [[ -f "$PROJECT_ROOT/completions/autovault.bash" ]] && \
+    [[ -f "$PROJECT_ROOT/completions/_autovault" ]]
+}
+
+test_completions_files_syntax() {
+    # Test completion files have valid bash syntax
+    bash -n "$PROJECT_ROOT/completions/autovault.bash" 2>/dev/null
+}
+
+#######################################
+# Alias Tests
+#######################################
+
+test_alias_help() {
+    # Test alias help page
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" alias --help 2>&1)
+    
+    # Should contain alias descriptions
+    echo "$output" | grep -qi "symlink\|alias\|path"
+}
+
+test_alias_status() {
+    # Test alias status command
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" alias status 2>&1) || true
+    
+    # Should report alias status (installed or not)
+    echo "$output" | grep -qi "alias\|symlink\|not found\|installed"
+}
+
+test_alias_dry_run() {
+    # Test alias install dry-run mode
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" alias install --dry-run 2>&1) || true
+    
+    # Should show dry-run messages
+    echo "$output" | grep -qi "dry-run\|would"
+}
+
+test_alias_custom_name() {
+    # Test alias with custom name in dry-run
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" alias install myalias --dry-run 2>&1) || true
+    
+    # Should mention the custom alias name
+    echo "$output" | grep -q "myalias"
+}
+
+test_alias_uninstall_dry_run() {
+    # Test alias uninstall dry-run mode
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" alias uninstall --dry-run 2>&1) || true
+    
+    # Should show uninstall dry-run messages or no alias found
+    echo "$output" | grep -qi "dry-run\|would\|not found\|no alias"
+}
+
+test_alias_methods() {
+    # Test alias install methods help
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" alias --help 2>&1)
+    
+    # Should mention different methods (symlink, alias)
+    echo "$output" | grep -qi "method\|symlink"
+}
+
+#######################################
 # Subcommand Help Tests
 #######################################
 
 test_help_subcommands() {
     # Test all subcommand helps work
-    local cmds=("templates" "customer" "section" "backup" "vault" "config" "structure" "hooks" "remote")
+    local cmds=("templates" "customer" "section" "backup" "vault" "config" "structure" "hooks" "remote" "completions" "alias")
     local errors=0
     
     for cmd in "${cmds[@]}"; do
@@ -1747,6 +1848,23 @@ main() {
     run_test "Remote remove command" test_remote_remove || true
     run_test "Remote list command" test_remote_list || true
     run_test "Remote help page" test_remote_help || true
+    
+    # Completions tests
+    show_category "COMPLETIONS TESTS" "📝"
+    run_test "Completions help page" test_completions_help || true
+    run_test "Completions status command" test_completions_status || true
+    run_test "Completions dry-run install" test_completions_dry_run || true
+    run_test "Completions files exist" test_completions_files_exist || true
+    run_test "Completions files syntax" test_completions_files_syntax || true
+    
+    # Alias tests
+    show_category "ALIAS TESTS" "🔗"
+    run_test "Alias help page" test_alias_help || true
+    run_test "Alias status command" test_alias_status || true
+    run_test "Alias dry-run install" test_alias_dry_run || true
+    run_test "Alias custom name" test_alias_custom_name || true
+    run_test "Alias uninstall dry-run" test_alias_uninstall_dry_run || true
+    run_test "Alias methods documented" test_alias_methods || true
     
     # Teardown with animation
     echo ""

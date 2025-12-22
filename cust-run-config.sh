@@ -48,7 +48,19 @@ fi
 #--------------------------------------
 # PATHS
 #--------------------------------------
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve symlinks to get the real script location
+_resolve_symlink() {
+  local target="$1"
+  while [[ -L "$target" ]]; do
+    local dir="$(cd "$(dirname "$target")" && pwd)"
+    target="$(readlink "$target")"
+    [[ "$target" != /* ]] && target="$dir/$target"
+  done
+  echo "$target"
+}
+
+SCRIPT_PATH="$(_resolve_symlink "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 BASH_DIR="$SCRIPT_DIR/bash"
 LIB_DIR="$BASH_DIR/lib"
 CONFIG_JSON="${CONFIG_JSON:-"$SCRIPT_DIR/config/cust-run-config.json"}"
@@ -143,7 +155,7 @@ interactive_config() {
     CUSTOMER_ID_WIDTH=3
     CUSTOMER_IDS=(1 2 3)
     SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
-    TEMPLATE_RELATIVE_ROOT="_templates/Run"
+    TEMPLATE_RELATIVE_ROOT="_templates/run"
     ENABLE_CLEANUP=false
   fi
 
@@ -391,6 +403,22 @@ main() {
     local subcmd="${1:-check}"
     shift || true
     bash "$BASH_DIR/Install-Requirements.sh" "$subcmd" "$@"
+    exit $?
+  fi
+
+  # Handle completions command (doesn't need config)
+  if [[ "$cmd" == "completions" ]]; then
+    local subcmd="${1:-status}"
+    shift || true
+    DRY_RUN="$DRY_RUN" bash "$BASH_DIR/Install-Completions.sh" "$subcmd" "$@"
+    exit $?
+  fi
+
+  # Handle alias command (doesn't need config)
+  if [[ "$cmd" == "alias" ]]; then
+    local subcmd="${1:-status}"
+    shift || true
+    DRY_RUN="$DRY_RUN" bash "$BASH_DIR/Install-Alias.sh" "$subcmd" "$@"
     exit $?
   fi
 

@@ -73,7 +73,7 @@ if [[ -z "${SECTIONS[*]:-}" ]]; then
   declare -ga SECTIONS=("FP" "RAISED" "INFORMATIONS" "DIVERS")
 fi
 
-TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT:-"_templates/Run"}"
+TEMPLATE_RELATIVE_ROOT="${TEMPLATE_RELATIVE_ROOT:-"_templates/run"}"
 
 # Cleanup safety flag (must be true to allow deletion)
 ENABLE_CLEANUP="${ENABLE_CLEANUP:-false}"
@@ -113,7 +113,7 @@ payload = {
     "CustomerIdWidth": int(os.environ.get("CUSTOMER_ID_WIDTH", "3")),
     "CustomerIds": [int(x) for x in split_list("CUSTOMER_IDS_LIST")],
     "Sections": split_list("SECTIONS_LIST") or ["FP", "RAISED", "INFORMATIONS", "DIVERS"],
-    "TemplateRelativeRoot": os.environ.get("TEMPLATE_RELATIVE_ROOT", "_templates\\\\Run"),
+    "TemplateRelativeRoot": os.environ.get("TEMPLATE_RELATIVE_ROOT", "_templates/run"),
     "EnableCleanup": os.environ.get("ENABLE_CLEANUP", "false").lower() == "true",
 }
 

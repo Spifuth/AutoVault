@@ -11,7 +11,24 @@ Templates are stored in two places:
 | Location | Purpose |
 |----------|---------|
 | `config/templates.json` | Source of truth (versioned in Git) |
-| `vault/_templates/Run/` | Working copies in Obsidian vault |
+| `vault/_templates/run/` | Working copies in Obsidian vault |
+
+The vault templates are organized into sub-folders:
+
+```
+_templates/run/
+├── index/          # Index templates (applied once per CUST)
+│   ├── CUST-Root-Index.md
+│   ├── CUST-Section-FP-Index.md
+│   ├── CUST-Section-RAISED-Index.md
+│   ├── CUST-Section-INFORMATIONS-Index.md
+│   └── CUST-Section-DIVERS-Index.md
+└── notes/          # Note templates (used by Templater)
+    ├── RUN - New FP note.md
+    ├── RUN - New RAISED note.md
+    ├── RUN - New INFORMATIONS note.md
+    └── RUN - New DIVERS note.md
+```
 
 ---
 
@@ -67,22 +84,13 @@ Apply templates to all CUST folders (replaces placeholders):
 
 ### Sync Templates
 
-Write templates from JSON to vault `_templates/` folder:
+Write templates from JSON to vault `_templates/run/` folder:
 
 ```bash
 ./cust-run-config.sh templates sync
 ```
 
-This creates/updates:
-- `_templates/Run/CUST-Root-Index.md`
-- `_templates/Run/CUST-Section-FP-Index.md`
-- `_templates/Run/CUST-Section-RAISED-Index.md`
-- `_templates/Run/CUST-Section-INFORMATIONS-Index.md`
-- `_templates/Run/CUST-Section-DIVERS-Index.md`
-- `_templates/Run/RUN - New FP note.md`
-- `_templates/Run/RUN - New RAISED note.md`
-- `_templates/Run/RUN - New INFORMATIONS note.md`
-- `_templates/Run/RUN - New DIVERS note.md`
+This creates/updates the index and notes sub-folders with all template files.
 
 ### Export Templates
 

@@ -1,4 +1,4 @@
-#compdef cust-run-config.sh cust-run-config autovault
+#compdef cust-run-config.sh cust-run-config autovault av vault custrun
 #===============================================================================
 #
 #  AUTOVAULT - Zsh Completion
@@ -65,6 +65,8 @@ _autovault() {
                 'vault:Obsidian setup (init/plugins/check/hub)'
                 'remote:Remote vault sync via SSH (push/pull)'
                 'hooks:Manage automation hooks (list/init/test)'
+                'completions:Install shell completions (bash/zsh)'
+                'alias:Create system alias (autovault, av, etc.)'
                 'requirements:Check/install dependencies'
                 'help:Show help for a command'
             )
@@ -92,6 +94,12 @@ _autovault() {
                     ;;
                 remote)
                     _autovault_remote
+                    ;;
+                completions)
+                    _autovault_completions_cmd
+                    ;;
+                alias)
+                    _autovault_alias_cmd
                     ;;
                 *)
                     _arguments '--help[Show help]'
@@ -289,6 +297,100 @@ _autovault_remote() {
                     local -a remotes
                     remotes=(${(f)"$(_autovault_get_remotes)"})
                     [[ -n "$remotes" ]] && _describe 'remote name' remotes
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_autovault_completions_cmd() {
+    local -a subcmds
+    subcmds=(
+        'install:Install shell completions'
+        'uninstall:Remove installed completions'
+        'status:Show completion installation status'
+    )
+    
+    _arguments \
+        '1: :->subcmd' \
+        '*: :->args'
+    
+    case "$state" in
+        subcmd)
+            _describe 'completions command' subcmds
+            ;;
+        args)
+            case "${line[2]}" in
+                install)
+                    local -a shells opts
+                    shells=(
+                        'bash:Install Bash completions'
+                        'zsh:Install Zsh completions'
+                        'all:Install for all shells'
+                    )
+                    opts=(
+                        '--user[Install for current user only (default)]'
+                        '--system[Install system-wide (requires sudo)]'
+                    )
+                    _describe 'shell' shells
+                    _arguments $opts
+                    ;;
+                uninstall)
+                    local -a shells
+                    shells=(
+                        'bash:Remove Bash completions'
+                        'zsh:Remove Zsh completions'
+                        'all:Remove all completions'
+                    )
+                    _describe 'shell' shells
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_autovault_alias_cmd() {
+    local -a subcmds
+    subcmds=(
+        'install:Create system alias or symlink'
+        'uninstall:Remove installed alias'
+        'status:Show alias installation status'
+    )
+    
+    _arguments \
+        '1: :->subcmd' \
+        '*: :->args'
+    
+    case "$state" in
+        subcmd)
+            _describe 'alias command' subcmds
+            ;;
+        args)
+            case "${line[2]}" in
+                install)
+                    local -a names opts
+                    names=(
+                        'autovault:Full name (default)'
+                        'av:Short and quick'
+                        'vault:Alternative name'
+                        'custrun:Descriptive name'
+                    )
+                    opts=(
+                        '--name=[Custom alias name]:alias name:(autovault av vault custrun)'
+                        '--method=[Installation method]:method:(symlink alias)'
+                        '--user[Install for current user only (default)]'
+                        '--system[Install system-wide (requires sudo)]'
+                    )
+                    _describe 'alias name' names
+                    _arguments $opts
+                    ;;
+                uninstall)
+                    local -a opts
+                    opts=(
+                        '--all[Remove all installed aliases]'
+                        '--name=[Alias name to remove]:alias name:(autovault av vault custrun)'
+                    )
+                    _arguments $opts
                     ;;
             esac
             ;;
