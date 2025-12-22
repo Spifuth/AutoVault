@@ -40,6 +40,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/logging.sh"
 source "$SCRIPT_DIR/lib/config.sh"
 
+# Source UI library if available
+if [[ -f "$SCRIPT_DIR/lib/ui.sh" ]]; then
+    source "$SCRIPT_DIR/lib/ui.sh"
+    UI_AVAILABLE=true
+else
+    UI_AVAILABLE=false
+fi
+
 #######################################
 # Helper functions
 #######################################
@@ -111,6 +119,10 @@ ensure_directory "$VAULT_ROOT"
 RUN_PATH="$VAULT_ROOT/Run"
 ensure_directory "$RUN_PATH"
 
+# Calculate total operations for progress
+total_customers=${#CUSTOMER_IDS[@]}
+current_customer=0
+
 # Prepare hub content lines (array)
 hub_lines=()
 hub_lines+=("# Run Hub")
@@ -118,7 +130,16 @@ hub_lines+=("")
 hub_lines+=("## Customers")
 hub_lines+=("")
 
+# Show section header if UI available
+if [[ "$UI_AVAILABLE" == "true" ]]; then
+    echo ""
+    print_section "Creating CUST Run Structure"
+    echo ""
+fi
+
 for id in "${CUSTOMER_IDS[@]}"; do
+    ((current_customer++))
+    
     # Check integer
     if ! [[ "$id" =~ ^[0-9]+$ ]]; then
         log_error "Invalid CUST id (not an integer): $id"
@@ -126,7 +147,13 @@ for id in "${CUSTOMER_IDS[@]}"; do
     fi
 
     code="$(get_cust_code "$id")"
-    log_info "Processing $code"
+    
+    # Show progress bar if UI available
+    if [[ "$UI_AVAILABLE" == "true" ]]; then
+        progress_bar "$current_customer" "$total_customers" 40 "$code"
+    else
+        log_info "Processing $code"
+    fi
 
     # Root CUST folder: Run/CUST-XXX
     cust_root="$RUN_PATH/$code"
@@ -167,4 +194,18 @@ else
     fi
 fi
 
-log_info "CUST Run structure creation completed."
+# Final success message with UI
+if [[ "$UI_AVAILABLE" == "true" ]]; then
+    echo ""
+    echo -e "${THEME[success]}✓ Structure creation completed!${THEME[reset]}"
+    echo ""
+    print_kv "Customers created" "$total_customers"
+    print_kv "Sections per customer" "${#SECTIONS[*]}"
+    print_kv "Total folders" "$(( total_customers * (1 + ${#SECTIONS[@]}) ))"
+    echo ""
+    
+    # Send notification if enabled
+    notify_success "AutoVault" "Created structure for $total_customers customers"
+else
+    log_info "CUST Run structure creation completed."
+fi

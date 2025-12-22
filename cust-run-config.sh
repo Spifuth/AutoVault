@@ -578,6 +578,16 @@ main() {
       run_bash "Archive-Customer.sh" "$@"
       ;;
 
+    #--- UI Demo ---
+    demo)
+      run_bash "Show-Demo.sh" "$@"
+      ;;
+
+    #--- Theme Configuration ---
+    theme)
+      run_bash "Configure-Theme.sh" "$@"
+      ;;
+
     #--- Hooks Management ---
     hooks)
       CURRENT_OPERATION="hooks"
