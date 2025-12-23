@@ -125,6 +125,44 @@ PROFILES[bugbounty]='
 }'
 
 #--------------------------------------
+# LIST PROFILES
+#--------------------------------------
+list_profiles() {
+  echo ""
+  echo -e "${BOLD}Available Profiles${NC}"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  
+  echo -e "${GREEN}minimal${NC} (default)"
+  echo "  Basic setup for simple note-taking"
+  echo "  Sections: Notes, Tasks"
+  echo "  Backup retention: 30 days"
+  echo ""
+  
+  echo -e "${GREEN}pentest${NC}"
+  echo "  Penetration testing workflow"
+  echo "  Sections: Recon, Enumeration, Exploitation, PostExploit, Pivoting, Reporting"
+  echo "  Backup retention: 90 days"
+  echo ""
+  
+  echo -e "${GREEN}audit${NC}"
+  echo "  Security audit workflow"
+  echo "  Sections: Scope, Planning, Documentation-Review, Technical-Assessment,"
+  echo "            Evidence, Findings, Recommendations"
+  echo "  Backup retention: 365 days"
+  echo ""
+  
+  echo -e "${GREEN}bugbounty${NC}"
+  echo "  Bug bounty hunting workflow"
+  echo "  Sections: Recon, Web, API, Mobile, Findings, Submissions"
+  echo "  Backup retention: 180 days"
+  echo ""
+  
+  echo -e "${DIM}Usage: $(basename "$0") --profile <name>${NC}"
+  echo ""
+}
+
+#--------------------------------------
 # USAGE
 #--------------------------------------
 usage() {
@@ -143,6 +181,7 @@ ${BOLD}OPTIONS${NC}
                           ${GREEN}pentest${NC}   - Penetration testing workflow
                           ${GREEN}audit${NC}     - Security audit workflow
                           ${GREEN}bugbounty${NC} - Bug bounty hunting workflow
+    --list-profiles     Show available profiles with details
     --force             Overwrite existing configuration
     --no-structure      Skip creating initial directory structure
     -h, --help          Show this help message
@@ -169,6 +208,10 @@ parse_args() {
       --path)
         VAULT_PATH="$2"
         shift 2
+        ;;
+      --list-profiles)
+        list_profiles
+        exit 0
         ;;
       --profile)
         PROFILE="$2"
