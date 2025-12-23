@@ -5,7 +5,75 @@ All notable changes to AutoVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - Phase 2.3
+## [Unreleased] - Phase 4.3
+
+### Planned
+- **Git Auto-Sync** - Automatic commit/push of vault changes
+- **Nmap Integration** - Import scan results into customer folders
+- **Burp Suite Integration** - Import findings from Burp Suite
+
+---
+
+## [2.5.0] - 2025-12-23 - Phase 4.2
+
+### Added
+- **Extended Packaging**
+  - DEB package for Debian/Ubuntu (`packaging/debian/`)
+  - RPM package for Fedora/RHEL (`packaging/rpm/`)
+  - Build script (`packaging/build-packages.sh`)
+
+### Changed
+- Test suite expanded to 134 tests (100% passing)
+- CI/CD pipeline updated for package builds
+- Cross-platform compatibility fixes for macOS (mktemp, bash 5.x)
+
+---
+
+## [2.5.0] - 2025-12-22 - Phase 4.1
+
+### Added
+- **Export Command** (`export`) - Export vault content to various formats
+  - `export pdf <target>` - Export to PDF (requires pandoc)
+  - `export html <target>` - Export to static HTML
+  - `export markdown <target>` - Export compiled Markdown
+  - `export report <id>` - Generate professional client report
+  - Template support: `default`, `pentest`, `audit`
+  - Options: `--output`, `--template`, `--toc`, `--css`
+
+### Dependencies
+- pandoc (PDF/HTML export)
+- wkhtmltopdf, weasyprint, or pdflatex (PDF engine)
+
+---
+
+## [2.4.0] - 2025-12-22 - Phase 3.2
+
+### Added
+- **Universal Installer** (`install.sh`)
+  - curl-installable: `curl -fsSL ... | bash`
+  - User mode (`--user`) and system mode
+  - Automatic shell detection and completion install
+- **Homebrew Formula** (`packaging/homebrew/autovault.rb`)
+- **AUR Package** (`packaging/aur/PKGBUILD`)
+- **Docker Support** (`Dockerfile`, `docker-compose.yml`)
+
+---
+
+## [2.4.0] - 2025-12-21 - Phase 3.1
+
+### Added
+- **GitHub Actions CI/CD**
+  - Multi-OS testing (Ubuntu, macOS)
+  - Automated release workflow on tags
+  - Coverage reporting
+- **Test Infrastructure**
+  - 134 comprehensive tests
+  - Coverage script (`tests/coverage.sh`)
+  - Docker-based isolated testing
+
+---
+
+## [2.4.0] - 2025-12-21 - Phase 2.3
 
 ### Added
 - **Multi-Vault Management** (`vaults`) - Manage multiple vault profiles
@@ -40,12 +108,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Custom variable registration
   - Template validation
 
-### Changed
-- Help system updated with new commands documentation
-- Test suite expanded to 112 tests (from 94)
-- Shell completions updated for vaults, plugins, encrypt commands
+---
 
-## [2.4.0] - 2024-12-22 - Phase 2.2
+## [2.4.0] - 2025-12-22 - Phase 2.2
 
 ### Added
 - **UI Library** (`bash/lib/ui.sh`) - Comprehensive UI utilities
@@ -84,7 +149,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `AUTOVAULT_NOTIFY` - Enable/disable desktop notifications (true/false)
 - `NO_COLOR` - Disable all colors (standard)
 
-## [2.4.0] - 2024-12-22 - Phase 2.1
+---
+
+## [2.4.0] - 2025-12-22 - Phase 2.1
 
 ### Added
 - **Init Command** (`init`) - Initialize a new vault from scratch
@@ -114,7 +181,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Help system reorganized with new categories (Management, Vault, Utilities)
 - Shell completions updated for new commands (Bash and Zsh)
 
-## [2.3.0] - 2024-12-21
+---
+
+## [2.3.0] - 2025-12-21
 
 ### Added
 - **Shell Completions Installer** - New `completions` command to install tab-completion
@@ -139,7 +208,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template folder path changed from `_templates/Run` to `_templates/run` (lowercase)
 - Main script now resolves symlinks to find its real location (required for alias feature)
 
-## [2.2.0] - 2024-12-20
+---
+
+## [2.2.0] - 2025-12-20
 
 ### Added
 - **Remote Vault Sync** - Sync your vault with remote servers via SSH/rsync
@@ -170,7 +241,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README version badge synchronized with code
 - Documentation for rsync/ssh as optional dependencies
 
-## [2.1.0] - 2024-12-15
+---
+
+## [2.1.0] - 2025-12-15
 
 ### Added
 - Interactive configuration wizard (`config` command)
@@ -181,7 +254,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced test suite (58 tests)
 - Improved CI/CD pipeline
 
-## [2.0.0] - 2024-12-01
+---
+
+## [2.0.0] - 2025-12-01
 
 ### Added
 - Complete rewrite with modular architecture
@@ -193,7 +268,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New CLI structure with subcommands
 - JSON-based configuration
 
-## [1.0.0] - 2024-11-01
+---
+
+## [1.0.0] - 2025-11-01
 
 ### Added
 - Initial release

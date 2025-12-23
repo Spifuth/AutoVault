@@ -1,28 +1,19 @@
 {
-  "VaultRoot": "/mnt/c/Users/ncaluye/Documents/Obsidian/DetectVault",
-  "CustomerIdWidth": 3,
-  "CustomerIds": [
-    2,
-    4,
-    5,
-    7,
-    10,
-    11,
-    12,
-    14,
-    15,
-    18,
-    25,
-    27,
-    29,
-    30
+  "vault_root": "/home/nl/project/AutoVault/vault",
+  "customer_prefix": "Client",
+  "default_sections": [
+    "Notes",
+    "Tasks"
   ],
-  "Sections": [
-    "FP",
-    "RAISED",
-    "INFORMATIONS",
-    "DIVERS"
-  ],
-  "TemplateRelativeRoot": "_templates/run",
-  "EnableCleanup": false
+  "options": {
+    "hooks_enabled": false,
+    "backup_path": "backups",
+    "backup_retention": 30,
+    "colors_enabled": true
+  },
+  "metadata": {
+    "version": "2.3.0",
+    "created": "2025-12-23T13:23:45Z",
+    "profile": "minimal"
+  }
 }
