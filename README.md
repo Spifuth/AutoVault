@@ -4,32 +4,62 @@
 
 AutoVault creates and maintains a standardized folder structure in your Obsidian vault, complete with templates and plugin configuration.
 
-[![Version](https://img.shields.io/badge/version-2.3.0-blue)](https://github.com/Spifuth/AutoVault)
+[![Version](https://img.shields.io/badge/version-2.4.0-blue)](https://github.com/Spifuth/AutoVault)
 [![Bash](https://img.shields.io/badge/bash-4%2B-green)](https://www.gnu.org/software/bash/)
 [![Tests](https://github.com/Spifuth/AutoVault/actions/workflows/tests.yml/badge.svg)](https://github.com/Spifuth/AutoVault/actions)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20WSL-lightgrey)](https://github.com/Spifuth/AutoVault)
 
 ---
 
+## 📦 Installation
+
+### Quick Install (recommended)
+
+```bash
+# Install to ~/.local (no sudo required)
+curl -fsSL https://raw.githubusercontent.com/Spifuth/AutoVault/main/install.sh | bash -s -- --user
+
+# Or system-wide installation
+curl -fsSL https://raw.githubusercontent.com/Spifuth/AutoVault/main/install.sh | bash
+```
+
+### Homebrew (macOS/Linux)
+
+```bash
+brew tap Spifuth/autovault
+brew install autovault
+```
+
+### Arch Linux (AUR)
+
+```bash
+yay -S autovault
+```
+
+### Manual Installation
+
+```bash
+git clone https://github.com/Spifuth/AutoVault.git
+cd AutoVault
+sudo ./install.sh
+```
+
+---
+
 ## ⚡ Quick Start
 
 ```bash
-# 1. Clone the repo
-git clone https://github.com/Spifuth/AutoVault.git
-cd AutoVault
+# 1. Configure your vault
+autovault config
 
-# 2. Configure your vault
-./cust-run-config.sh config
+# 2. Initialize everything
+autovault init
 
-# 3. Initialize everything
-./cust-run-config.sh vault init
+# 3. Check your setup
+autovault doctor
 
-# 4. (Optional) Create a short alias and enable completions
-./cust-run-config.sh alias install av
-./cust-run-config.sh completions install
-
-# Now use 'av' from anywhere!
-av status
+# 4. (Optional) Create a short alias
+autovault alias install av
 ```
 
 That's it! Your vault is ready with:
