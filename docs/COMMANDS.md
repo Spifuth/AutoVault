@@ -803,6 +803,122 @@ git remote add origin https://github.com/user/vault.git
 
 ---
 
+## Nmap Integration Command
+
+### `nmap`
+
+Import Nmap scan results into customer folders. Parses XML and grepable formats to generate structured Markdown reports.
+
+```bash
+# Import Nmap XML scan for a customer
+./cust-run-config.sh nmap import scan.xml --customer CUST-001
+
+# Import grepable format
+./cust-run-config.sh nmap import scan.gnmap -c CUST-002 --format gnmap
+
+# Parse and preview without importing
+./cust-run-config.sh nmap parse scan.xml
+
+# List available templates
+./cust-run-config.sh nmap templates list
+
+# Custom output directory
+./cust-run-config.sh nmap import scan.xml -c CUST-001 -o /path/to/output
+```
+
+### Nmap Subcommands
+
+| Subcommand | Description |
+|------------|-------------|
+| `import` | Import Nmap scan into customer folder |
+| `parse` | Parse and display scan results (preview) |
+| `templates` | Manage Nmap report templates |
+
+### Nmap Options
+
+| Option | Description |
+|--------|-------------|
+| `-c, --customer <ID>` | Target customer ID (required for import) |
+| `-f, --format <type>` | Input format: `xml` (default), `gnmap` |
+| `-o, --output-dir <path>` | Custom output directory |
+| `--raw` | Preserve raw scan data |
+| `--no-summary` | Skip summary generation |
+| `-q, --quiet` | Suppress output |
+
+### Supported Input Formats
+
+| Format | Extension | Description |
+|--------|-----------|-------------|
+| XML | `.xml` | Full Nmap XML output (`-oX`) |
+| Grepable | `.gnmap` | Grepable output (`-oG`) |
+
+### Generated Files
+
+When importing Nmap scans, the following structure is created:
+
+```
+CUST-001/
+├── Recon/
+│   ├── Nmap/
+│   │   ├── 2024-01-15_scan-summary.md     # Markdown report
+│   │   ├── 2024-01-15_scan.xml            # Original file (if --raw)
+│   │   └── hosts/
+│   │       ├── 192.168.1.1.md             # Per-host details
+│   │       ├── 192.168.1.2.md
+│   │       └── ...
+```
+
+### Markdown Report Contents
+
+Generated reports include:
+
+- **Scan metadata**: Date, targets, command used
+- **Hosts summary**: Table of all discovered hosts
+- **Open ports**: Per-host port/service listings
+- **Service versions**: Detected software versions
+- **OS detection**: Operating system fingerprinting
+- **Scripts output**: NSE script results (if any)
+- **Dataview queries**: For Obsidian integration
+
+### Examples
+
+```bash
+# Basic import
+./cust-run-config.sh nmap import network-scan.xml -c CUST-001
+
+# Import with raw file preservation
+./cust-run-config.sh nmap import pentest.xml -c CUST-002 --raw
+
+# Parse only (dry run)
+./cust-run-config.sh nmap parse quick-scan.gnmap -f gnmap
+
+# Quiet mode for scripting
+./cust-run-config.sh nmap import scan.xml -c CUST-001 -q
+
+# Show available templates
+./cust-run-config.sh nmap templates list
+```
+
+### Integration with Obsidian
+
+The generated Markdown files include:
+
+- **Frontmatter**: YAML metadata for Dataview
+- **Tags**: `#nmap`, `#recon`, `#scan`
+- **Links**: Internal links to host files
+- **Dataview blocks**: Queries for port/service tables
+
+Example Dataview query in generated files:
+
+```dataview
+TABLE port, service, version
+FROM "CUST-001/Recon/Nmap/hosts"
+WHERE file.name != this.file.name
+SORT port ASC
+```
+
+---
+
 ## Theme Command
 
 ### `theme`

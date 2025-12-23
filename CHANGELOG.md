@@ -8,8 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - Phase 4.3
 
 ### Planned
-- **Nmap Integration** - Import scan results into customer folders
 - **Burp Suite Integration** - Import findings from Burp Suite
+
+---
+
+## [2.7.0] - 2025-12-23 - Phase 4.3 (Nmap Integration)
+
+### Added
+- **Nmap Integration** (`nmap`) - Import Nmap scan results into customer folders
+  - `nmap import <file>` - Import XML or grepable scan into customer folder
+  - `nmap parse <file>` - Parse and preview scan results
+  - `nmap templates` - Manage Nmap report templates
+  - XML format support (`-oX`)
+  - Grepable format support (`-oG`/`-oN`)
+  - Automatic Markdown report generation
+  - Per-host detail files with port/service information
+  - Dataview integration for Obsidian queries
+  - Service version and OS detection parsing
+  - NSE script output support
+
+### Changed
+- Test suite expanded to 151 tests (100% passing)
+- Shell completions updated for nmap command (Bash and Zsh)
+- Help system updated with nmap documentation
+- COMMANDS.md updated with nmap reference
 
 ---
 

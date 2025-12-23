@@ -34,7 +34,7 @@ _autovault_completions() {
     _init_completion || return
     
     # All main commands
-    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks completions alias requirements help init doctor search archive export git-sync theme demo vaults plugins encrypt"
+    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks completions alias requirements help init doctor search archive export git-sync nmap theme demo vaults plugins encrypt"
     
     # Global options
     local global_opts="-v --verbose -q --quiet --silent --no-color --dry-run --diff -h --help --version"
@@ -57,6 +57,7 @@ _autovault_completions() {
     local export_cmds="pdf html markdown report"
     local export_targets="customer section vault file"
     local git_sync_cmds="status now sync watch config enable disable log init"
+    local nmap_cmds="import parse templates"
     
     # Get the main command (skip options)
     local main_cmd=""
@@ -411,6 +412,30 @@ _autovault_completions() {
                     ;;
                 *)
                     COMPREPLY=($(compgen -W "$git_sync_cmds --quiet -q --help" -- "$cur"))
+                    ;;
+            esac
+            ;;
+        
+        nmap|import-nmap)
+            case "$prev" in
+                --customer|-c)
+                    local customers=$(_autovault_get_customer_ids)
+                    COMPREPLY=($(compgen -W "$customers" -- "$cur"))
+                    ;;
+                --format|-f)
+                    COMPREPLY=($(compgen -W "xml gnmap grepable" -- "$cur"))
+                    ;;
+                --output-dir|-o)
+                    COMPREPLY=($(compgen -d -- "$cur"))
+                    ;;
+                --file|import)
+                    COMPREPLY=($(compgen -f -X '!*.@(xml|gnmap)' -- "$cur"))
+                    ;;
+                nmap|import-nmap)
+                    COMPREPLY=($(compgen -W "$nmap_cmds --help" -- "$cur"))
+                    ;;
+                *)
+                    COMPREPLY=($(compgen -W "$nmap_cmds --customer -c --format -f --output-dir -o --quiet -q --help" -- "$cur"))
                     ;;
             esac
             ;;

@@ -613,6 +613,11 @@ main() {
       run_bash "Git-Sync.sh" "$@"
       ;;
 
+    #--- Nmap Import ---
+    nmap)
+      run_bash "Import-Nmap.sh" "$@"
+      ;;
+
     #--- Hooks Management ---
     hooks)
       CURRENT_OPERATION="hooks"

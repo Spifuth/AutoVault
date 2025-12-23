@@ -70,6 +70,7 @@ usage() {
     archive)      help_archive ;;
     export)       help_export ;;
     git-sync)     help_git_sync ;;
+    nmap)         help_nmap ;;
     theme)        help_theme ;;
     demo)         help_demo ;;
     *)            help_main ;;
@@ -1191,6 +1192,82 @@ $(_h_bold)SETUP GUIDE$(_h_reset)
 
     4. Enable automatic sync:
        $script_name git-sync enable cron
+EOF
+}
+
+#--------------------------------------
+# NMAP HELP
+#--------------------------------------
+help_nmap() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - NMAP IMPORT$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name nmap <command> [OPTIONS]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Import Nmap scan results into customer folders.
+    Parses XML or grepable output and generates Markdown notes.
+
+    This is useful for:
+    - Importing reconnaissance results
+    - Documenting discovered hosts and services
+    - Building an asset inventory
+
+$(_h_bold)COMMANDS$(_h_reset)
+    $(_h_green)import$(_h_reset) <file> <customer>
+        Import scan to customer folder
+        Creates Markdown note + saves raw data
+
+    $(_h_green)parse$(_h_reset) <file>
+        Preview parsed results without importing
+
+    $(_h_green)templates$(_h_reset)
+        Show available output templates
+
+$(_h_bold)OPTIONS$(_h_reset)
+    $(_h_green)-s, --section <name>$(_h_reset)
+        Target section (default: INFORMATIONS)
+
+    $(_h_green)-t, --template <name>$(_h_reset)
+        Output template: default, minimal, pentest, inventory
+
+$(_h_bold)SUPPORTED FORMATS$(_h_reset)
+    $(_h_cyan)XML$(_h_reset)       Nmap XML output (-oX scan.xml)
+    $(_h_cyan)Grepable$(_h_reset)  Nmap grepable output (-oG scan.gnmap)
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $(_h_dim)# Run nmap scan with XML output$(_h_reset)
+    nmap -sV -oX scan.xml target.com
+
+    $(_h_dim)# Import to customer ACME$(_h_reset)
+    $script_name nmap import scan.xml ACME
+
+    $(_h_dim)# Import to RAISED section$(_h_reset)
+    $script_name nmap import scan.xml ACME -s RAISED
+
+    $(_h_dim)# Preview parsed data$(_h_reset)
+    $script_name nmap parse scan.xml
+
+    $(_h_dim)# Use pentest template$(_h_reset)
+    $script_name nmap import scan.xml ACME -t pentest
+
+$(_h_bold)OUTPUT FILES$(_h_reset)
+    Vault/Run/CUST/CUST-SECTION/nmap_scan_TIMESTAMP.md    (Markdown)
+    Vault/Run/CUST/CUST-SECTION/nmap_scan_TIMESTAMP_raw.xml (Raw data)
+
+$(_h_bold)DEPENDENCIES$(_h_reset)
+    - xmllint (optional, for better XML parsing)
+    - jq (optional, for JSON processing)
+
+    Install on Debian/Ubuntu:
+        sudo apt-get install libxml2-utils jq
+
+    Install on macOS:
+        brew install libxml2 jq
 EOF
 }
 

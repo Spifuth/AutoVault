@@ -65,6 +65,7 @@ _autovault() {
                 'archive:Archive a customer (zip + optional remove)'
                 'export:Export vault/customer to PDF/HTML/Markdown'
                 'git-sync:Automatic git synchronization (commit/push)'
+                'nmap:Import Nmap scan results into customer folder'
                 'init:Initialize new vault from scratch'
                 'vault:Obsidian setup (init/plugins/check/hub)'
                 'remote:Remote vault sync via SSH (push/pull)'
@@ -126,6 +127,9 @@ _autovault() {
                     ;;
                 git-sync|gitsync|sync)
                     _autovault_git_sync
+                    ;;
+                nmap|import-nmap)
+                    _autovault_nmap
                     ;;
                 theme)
                     _autovault_theme
@@ -626,6 +630,55 @@ _autovault_git_sync() {
                     ;;
                 init)
                     _arguments '1:remote URL:'
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_autovault_nmap() {
+    local -a subcmds
+    subcmds=(
+        'import:Import Nmap scan file into customer folder'
+        'parse:Parse and display Nmap scan results'
+        'templates:Manage Nmap report templates'
+    )
+    
+    _arguments \
+        '1: :->subcmd' \
+        '*: :->args' \
+        '--customer[Target customer ID]:customer:($(_autovault_get_customer_ids))' \
+        '-c[Target customer ID]:customer:($(_autovault_get_customer_ids))' \
+        '--format[Input format]:format:(xml gnmap grepable)' \
+        '-f[Input format]:format:(xml gnmap grepable)' \
+        '--output-dir[Output directory]:directory:_files -/' \
+        '-o[Output directory]:directory:_files -/' \
+        '--quiet[Suppress output]' \
+        '-q[Suppress output]' \
+        '--help[Show help]'
+    
+    case "$state" in
+        subcmd)
+            _describe 'nmap command' subcmds
+            ;;
+        args)
+            case "${words[2]}" in
+                import|parse)
+                    _arguments \
+                        '1:Nmap file:_files -g "*.xml *.gnmap"' \
+                        '--customer[Target customer ID]:customer:($(_autovault_get_customer_ids))' \
+                        '-c[Target customer ID]:customer:($(_autovault_get_customer_ids))' \
+                        '--format[Input format]:format:(xml gnmap)' \
+                        '-f[Input format]:format:(xml gnmap)'
+                    ;;
+                templates)
+                    local -a template_cmds
+                    template_cmds=(
+                        'list:List available Nmap templates'
+                        'show:Show template content'
+                        'create:Create new Nmap template'
+                    )
+                    _describe 'template command' template_cmds
                     ;;
             esac
             ;;

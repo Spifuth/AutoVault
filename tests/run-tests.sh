@@ -77,7 +77,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
 CURRENT_TEST=0
-TOTAL_TESTS=142
+TOTAL_TESTS=151
 
 # Animation frames
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -2184,6 +2184,67 @@ test_git_sync_completion_zsh() {
 }
 
 #######################################
+# Nmap Integration Tests
+#######################################
+
+test_nmap_script_exists() {
+    [[ -f "$PROJECT_ROOT/bash/Import-Nmap.sh" ]]
+}
+
+test_nmap_script_syntax() {
+    bash -n "$PROJECT_ROOT/bash/Import-Nmap.sh"
+}
+
+test_nmap_script_executable() {
+    [[ -x "$PROJECT_ROOT/bash/Import-Nmap.sh" ]]
+}
+
+test_nmap_help() {
+    local output
+    output=$("$PROJECT_ROOT/bash/Import-Nmap.sh" --help 2>&1 || true)
+    
+    echo "$output" | grep -qiE "(nmap|import|usage)"
+}
+
+test_nmap_functions() {
+    local content
+    content=$(cat "$PROJECT_ROOT/bash/Import-Nmap.sh")
+    
+    # Check essential functions exist
+    echo "$content" | grep -q "parse_xml\|parse_nmap_xml" && \
+    echo "$content" | grep -q "parse_gnmap\|parse_grepable" && \
+    echo "$content" | grep -q "generate_markdown\|create_markdown"
+}
+
+test_nmap_completion_bash() {
+    local content
+    content=$(cat "$PROJECT_ROOT/completions/autovault.bash")
+    
+    echo "$content" | grep -q "nmap"
+}
+
+test_nmap_completion_zsh() {
+    local content
+    content=$(cat "$PROJECT_ROOT/completions/_autovault")
+    
+    echo "$content" | grep -q "nmap"
+}
+
+test_nmap_cli_routing() {
+    local content
+    content=$(cat "$PROJECT_ROOT/cust-run-config.sh")
+    
+    echo "$content" | grep -q "nmap\|import-nmap"
+}
+
+test_nmap_help_function() {
+    local content
+    content=$(cat "$PROJECT_ROOT/bash/lib/help.sh")
+    
+    echo "$content" | grep -q "help_nmap"
+}
+
+#######################################
 # Subcommand Help Tests
 #######################################
 
@@ -2597,6 +2658,18 @@ main() {
     run_test "Git-Sync functions defined" test_git_sync_functions || true
     run_test "Git-Sync bash completion" test_git_sync_completion_bash || true
     run_test "Git-Sync zsh completion" test_git_sync_completion_zsh || true
+    
+    # Nmap tests
+    show_category "NMAP INTEGRATION TESTS" "🔍"
+    run_test "Nmap script exists" test_nmap_script_exists || true
+    run_test "Nmap script syntax" test_nmap_script_syntax || true
+    run_test "Nmap script executable" test_nmap_script_executable || true
+    run_test "Nmap help page" test_nmap_help || true
+    run_test "Nmap functions defined" test_nmap_functions || true
+    run_test "Nmap bash completion" test_nmap_completion_bash || true
+    run_test "Nmap zsh completion" test_nmap_completion_zsh || true
+    run_test "Nmap CLI routing" test_nmap_cli_routing || true
+    run_test "Nmap help function" test_nmap_help_function || true
     
     # Teardown with animation
     echo ""
