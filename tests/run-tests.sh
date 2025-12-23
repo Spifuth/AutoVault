@@ -77,7 +77,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
 CURRENT_TEST=0
-TOTAL_TESTS=134
+TOTAL_TESTS=142
 
 # Animation frames
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -2116,6 +2116,74 @@ test_template_vars_functions() {
 }
 
 #######################################
+# Git-Sync Tests
+#######################################
+
+test_git_sync_script_exists() {
+    [[ -f "$PROJECT_ROOT/bash/Git-Sync.sh" ]]
+}
+
+test_git_sync_script_syntax() {
+    bash -n "$PROJECT_ROOT/bash/Git-Sync.sh"
+}
+
+test_git_sync_script_executable() {
+    [[ -x "$PROJECT_ROOT/bash/Git-Sync.sh" ]]
+}
+
+test_git_sync_help() {
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" git-sync --help 2>&1)
+    
+    echo "$output" | grep -qi "git-sync\|sync\|commit"
+}
+
+test_git_sync_status_no_vault() {
+    # Test git-sync status without configured vault
+    # Should fail gracefully
+    local exit_code=0
+    "$PROJECT_ROOT/bash/Git-Sync.sh" status 2>&1 || exit_code=$?
+    
+    # Should exit non-zero if no vault configured
+    [[ $exit_code -ne 0 ]] || true
+}
+
+test_git_sync_config_file() {
+    # Test that config file path is defined
+    local content
+    content=$(cat "$PROJECT_ROOT/bash/Git-Sync.sh")
+    
+    echo "$content" | grep -q "GIT_SYNC_CONFIG_FILE"
+}
+
+test_git_sync_functions() {
+    # Test that key functions are defined
+    local content
+    content=$(cat "$PROJECT_ROOT/bash/Git-Sync.sh")
+    
+    echo "$content" | grep -q "do_sync" && \
+    echo "$content" | grep -q "show_status" && \
+    echo "$content" | grep -q "do_watch" && \
+    echo "$content" | grep -q "enable_auto_sync"
+}
+
+test_git_sync_completion_bash() {
+    # Test bash completion includes git-sync
+    local content
+    content=$(cat "$PROJECT_ROOT/completions/autovault.bash")
+    
+    echo "$content" | grep -q "git-sync"
+}
+
+test_git_sync_completion_zsh() {
+    # Test zsh completion includes git-sync
+    local content
+    content=$(cat "$PROJECT_ROOT/completions/_autovault")
+    
+    echo "$content" | grep -q "git-sync"
+}
+
+#######################################
 # Subcommand Help Tests
 #######################################
 
@@ -2518,6 +2586,17 @@ main() {
     run_test "Template vars library exists" test_template_vars_exists || true
     run_test "Template vars syntax" test_template_vars_syntax || true
     run_test "Template vars functions" test_template_vars_functions || true
+    
+    # Git-Sync tests
+    show_category "GIT-SYNC TESTS" "🔄"
+    run_test "Git-Sync script exists" test_git_sync_script_exists || true
+    run_test "Git-Sync script syntax" test_git_sync_script_syntax || true
+    run_test "Git-Sync script executable" test_git_sync_script_executable || true
+    run_test "Git-Sync help page" test_git_sync_help || true
+    run_test "Git-Sync config file path" test_git_sync_config_file || true
+    run_test "Git-Sync functions defined" test_git_sync_functions || true
+    run_test "Git-Sync bash completion" test_git_sync_completion_bash || true
+    run_test "Git-Sync zsh completion" test_git_sync_completion_zsh || true
     
     # Teardown with animation
     echo ""

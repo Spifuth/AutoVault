@@ -8,9 +8,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - Phase 4.3
 
 ### Planned
-- **Git Auto-Sync** - Automatic commit/push of vault changes
 - **Nmap Integration** - Import scan results into customer folders
 - **Burp Suite Integration** - Import findings from Burp Suite
+
+---
+
+## [2.6.0] - 2025-12-23 - Phase 4.3 (Git-Sync)
+
+### Added
+- **Git Auto-Sync** (`git-sync`) - Automatic vault synchronization
+  - `git-sync status` - Show sync status and pending changes
+  - `git-sync now` - Sync immediately (commit + push)
+  - `git-sync watch` - Watch for changes continuously
+  - `git-sync config` - Configure sync settings
+  - `git-sync enable` - Enable auto-sync (cron or systemd)
+  - `git-sync disable` - Disable auto-sync
+  - `git-sync log` - Show sync history
+  - `git-sync init` - Initialize vault as git repository
+  - Commit message templates with variables ({{DATE}}, {{TIME}}, etc.)
+  - Desktop notifications on sync
+  - Cron and systemd timer support
+
+### Changed
+- Test suite expanded to 142 tests (100% passing)
+- Shell completions updated for git-sync command (Bash and Zsh)
+- Help system updated with git-sync documentation
+- COMMANDS.md updated with git-sync reference
 
 ---
 

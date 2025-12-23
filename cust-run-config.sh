@@ -608,6 +608,11 @@ main() {
       run_bash "Export-Vault.sh" "$@"
       ;;
 
+    #--- Git Sync ---
+    git-sync|gitsync|sync)
+      run_bash "Git-Sync.sh" "$@"
+      ;;
+
     #--- Hooks Management ---
     hooks)
       CURRENT_OPERATION="hooks"

@@ -64,6 +64,7 @@ _autovault() {
                 'backup:Manage backups (create/list/restore/cleanup)'
                 'archive:Archive a customer (zip + optional remove)'
                 'export:Export vault/customer to PDF/HTML/Markdown'
+                'git-sync:Automatic git synchronization (commit/push)'
                 'init:Initialize new vault from scratch'
                 'vault:Obsidian setup (init/plugins/check/hub)'
                 'remote:Remote vault sync via SSH (push/pull)'
@@ -122,6 +123,9 @@ _autovault() {
                     ;;
                 export)
                     _autovault_export
+                    ;;
+                git-sync|gitsync|sync)
+                    _autovault_git_sync
                     ;;
                 theme)
                     _autovault_theme
@@ -574,6 +578,58 @@ _autovault_demo() {
         'box:Box and section formatting'
     )
     _describe 'component' components
+}
+
+# Git-sync subcommands
+_autovault_git_sync() {
+    local -a subcmds
+    subcmds=(
+        'status:Show git sync status and pending changes'
+        'now:Sync immediately (commit + push)'
+        'sync:Sync immediately (commit + push)'
+        'watch:Watch for changes and sync continuously'
+        'config:Configure git-sync settings'
+        'enable:Enable auto-sync (cron or systemd)'
+        'disable:Disable auto-sync'
+        'log:Show sync history'
+        'init:Initialize vault as git repository'
+    )
+    
+    _arguments \
+        '1: :->subcmd' \
+        '*: :->args' \
+        '--quiet[Suppress output]' \
+        '-q[Suppress output]' \
+        '--help[Show help]'
+    
+    case "$state" in
+        subcmd)
+            _describe 'git-sync command' subcmds
+            ;;
+        args)
+            case "${words[2]}" in
+                enable)
+                    local -a methods
+                    methods=(
+                        'cron:Use crontab for periodic sync'
+                        'systemd:Use systemd user timer'
+                    )
+                    _describe 'method' methods
+                    ;;
+                watch)
+                    _arguments \
+                        '--interval[Sync interval in seconds]:seconds:(60 120 300 600)' \
+                        '-i[Sync interval in seconds]:seconds:(60 120 300 600)'
+                    ;;
+                log|logs|history)
+                    _arguments '1:lines:(10 20 50 100)'
+                    ;;
+                init)
+                    _arguments '1:remote URL:'
+                    ;;
+            esac
+            ;;
+    esac
 }
 
 # Helper functions to get dynamic values

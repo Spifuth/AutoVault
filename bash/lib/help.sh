@@ -69,6 +69,7 @@ usage() {
     search)       help_search ;;
     archive)      help_archive ;;
     export)       help_export ;;
+    git-sync)     help_git_sync ;;
     theme)        help_theme ;;
     demo)         help_demo ;;
     *)            help_main ;;
@@ -1103,6 +1104,93 @@ $(_h_bold)EXAMPLES$(_h_reset)
 
     $(_h_dim)# Quick vault export (auto-named)$(_h_reset)
     $script_name export html vault
+EOF
+}
+
+#--------------------------------------
+# GIT-SYNC HELP
+#--------------------------------------
+help_git_sync() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - GIT-SYNC$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name git-sync <command> [OPTIONS]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Automatic git synchronization for your vault.
+    Commit and push vault modifications automatically.
+
+    This is useful for:
+    - Keeping vault changes backed up to a remote repository
+    - Syncing vault across multiple machines
+    - Maintaining version history of your notes
+
+$(_h_bold)COMMANDS$(_h_reset)
+    $(_h_green)status$(_h_reset)              Show git sync status and pending changes
+    $(_h_green)now$(_h_reset), $(_h_green)sync$(_h_reset)          Sync immediately (commit + push)
+    $(_h_green)watch$(_h_reset)               Watch for changes and sync continuously
+    $(_h_green)config$(_h_reset)              Configure git-sync settings
+    $(_h_green)enable$(_h_reset) [method]     Enable auto-sync (cron or systemd)
+    $(_h_green)disable$(_h_reset)             Disable auto-sync
+    $(_h_green)log$(_h_reset) [lines]         Show sync history
+    $(_h_green)init$(_h_reset) [remote-url]   Initialize vault as git repository
+
+$(_h_bold)OPTIONS$(_h_reset)
+    $(_h_green)-i, --interval <seconds>$(_h_reset)
+        Sync interval for watch mode (default: 300)
+
+    $(_h_green)-q, --quiet$(_h_reset)
+        Suppress output (for cron jobs)
+
+$(_h_bold)AUTO-SYNC METHODS$(_h_reset)
+    $(_h_cyan)cron$(_h_reset)        Uses crontab for periodic sync
+    $(_h_cyan)systemd$(_h_reset)     Uses systemd user timer (Linux)
+
+$(_h_bold)COMMIT MESSAGE VARIABLES$(_h_reset)
+    {{DATE}}      Current date (YYYY-MM-DD)
+    {{TIME}}      Current time (HH:MM:SS)
+    {{USER}}      Current username
+    {{HOSTNAME}}  Machine hostname
+
+$(_h_bold)CONFIGURATION$(_h_reset)
+    Config file: ~/.config/autovault/git-sync.conf
+    Log file:    ~/.config/autovault/git-sync.log
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $(_h_dim)# Check current sync status$(_h_reset)
+    $script_name git-sync status
+
+    $(_h_dim)# Sync now (commit and push)$(_h_reset)
+    $script_name git-sync now
+
+    $(_h_dim)# Watch for changes (sync every 2 minutes)$(_h_reset)
+    $script_name git-sync watch --interval 120
+
+    $(_h_dim)# Enable automatic sync via cron$(_h_reset)
+    $script_name git-sync enable cron
+
+    $(_h_dim)# Initialize vault as git repo$(_h_reset)
+    $script_name git-sync init https://github.com/user/vault.git
+
+    $(_h_dim)# View sync log$(_h_reset)
+    $script_name git-sync log 50
+
+$(_h_bold)SETUP GUIDE$(_h_reset)
+    1. Initialize git in your vault (if not already):
+       $script_name git-sync init
+
+    2. Add remote repository:
+       cd /path/to/vault && git remote add origin <url>
+
+    3. Configure sync settings:
+       $script_name git-sync config
+
+    4. Enable automatic sync:
+       $script_name git-sync enable cron
 EOF
 }
 

@@ -687,6 +687,122 @@ Export vault content to various formats (PDF, HTML, Markdown) or generate client
 
 ---
 
+## Git-Sync Command
+
+### `git-sync`
+
+Automatic git synchronization for vault changes. Commit and push vault modifications automatically.
+
+**Use cases:**
+- Keep vault changes backed up to a remote repository
+- Sync vault across multiple machines
+- Maintain version history of your notes
+
+```bash
+# Show sync status
+./cust-run-config.sh git-sync status
+
+# Sync now (commit + push)
+./cust-run-config.sh git-sync now
+
+# Watch for changes (foreground)
+./cust-run-config.sh git-sync watch --interval 120
+
+# Configure git-sync settings
+./cust-run-config.sh git-sync config
+
+# Enable automatic sync
+./cust-run-config.sh git-sync enable cron
+
+# Initialize vault as git repo
+./cust-run-config.sh git-sync init https://github.com/user/vault.git
+```
+
+### Git-Sync Subcommands
+
+| Subcommand | Description |
+|------------|-------------|
+| `status` | Show git sync status and pending changes |
+| `now`, `sync` | Sync immediately (commit + push) |
+| `watch` | Watch for changes and sync continuously |
+| `config` | Configure git-sync settings interactively |
+| `enable <method>` | Enable auto-sync (`cron` or `systemd`) |
+| `disable` | Disable auto-sync |
+| `log [lines]` | Show sync history (default: 20 lines) |
+| `init [url]` | Initialize vault as git repository |
+
+### Git-Sync Options
+
+| Option | Description |
+|--------|-------------|
+| `-i, --interval <sec>` | Sync interval for watch mode (default: 300) |
+| `-q, --quiet` | Suppress output (for cron jobs) |
+
+### Auto-Sync Methods
+
+| Method | Description |
+|--------|-------------|
+| `cron` | Uses crontab for periodic sync |
+| `systemd` | Uses systemd user timer (Linux only) |
+
+### Commit Message Variables
+
+| Variable | Description |
+|----------|-------------|
+| `{{DATE}}` | Current date (YYYY-MM-DD) |
+| `{{TIME}}` | Current time (HH:MM:SS) |
+| `{{USER}}` | Current username |
+| `{{HOSTNAME}}` | Machine hostname |
+
+### Configuration
+
+Git-sync settings are stored in:
+```
+~/.config/autovault/git-sync.conf
+```
+
+Settings include:
+- Sync interval
+- Commit message template
+- Remote name and branch
+- Push/pull behavior
+- Notification preferences
+
+### Setup Guide
+
+```bash
+# 1. Initialize git in your vault (if not already done)
+./cust-run-config.sh git-sync init
+
+# 2. Add remote repository
+cd /path/to/vault
+git remote add origin https://github.com/user/vault.git
+
+# 3. Configure sync settings
+./cust-run-config.sh git-sync config
+
+# 4. Enable automatic sync
+./cust-run-config.sh git-sync enable cron
+```
+
+### Examples
+
+```bash
+# Watch and sync every 2 minutes
+./cust-run-config.sh git-sync watch -i 120
+
+# View last 50 sync events
+./cust-run-config.sh git-sync log 50
+
+# Enable systemd timer (Linux)
+./cust-run-config.sh git-sync enable systemd
+
+# Quick manual sync
+./cust-run-config.sh git-sync now
+```
+
+---
+
 ## Theme Command
 
 ### `theme`

@@ -34,7 +34,7 @@ _autovault_completions() {
     _init_completion || return
     
     # All main commands
-    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks completions alias requirements help init doctor search archive export theme demo vaults plugins encrypt"
+    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks completions alias requirements help init doctor search archive export git-sync theme demo vaults plugins encrypt"
     
     # Global options
     local global_opts="-v --verbose -q --quiet --silent --no-color --dry-run --diff -h --help --version"
@@ -56,6 +56,7 @@ _autovault_completions() {
     local encrypt_cmds="init encrypt decrypt status lock unlock"
     local export_cmds="pdf html markdown report"
     local export_targets="customer section vault file"
+    local git_sync_cmds="status now sync watch config enable disable log init"
     
     # Get the main command (skip options)
     local main_cmd=""
@@ -387,6 +388,29 @@ _autovault_completions() {
                     ;;
                 *)
                     COMPREPLY=($(compgen -W "-o --output -t --template --no-toc --no-metadata --page-size --css --help" -- "$cur"))
+                    ;;
+            esac
+            ;;
+        
+        git-sync|gitsync|sync)
+            case "$prev" in
+                enable)
+                    COMPREPLY=($(compgen -W "cron systemd" -- "$cur"))
+                    ;;
+                watch)
+                    COMPREPLY=($(compgen -W "--interval -i" -- "$cur"))
+                    ;;
+                log|logs|history)
+                    COMPREPLY=($(compgen -W "10 20 50 100" -- "$cur"))
+                    ;;
+                init)
+                    # Could suggest common git providers
+                    ;;
+                git-sync|gitsync|sync)
+                    COMPREPLY=($(compgen -W "$git_sync_cmds --help" -- "$cur"))
+                    ;;
+                *)
+                    COMPREPLY=($(compgen -W "$git_sync_cmds --quiet -q --help" -- "$cur"))
                     ;;
             esac
             ;;
