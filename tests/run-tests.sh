@@ -77,7 +77,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
 CURRENT_TEST=0
-TOTAL_TESTS=111
+TOTAL_TESTS=118
 
 # Animation frames
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -1712,6 +1712,74 @@ test_archive_no_id() {
 }
 
 #######################################
+# Export Command Tests
+#######################################
+
+test_export_help() {
+    # Test export command help page
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" export --help 2>&1)
+    
+    echo "$output" | grep -qi "export\|pdf\|html\|markdown"
+}
+
+test_export_formats() {
+    # Test export help documents all formats
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" export --help 2>&1)
+    
+    # Should mention all supported formats
+    echo "$output" | grep -qi "pdf" && \
+    echo "$output" | grep -qi "html" && \
+    echo "$output" | grep -qi "markdown"
+}
+
+test_export_targets() {
+    # Test export help documents all targets
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" export --help 2>&1)
+    
+    # Should mention all targets
+    echo "$output" | grep -qiE "vault|customer|section|file"
+}
+
+test_export_templates() {
+    # Test export help documents report templates
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" export --help 2>&1)
+    
+    # Should mention report templates
+    echo "$output" | grep -qiE "pentest|audit|summary|default"
+}
+
+test_export_no_args() {
+    # Test export without args shows usage
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" export 2>&1) || true
+    
+    # Should show usage or error
+    echo "$output" | grep -qiE "usage|pdf|html|markdown|format"
+}
+
+test_export_pdf_no_target() {
+    # Test export pdf without target shows error
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" export pdf 2>&1) || true
+    
+    # Should show error about missing target
+    echo "$output" | grep -qiE "usage|target|vault|customer|section"
+}
+
+test_export_dependencies() {
+    # Test export checks for pandoc dependency
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" export --help 2>&1)
+    
+    # Should mention pandoc requirement
+    echo "$output" | grep -qi "pandoc"
+}
+
+#######################################
 # Theme Command Tests
 #######################################
 
@@ -2265,6 +2333,16 @@ main() {
     run_test "Archive help page" test_archive_help || true
     run_test "Archive formats documented" test_archive_formats || true
     run_test "Archive no ID error" test_archive_no_id || true
+    
+    # Export command tests
+    show_category "EXPORT COMMAND TESTS" "📄"
+    run_test "Export help page" test_export_help || true
+    run_test "Export formats documented" test_export_formats || true
+    run_test "Export targets documented" test_export_targets || true
+    run_test "Export templates documented" test_export_templates || true
+    run_test "Export no args error" test_export_no_args || true
+    run_test "Export PDF no target error" test_export_pdf_no_target || true
+    run_test "Export dependencies documented" test_export_dependencies || true
     
     # Theme command tests
     show_category "THEME COMMAND TESTS" "🎨"

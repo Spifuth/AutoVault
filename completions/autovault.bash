@@ -34,7 +34,7 @@ _autovault_completions() {
     _init_completion || return
     
     # All main commands
-    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks completions alias requirements help init doctor search archive theme demo vaults plugins encrypt"
+    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks completions alias requirements help init doctor search archive export theme demo vaults plugins encrypt"
     
     # Global options
     local global_opts="-v --verbose -q --quiet --silent --no-color --dry-run --diff -h --help --version"
@@ -54,6 +54,8 @@ _autovault_completions() {
     local vaults_cmds="list add remove switch current info"
     local plugins_cmds="list info enable disable create run"
     local encrypt_cmds="init encrypt decrypt status lock unlock"
+    local export_cmds="pdf html markdown report"
+    local export_targets="customer section vault file"
     
     # Get the main command (skip options)
     local main_cmd=""
@@ -358,6 +360,33 @@ _autovault_completions() {
                     ;;
                 *)
                     COMPREPLY=($(compgen -W "$encrypt_cmds --help" -- "$cur"))
+                    ;;
+            esac
+            ;;
+        
+        export)
+            case "$prev" in
+                pdf|html|markdown|report)
+                    COMPREPLY=($(compgen -W "$export_targets" -- "$cur"))
+                    ;;
+                customer)
+                    local ids=$(_autovault_get_customer_ids)
+                    COMPREPLY=($(compgen -W "$ids" -- "$cur"))
+                    ;;
+                -t|--template)
+                    COMPREPLY=($(compgen -W "default pentest audit summary" -- "$cur"))
+                    ;;
+                -o|--output)
+                    _filedir
+                    ;;
+                --page-size)
+                    COMPREPLY=($(compgen -W "A4 Letter Legal A3" -- "$cur"))
+                    ;;
+                export)
+                    COMPREPLY=($(compgen -W "$export_cmds --help" -- "$cur"))
+                    ;;
+                *)
+                    COMPREPLY=($(compgen -W "-o --output -t --template --no-toc --no-metadata --page-size --css --help" -- "$cur"))
                     ;;
             esac
             ;;

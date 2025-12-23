@@ -584,6 +584,109 @@ tar -xzf archive.tar.gz -C /path/to/vault
 
 ---
 
+## Export Command
+
+### `export`
+
+Export vault content to various formats (PDF, HTML, Markdown) or generate client reports.
+
+**Requirements:**
+- `pandoc` - Required for all export formats
+- PDF backend (one of): `wkhtmltopdf`, `weasyprint`, or `pdflatex`
+
+```bash
+# Export entire vault to PDF
+./cust-run-config.sh export pdf vault
+
+# Export customer to HTML
+./cust-run-config.sh export html customer ACME
+
+# Export section to Markdown (single file)
+./cust-run-config.sh export markdown section RAISED
+
+# Export single file
+./cust-run-config.sh export pdf file ./Run/CUST-001/FP/notes.md
+
+# Generate client report
+./cust-run-config.sh export report customer ACME --template pentest
+```
+
+### Export Subcommands
+
+| Subcommand | Description |
+|------------|-------------|
+| `pdf` | Export to PDF format |
+| `html` | Export to HTML format |
+| `markdown` | Export to single merged Markdown file |
+| `report` | Generate formatted client report |
+
+### Export Targets
+
+| Target | Description |
+|--------|-------------|
+| `vault` | Export entire vault |
+| `customer <id>` | Export specific customer |
+| `section <name>` | Export specific section across all customers |
+| `file <path>` | Export single file |
+
+### Export Options
+
+| Option | Description |
+|--------|-------------|
+| `-o, --output <path>` | Output file path (default: auto-generated) |
+| `-t, --template <name>` | Report template: `default`, `pentest`, `audit`, `summary` |
+| `--title <text>` | Document title |
+| `--author <text>` | Document author |
+| `--no-toc` | Disable table of contents |
+| `--no-metadata` | Disable metadata header |
+| `--page-size <size>` | PDF page size: `A4`, `Letter`, `Legal`, `A3` |
+| `--css <file>` | Custom CSS stylesheet |
+
+### Report Templates
+
+| Template | Description | Use Case |
+|----------|-------------|----------|
+| `default` | Standard format | General documentation |
+| `pentest` | Pentest report format | Security assessments |
+| `audit` | Audit report format | Compliance audits |
+| `summary` | Executive summary | Management reports |
+
+### Examples
+
+```bash
+# PDF with custom title and author
+./cust-run-config.sh export pdf customer ACME \
+    --title "Security Assessment" \
+    --author "Security Team"
+
+# HTML with custom CSS
+./cust-run-config.sh export html vault \
+    --css ~/custom-style.css \
+    --output ~/reports/vault-export.html
+
+# Pentest report for client delivery
+./cust-run-config.sh export report customer ACME \
+    --template pentest \
+    --output ~/deliverables/ACME-pentest-report.pdf
+
+# Quick markdown merge (for sharing)
+./cust-run-config.sh export markdown section FP \
+    --no-toc --no-metadata
+
+# Different page sizes
+./cust-run-config.sh export pdf vault --page-size Letter
+```
+
+**Default output paths:**
+```
+./exports/export_<target>_<timestamp>.pdf
+./exports/export_<target>_<timestamp>.html
+./exports/export_<target>_<timestamp>.md
+./exports/report_<customer>_<template>_<timestamp>.pdf
+```
+
+---
+
 ## Theme Command
 
 ### `theme`
