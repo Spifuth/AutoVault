@@ -1659,10 +1659,12 @@ test_search_no_query() {
 
 test_search_json_output() {
     # Test search JSON output format (even with no results)
+    # Need to set config since search requires vault path
+    export CONFIG_JSON="$PROJECT_ROOT/config/cust-run-config.test.json"
     local output
     output=$("$PROJECT_ROOT/cust-run-config.sh" search "nonexistent12345" --json 2>&1) || true
     
-    # Should be valid JSON structure
+    # Should be valid JSON structure (may have errors before JSON due to empty vault)
     echo "$output" | grep -q '"query"' || echo "$output" | grep -q '"results"'
 }
 
