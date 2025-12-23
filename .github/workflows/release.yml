@@ -70,6 +70,7 @@ jobs:
           cp -r completions/ release/autovault-${{ steps.version.outputs.version }}/
           cp -r hooks/ release/autovault-${{ steps.version.outputs.version }}/
           cp -r docs/ release/autovault-${{ steps.version.outputs.version }}/
+          cp -r packaging/ release/autovault-${{ steps.version.outputs.version }}/
           cp cust-run-config.sh release/autovault-${{ steps.version.outputs.version }}/
           cp README.md release/autovault-${{ steps.version.outputs.version }}/
           cp CHANGELOG.md release/autovault-${{ steps.version.outputs.version }}/
@@ -84,6 +85,26 @@ jobs:
           sha256sum autovault-${{ steps.version.outputs.version }}.tar.gz > autovault-${{ steps.version.outputs.version }}.tar.gz.sha256
           sha256sum autovault-${{ steps.version.outputs.version }}.zip > autovault-${{ steps.version.outputs.version }}.zip.sha256
 
+      - name: Build DEB package
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev fakeroot
+          VERSION=${{ steps.version.outputs.version }} ./packaging/build-packages.sh deb
+          mv dist/*.deb release/ || true
+
+      - name: Build RPM package
+        run: |
+          sudo apt-get install -y rpm
+          VERSION=${{ steps.version.outputs.version }} ./packaging/build-packages.sh rpm || echo "RPM build skipped (may require Fedora/RHEL)"
+          mv dist/*.rpm release/ 2>/dev/null || true
+
+      - name: Generate package checksums
+        run: |
+          cd release
+          for pkg in *.deb *.rpm; do
+            [ -f "$pkg" ] && sha256sum "$pkg" > "$pkg.sha256"
+          done
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -96,6 +117,10 @@ jobs:
             release/autovault-${{ steps.version.outputs.version }}.tar.gz.sha256
             release/autovault-${{ steps.version.outputs.version }}.zip
             release/autovault-${{ steps.version.outputs.version }}.zip.sha256
+            release/*.deb
+            release/*.deb.sha256
+            release/*.rpm
+            release/*.rpm.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

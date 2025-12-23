@@ -1,0 +1,59 @@
+#!/usr/bin/make -f
+#
+# Debian rules file for autovault
+#
+
+export DH_VERBOSE = 1
+export PREFIX = /usr
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	# Create directories
+	install -d $(CURDIR)/debian/autovault/usr/share/autovault
+	install -d $(CURDIR)/debian/autovault/usr/share/autovault/bash
+	install -d $(CURDIR)/debian/autovault/usr/share/autovault/bash/lib
+	install -d $(CURDIR)/debian/autovault/usr/share/autovault/config
+	install -d $(CURDIR)/debian/autovault/usr/share/autovault/hooks
+	install -d $(CURDIR)/debian/autovault/usr/share/autovault/docs
+	install -d $(CURDIR)/debian/autovault/usr/bin
+	install -d $(CURDIR)/debian/autovault/usr/share/bash-completion/completions
+	install -d $(CURDIR)/debian/autovault/usr/share/zsh/vendor-completions
+	install -d $(CURDIR)/debian/autovault/usr/share/doc/autovault
+	
+	# Install main script
+	install -m 755 cust-run-config.sh $(CURDIR)/debian/autovault/usr/share/autovault/
+	
+	# Install bash scripts
+	install -m 755 bash/*.sh $(CURDIR)/debian/autovault/usr/share/autovault/bash/
+	install -m 644 bash/lib/*.sh $(CURDIR)/debian/autovault/usr/share/autovault/bash/lib/
+	
+	# Install config templates
+	install -m 644 config/*.json $(CURDIR)/debian/autovault/usr/share/autovault/config/
+	
+	# Install hook examples
+	install -m 644 hooks/*.example $(CURDIR)/debian/autovault/usr/share/autovault/hooks/ || true
+	install -m 644 hooks/README.md $(CURDIR)/debian/autovault/usr/share/autovault/hooks/ || true
+	
+	# Install documentation
+	install -m 644 README.md $(CURDIR)/debian/autovault/usr/share/doc/autovault/
+	install -m 644 CHANGELOG.md $(CURDIR)/debian/autovault/usr/share/doc/autovault/
+	install -m 644 docs/*.md $(CURDIR)/debian/autovault/usr/share/autovault/docs/
+	
+	# Install completions
+	install -m 644 completions/autovault.bash $(CURDIR)/debian/autovault/usr/share/bash-completion/completions/autovault
+	install -m 644 completions/_autovault $(CURDIR)/debian/autovault/usr/share/zsh/vendor-completions/
+	
+	# Create symlink for binary
+	ln -sf /usr/share/autovault/cust-run-config.sh $(CURDIR)/debian/autovault/usr/bin/autovault
+
+override_dh_auto_test:
+	# Run tests during build
+	bash -n cust-run-config.sh
+	for f in bash/*.sh; do bash -n "$$f"; done
+	for f in bash/lib/*.sh; do bash -n "$$f"; done
+
+override_dh_auto_clean:
+	# Nothing to clean for shell scripts
+	:

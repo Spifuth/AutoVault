@@ -1,0 +1,29 @@
+Source: autovault
+Section: utils
+Priority: optional
+Maintainer: Spifuth <spifuth@protonmail.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.0
+Homepage: https://github.com/Spifuth/AutoVault
+Vcs-Browser: https://github.com/Spifuth/AutoVault
+Vcs-Git: https://github.com/Spifuth/AutoVault.git
+Rules-Requires-Root: no
+
+Package: autovault
+Architecture: all
+Depends: bash (>= 4.0), jq, coreutils, ${misc:Depends}
+Recommends: git, pandoc, age
+Suggests: wkhtmltopdf, gnupg
+Description: CLI tool for managing Obsidian vaults
+ AutoVault is a powerful command-line tool for managing Obsidian vaults
+ with support for multi-customer folder structures, templates, backups,
+ encryption, and export to PDF/HTML.
+ .
+ Features:
+  - Multi-customer vault organization
+  - Template management and synchronization
+  - Backup creation and restoration
+  - Export to PDF, HTML, and Markdown
+  - Remote vault synchronization via SSH
+  - Age/GPG encryption support
+  - Bash and Zsh completions
