@@ -41,6 +41,8 @@ _h_cyan()   { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[36m"; fi; }
 _h_green()  { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[32m"; fi; }
 _h_yellow() { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[33m"; fi; }
 _h_blue()   { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[34m"; fi; }
+_h_red()    { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[31m"; fi; }
+_h_magenta(){ if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[35m"; fi; }
 _h_reset()  { if [[ -z "${NO_COLOR:-}" ]]; then echo -ne "\033[0m";  fi; }
 
 #--------------------------------------

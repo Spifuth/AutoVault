@@ -1,19 +1,17 @@
 {
-  "vault_root": "/home/nl/project/AutoVault/vault",
-  "customer_prefix": "Client",
-  "default_sections": [
-    "Notes",
-    "Tasks"
+  "VaultRoot": "/home/nl/project/AutoVault/vault",
+  "CustomerIdWidth": 3,
+  "CustomerIds": [
+    1,
+    2,
+    3
   ],
-  "options": {
-    "hooks_enabled": false,
-    "backup_path": "backups",
-    "backup_retention": 30,
-    "colors_enabled": true
-  },
-  "metadata": {
-    "version": "2.8.0",
-    "created": "2025-12-23T13:23:45Z",
-    "profile": "minimal"
-  }
+  "Sections": [
+    "FP",
+    "RAISED",
+    "INFORMATIONS",
+    "DIVERS"
+  ],
+  "TemplateRelativeRoot": "_templates/run",
+  "EnableCleanup": false
 }

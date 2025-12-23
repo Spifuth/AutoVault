@@ -259,7 +259,7 @@ check_configuration() {
 
   # Required fields
   local vault_root
-  vault_root=$(jq -r '.vault_root // empty' "$config_file")
+  vault_root=$(jq -r '.VaultRoot // empty' "$config_file")
   if [[ -n "$vault_root" ]]; then
     check_pass "vault_root" "configured: $vault_root"
   else
@@ -267,7 +267,7 @@ check_configuration() {
   fi
 
   local prefix
-  prefix=$(jq -r '.customer_prefix // empty' "$config_file")
+  prefix=$(jq -r '.CustomerPrefix // empty' "$config_file")
   if [[ -n "$prefix" ]]; then
     check_pass "customer_prefix" "configured: $prefix"
   else
@@ -275,7 +275,7 @@ check_configuration() {
   fi
 
   local sections
-  sections=$(jq -r '.default_sections | length' "$config_file" 2>/dev/null || echo "0")
+  sections=$(jq -r '.Sections | length' "$config_file" 2>/dev/null || echo "0")
   if [[ "$sections" -gt 0 ]]; then
     check_pass "default_sections" "$sections sections defined"
   else
@@ -325,7 +325,7 @@ check_vault_structure() {
   fi
 
   local vault_root
-  vault_root=$(jq -r '.vault_root // empty' "$config_file")
+  vault_root=$(jq -r '.VaultRoot // empty' "$config_file")
   if [[ -z "$vault_root" ]]; then
     check_warn "Vault" "vault_root not configured"
     return
@@ -345,7 +345,7 @@ check_vault_structure() {
 
   # Check for customers
   local prefix
-  prefix=$(jq -r '.customer_prefix // "CustRun"' "$config_file")
+  prefix=$(jq -r '.CustomerPrefix // "CustRun"' "$config_file")
   local customer_count
   customer_count=$(find "$vault_root" -maxdepth 1 -type d -name "${prefix}-*" 2>/dev/null | wc -l)
   check_pass "Customers" "$customer_count customer(s) found"
@@ -473,7 +473,7 @@ check_disk_space() {
   local config_file="$SCRIPT_DIR/../config/cust-run-config.json"
   if [[ -f "$config_file" ]]; then
     local vault_root
-    vault_root=$(jq -r '.vault_root // empty' "$config_file")
+    vault_root=$(jq -r '.VaultRoot // empty' "$config_file")
     if [[ -n "$vault_root" ]] && [[ -d "$vault_root" ]]; then
       local vault_disk_free
       vault_disk_free=$(df -h "$vault_root" 2>/dev/null | awk 'NR==2 {print $4}')

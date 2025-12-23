@@ -172,7 +172,7 @@ get_customer_path() {
   fi
 
   local vault_root
-  vault_root=$(jq -r '.vault_root // empty' "$config_file")
+  vault_root=$(jq -r '.VaultRoot // empty' "$config_file")
   
   if [[ -z "$vault_root" ]] || [[ ! -d "$vault_root" ]]; then
     log_error "Vault root not configured or does not exist"
@@ -180,7 +180,7 @@ get_customer_path() {
   fi
 
   local prefix
-  prefix=$(jq -r '.customer_prefix // "CustRun"' "$config_file")
+  prefix=$(jq -r '.CustomerPrefix // "CustRun"' "$config_file")
   
   local customer_path="$vault_root/${prefix}-${CUSTOMER_ID}"
   
@@ -201,9 +201,9 @@ get_archive_path() {
   local customer_path="$1"
   local config_file="$SCRIPT_DIR/../config/cust-run-config.json"
   local vault_root
-  vault_root=$(jq -r '.vault_root // empty' "$config_file")
+  vault_root=$(jq -r '.VaultRoot // empty' "$config_file")
   local prefix
-  prefix=$(jq -r '.customer_prefix // "CustRun"' "$config_file")
+  prefix=$(jq -r '.CustomerPrefix // "CustRun"' "$config_file")
 
   # Use custom path if specified
   if [[ -n "$OUTPUT_PATH" ]]; then
