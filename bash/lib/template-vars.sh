@@ -50,6 +50,7 @@ register_template_var() {
 
 #--------------------------------------
 # Clear all custom variables
+# shellcheck disable=SC2034  # Public API function for external use
 #--------------------------------------
 clear_template_vars() {
     TEMPLATE_CUSTOM_VARS=()

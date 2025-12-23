@@ -36,6 +36,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/logging.sh"
 source "$SCRIPT_DIR/lib/config.sh"
 
+# DEPRECATION WARNING
+log_warn "================================================================"
+log_warn "DEPRECATED: Apply-CustRunTemplates.sh is a legacy script"
+log_warn "Please use: cust-run-config.sh templates apply"
+log_warn "This script reads from vault templates, not config/templates.json"
+log_warn "================================================================"
+echo ""
+
 # Load configuration
 if ! load_config; then
     log_error "Failed to load configuration"

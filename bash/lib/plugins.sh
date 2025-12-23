@@ -52,6 +52,9 @@ declare -gA PLUGIN_HANDLERS
 
 #--------------------------------------
 # Initialize plugin system
+# Note: Part of Plugin System API (Phase 5)
+# These functions are defined for future use
+# shellcheck disable=SC2034  # Public API for plugin system
 #--------------------------------------
 plugins_init() {
     LOADED_PLUGINS=()

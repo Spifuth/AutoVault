@@ -319,8 +319,11 @@ select_menu() {
   fi
 }
 
+#--------------------------------------
 # Multi-select menu (fzf only, fallback to single select)
+# Part of UI API - available for scripts/plugins
 # Usage: results=$(multi_select_menu "Select items:" "item1" "item2" "item3")
+#--------------------------------------
 multi_select_menu() {
   local prompt="$1"
   shift

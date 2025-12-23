@@ -77,7 +77,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
 CURRENT_TEST=0
-TOTAL_TESTS=160
+TOTAL_TESTS=161
 
 # Animation frames
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -2719,6 +2719,7 @@ main() {
     run_test "Git-Sync functions defined" test_git_sync_functions || true
     run_test "Git-Sync bash completion" test_git_sync_completion_bash || true
     run_test "Git-Sync zsh completion" test_git_sync_completion_zsh || true
+    run_test "Git-Sync graceful no-vault" test_git_sync_status_no_vault || true
     
     # Nmap tests
     show_category "NMAP INTEGRATION TESTS" "🔍"
