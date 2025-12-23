@@ -33,7 +33,14 @@ jobs:
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew install jq rsync
+          brew install jq rsync bash
+          # Add Homebrew's bash to path (bash 5.x)
+          echo "$(brew --prefix)/bin" >> $GITHUB_PATH
+          
+      - name: Verify bash version
+        run: |
+          echo "Bash version: $BASH_VERSION"
+          bash --version
           
       - name: Make scripts executable
         run: |
@@ -42,7 +49,13 @@ jobs:
           chmod +x tests/*.sh
 
       - name: Run tests
-        run: ./tests/run-tests.sh
+        shell: bash
+        run: |
+          # On macOS, explicitly use Homebrew's bash
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            export PATH="$(brew --prefix)/bin:$PATH"
+          fi
+          bash ./tests/run-tests.sh
         env:
           CI: true
 
