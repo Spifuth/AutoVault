@@ -68,6 +68,7 @@ usage() {
     doctor)       help_doctor ;;
     search)       help_search ;;
     archive)      help_archive ;;
+    export)       help_export ;;
     theme)        help_theme ;;
     demo)         help_demo ;;
     *)            help_main ;;
@@ -1013,6 +1014,95 @@ $(_h_bold)EXAMPLES$(_h_reset)
 
     $(_h_dim)# Archive with encryption$(_h_reset)
     $script_name archive ACME --encrypt
+EOF
+}
+
+#--------------------------------------
+# EXPORT HELP
+#--------------------------------------
+help_export() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - EXPORT$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name export <format> [target-type] [target] [OPTIONS]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Export vault content to various formats including PDF, HTML,
+    and compiled Markdown. Generate professional client reports
+    from your notes.
+
+    This is useful for:
+    - Creating deliverable reports for clients
+    - Sharing documentation offline
+    - Archiving vault content in portable formats
+
+$(_h_bold)FORMATS$(_h_reset)
+    $(_h_green)pdf$(_h_reset)          Export to PDF document
+    $(_h_green)html$(_h_reset)         Export to standalone HTML
+    $(_h_green)markdown$(_h_reset)     Export compiled Markdown
+    $(_h_green)report$(_h_reset)       Generate professional report
+
+$(_h_bold)TARGET TYPES$(_h_reset)
+    $(_h_green)customer <id>$(_h_reset)       Export single customer
+    $(_h_green)section <id:name>$(_h_reset)   Export specific section
+    $(_h_green)vault$(_h_reset)               Export entire vault
+    $(_h_green)file <path>$(_h_reset)         Export single file
+
+$(_h_bold)OPTIONS$(_h_reset)
+    $(_h_green)-o, --output <file>$(_h_reset)
+        Output file path
+
+    $(_h_green)-t, --template <name>$(_h_reset)
+        Report template to use
+        Available: default, pentest, audit, summary
+
+    $(_h_green)--no-toc$(_h_reset)
+        Disable table of contents
+
+    $(_h_green)--no-metadata$(_h_reset)
+        Disable metadata header
+
+    $(_h_green)--page-size <size>$(_h_reset)
+        Page size for PDF (A4, Letter, etc.)
+
+    $(_h_green)--css <file>$(_h_reset)
+        Custom CSS file for styling
+
+$(_h_bold)TEMPLATES$(_h_reset)
+    $(_h_cyan)default$(_h_reset)     Basic report with all content
+    $(_h_cyan)pentest$(_h_reset)     Penetration test report format
+    $(_h_cyan)audit$(_h_reset)       Security audit format
+    $(_h_cyan)summary$(_h_reset)     Brief summary with statistics
+
+$(_h_bold)DEPENDENCIES$(_h_reset)
+    - pandoc (required for PDF/HTML conversion)
+    - wkhtmltopdf, weasyprint, or texlive (for PDF)
+
+    Install on Debian/Ubuntu:
+        sudo apt-get install pandoc wkhtmltopdf
+
+    Install on macOS:
+        brew install pandoc wkhtmltopdf
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $(_h_dim)# Export customer to PDF$(_h_reset)
+    $script_name export pdf customer 42 -o report.pdf
+
+    $(_h_dim)# Export entire vault to HTML$(_h_reset)
+    $script_name export html vault -o vault.html
+
+    $(_h_dim)# Generate pentest report$(_h_reset)
+    $script_name export report 42 --template pentest -o pentest-report.pdf
+
+    $(_h_dim)# Export section to markdown$(_h_reset)
+    $script_name export markdown section 42:RAISED -o findings.md
+
+    $(_h_dim)# Quick vault export (auto-named)$(_h_reset)
+    $script_name export html vault
 EOF
 }
 

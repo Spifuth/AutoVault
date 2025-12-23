@@ -603,6 +603,11 @@ main() {
       run_bash "Manage-Encryption.sh" "$@"
       ;;
 
+    #--- Export ---
+    export)
+      run_bash "Export-Vault.sh" "$@"
+      ;;
+
     #--- Hooks Management ---
     hooks)
       CURRENT_OPERATION="hooks"
