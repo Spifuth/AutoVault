@@ -40,7 +40,9 @@ _REMOTE_SH_LOADED=1
 # CONFIGURATION
 #--------------------------------------
 REMOTES_JSON="${REMOTES_JSON:-}"
+# shellcheck disable=SC2034  # Used by functions in this module
 DEFAULT_SSH_PORT=22
+# shellcheck disable=SC2034  # Used by rsync operations
 DEFAULT_RSYNC_OPTS="-avz --progress --delete"
 
 #--------------------------------------
@@ -167,8 +169,8 @@ list_remotes() {
         printf "    Host: %s (port %s)\n" "$host" "$port"
         printf "    Path: %s\n" "$path"
         
-        # Test connection (quick)
-        if ssh -o BatchMode=yes -o ConnectTimeout=3 -p "$port" "$host" "exit" 2>/dev/null; then
+        # Test connection (quick) - use -n to prevent SSH from consuming stdin
+        if ssh -n -o BatchMode=yes -o ConnectTimeout=3 -p "$port" "$host" "exit" 2>/dev/null; then
             printf "    Status: ${GREEN}✓ reachable${NC}\n"
         else
             printf "    Status: ${YELLOW}? unreachable or needs auth${NC}\n"

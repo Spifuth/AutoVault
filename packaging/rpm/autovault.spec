@@ -1,5 +1,5 @@
 Name:           autovault
-Version:        2.5.0
+Version:        2.8.0
 Release:        1%{?dist}
 Summary:        CLI tool for managing Obsidian vaults
 

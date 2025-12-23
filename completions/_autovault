@@ -78,6 +78,9 @@ _autovault() {
                 'requirements:Check/install dependencies'
                 'theme:Configure color theme (dark/light/auto)'
                 'demo:UI components demo (progress/spinner/etc.)'
+                'vaults:Multi-vault management (switch/add/remove)'
+                'plugins:Plugin management (list/enable/disable)'
+                'encrypt:Vault encryption (init/lock/unlock)'
                 'help:Show help for a command'
             )
             _describe 'command' commands
@@ -140,6 +143,15 @@ _autovault() {
                     ;;
                 demo)
                     _autovault_demo
+                    ;;
+                vaults|vault-switch)
+                    _autovault_vaults
+                    ;;
+                plugins)
+                    _autovault_plugins
+                    ;;
+                encrypt|encryption)
+                    _autovault_encrypt
                     ;;
                 *)
                     _arguments '--help[Show help]'
@@ -738,6 +750,98 @@ _autovault_burp() {
     esac
 }
 
+_autovault_vaults() {
+    local -a subcmds
+    subcmds=(
+        'list:List all vault profiles'
+        'add:Add a new vault profile'
+        'remove:Remove a vault profile'
+        'switch:Switch to a different vault'
+        'current:Show current active vault'
+        'info:Show vault details'
+    )
+    
+    _arguments \
+        '1: :->subcmd' \
+        '*: :->args' \
+        '--help[Show help]'
+    
+    case "$state" in
+        subcmd)
+            _describe 'vaults command' subcmds
+            ;;
+        args)
+            case "${words[2]}" in
+                switch|remove|info)
+                    local -a vaults
+                    vaults=(${(f)"$(_autovault_get_vault_profiles)"})
+                    [[ -n "$vaults" ]] && _describe 'vault profile' vaults
+                    ;;
+                add)
+                    _arguments '1:profile name:' '2:vault path:_files -/'
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_autovault_plugins() {
+    local -a subcmds
+    subcmds=(
+        'list:List available plugins'
+        'info:Show plugin details'
+        'enable:Enable a plugin'
+        'disable:Disable a plugin'
+        'create:Create a new plugin'
+        'run:Run a plugin manually'
+    )
+    
+    _arguments \
+        '1: :->subcmd' \
+        '*: :->args' \
+        '--help[Show help]'
+    
+    case "$state" in
+        subcmd)
+            _describe 'plugins command' subcmds
+            ;;
+        args)
+            case "${words[2]}" in
+                info|enable|disable|run)
+                    local -a plugins
+                    plugins=(${(f)"$(_autovault_get_plugins)"})
+                    [[ -n "$plugins" ]] && _describe 'plugin' plugins
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_autovault_encrypt() {
+    local -a subcmds
+    subcmds=(
+        'init:Initialize encryption for vault'
+        'encrypt:Encrypt the vault'
+        'decrypt:Decrypt the vault'
+        'status:Show encryption status'
+        'lock:Lock the vault (encrypt + cleanup)'
+        'unlock:Unlock the vault for editing'
+    )
+    
+    _arguments \
+        '1: :->subcmd' \
+        '*: :->args' \
+        '--backend[Encryption backend]:backend:(age gpg)' \
+        '--recipient[Age recipient or GPG key ID]:recipient:' \
+        '--help[Show help]'
+    
+    case "$state" in
+        subcmd)
+            _describe 'encrypt command' subcmds
+            ;;
+    esac
+}
+
 # Helper functions to get dynamic values
 _autovault_get_customer_ids() {
     local config_file="${CONFIG_JSON:-./config/cust-run-config.json}"
@@ -762,6 +866,16 @@ _autovault_get_templates() {
 _autovault_get_remotes() {
     local config_file="${REMOTES_JSON:-./config/remotes.json}"
     [[ -f "$config_file" ]] && jq -r '.remotes | keys[]' "$config_file" 2>/dev/null
+}
+
+_autovault_get_vault_profiles() {
+    local config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/autovault"
+    [[ -d "$config_dir/vaults" ]] && find "$config_dir/vaults" -name "*.json" -printf "%f\n" 2>/dev/null | sed 's/\.json$//'
+}
+
+_autovault_get_plugins() {
+    local plugins_dir="./plugins"
+    [[ -d "$plugins_dir" ]] && find "$plugins_dir" -maxdepth 1 -type f -name "*.sh" -printf "%f\n" 2>/dev/null | sed 's/\.sh$//'
 }
 
 _autovault "$@"

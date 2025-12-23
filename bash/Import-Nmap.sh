@@ -32,6 +32,7 @@ source "$SCRIPT_DIR/lib/config.sh"
 #--------------------------------------
 # CONFIGURATION
 #--------------------------------------
+# shellcheck disable=SC2034  # Configuration variables used by functions
 DEFAULT_SECTION="INFORMATIONS"
 DEFAULT_TEMPLATE="default"
 NMAP_TEMPLATES_DIR="$SCRIPT_DIR/../config/nmap-templates"

@@ -1,3 +1,14 @@
+autovault (2.8.0-1) unstable; urgency=medium
+
+  * Phase 4.3: External Tool Integrations
+    - Git Auto-Sync: automatic vault synchronization
+    - Nmap Integration: import scan results
+    - Burp Suite Integration: import vulnerability findings
+  * 160 tests passing
+  * Full Bash and Zsh completions
+
+ -- Spifuth <spifuth@protonmail.com>  Mon, 23 Dec 2024 18:00:00 +0000
+
 autovault (2.5.0-1) unstable; urgency=medium
 
   * Phase 4.1: Export & Reporting

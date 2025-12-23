@@ -122,20 +122,35 @@ YourVault/
 
 ```bash
 # Configuration
-./cust-run-config.sh config       # Interactive setup wizard
-./cust-run-config.sh status       # Show current status
+autovault config       # Interactive setup wizard
+autovault status       # Show current status
+autovault doctor       # Run diagnostics
 
 # Vault Management (recommended)
-./cust-run-config.sh vault init   # Full setup: structure + templates + plugins
+autovault vault init   # Full setup: structure + templates + plugins
 
-# Individual Operations
-./cust-run-config.sh structure    # Create folder structure only
-./cust-run-config.sh templates apply  # Apply templates to folders
-./cust-run-config.sh vault plugins    # Configure Obsidian plugins
+# Customer Management
+autovault customer add <id>       # Add customer
+autovault customer remove <id>    # Remove customer
+autovault customer list           # List all customers
+
+# Backup & Restore
+autovault backup create           # Create backup
+autovault backup restore <name>   # Restore backup
+
+# Export & Reports
+autovault export pdf <target>     # Export to PDF
+autovault export html <target>    # Export to HTML
+autovault export report <id>      # Generate client report
+
+# Tool Integrations
+autovault git-sync watch          # Auto-sync vault changes
+autovault nmap import <file> -c <id>   # Import Nmap scans
+autovault burp import <file> -c <id>   # Import Burp findings
 
 # System Integration
-./cust-run-config.sh alias install av   # Create 'av' command
-./cust-run-config.sh completions install  # Enable tab-completion
+autovault alias install av        # Create 'av' command
+autovault completions install     # Enable tab-completion
 ```
 
 See [docs/COMMANDS.md](docs/COMMANDS.md) for the complete reference.
@@ -155,7 +170,19 @@ Install them from Obsidian: `Settings → Community Plugins → Browse`
 
 ---
 
-## 📁 Project Structure
+## �️ Integrations
+
+| Integration | Description |
+|-------------|-------------|
+| **Git Auto-Sync** | Automatic commit/push on vault changes |
+| **Nmap** | Import scan results into customer folders |
+| **Burp Suite** | Import vulnerability findings with severity |
+| **Remote Sync** | Push/pull vault via SSH/rsync |
+| **Export** | PDF, HTML, Markdown export with templates |
+
+---
+
+## �📁 Project Structure
 
 ```
 AutoVault/

@@ -32,6 +32,7 @@ source "$SCRIPT_DIR/lib/config.sh"
 #--------------------------------------
 # CONFIGURATION
 #--------------------------------------
+# shellcheck disable=SC2034  # These are configuration variables used throughout
 EXPORT_DIR=""
 OUTPUT_FORMAT=""
 TEMPLATE_NAME="default"
