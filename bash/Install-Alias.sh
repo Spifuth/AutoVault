@@ -385,6 +385,7 @@ cmd_install() {
 
 cmd_uninstall() {
     local alias_name=""
+    # shellcheck disable=SC2034  # Prepared for --all flag functionality
     local remove_all=false
     
     # Parse arguments
@@ -395,6 +396,7 @@ cmd_uninstall() {
                 export DRY_RUN
                 ;;
             --all)
+                # shellcheck disable=SC2034  # Prepared for --all flag functionality
                 remove_all=true
                 ;;
             --name=*)

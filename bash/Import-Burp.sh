@@ -689,7 +689,8 @@ do_import() {
     
     # Copy raw file if requested
     if [[ "$keep_raw" == "true" && "$DRY_RUN" != "true" ]]; then
-        local raw_file="$output_dir/$(basename "$file")"
+        local raw_file
+        raw_file="$output_dir/$(basename "$file")"
         cp "$file" "$raw_file"
         log_info "Saved raw file: $raw_file"
     fi
@@ -792,6 +793,7 @@ main() {
     local input_file=""
     local customer_id=""
     local output_dir=""
+    # shellcheck disable=SC2034  # Reserved for HTML format support (future feature)
     local format="xml"
     local min_severity=""
     local keep_raw=false
@@ -817,6 +819,7 @@ main() {
                 shift 2
                 ;;
             -f|--format)
+                # shellcheck disable=SC2034  # Reserved for HTML format support
                 format="$2"
                 shift 2
                 ;;

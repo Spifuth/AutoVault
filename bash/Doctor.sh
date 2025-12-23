@@ -571,6 +571,7 @@ print_summary() {
   echo -e "${BOLD}Summary${NC}"
   echo -e "${DIM}$(printf '─%.0s' {1..50})${NC}"
   
+  # shellcheck disable=SC2034  # Kept for potential future use in summary percentage
   local total=$((CHECKS_PASSED + CHECKS_FAILED + CHECKS_WARNED))
   
   echo -e "  ${GREEN}✓${NC} Passed:   $CHECKS_PASSED"

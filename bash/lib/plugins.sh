@@ -134,6 +134,7 @@ plugin_load() {
     # Run init script if exists
     local init_script="$plugin_path/init.sh"
     if [[ -f "$init_script" ]]; then
+        # shellcheck source=/dev/null
         source "$init_script"
     fi
     
@@ -163,6 +164,7 @@ plugins_emit() {
         elif [[ -f "$handler" ]]; then
             log_debug "Sourcing plugin handler: $handler"
             (
+                # shellcheck source=/dev/null
                 source "$handler"
                 if declare -F "handle_$event" &>/dev/null; then
                     "handle_$event" "${args[@]}"
@@ -353,6 +355,7 @@ plugin_run_command() {
     if [[ -x "$command_script" ]]; then
         "$command_script" "${args[@]}"
     else
+        # shellcheck source=/dev/null
         source "$command_script"
         if declare -F "cmd_$command_name" &>/dev/null; then
             "cmd_$command_name" "${args[@]}"

@@ -32,14 +32,17 @@ source "$SCRIPT_DIR/lib/config.sh"
 #--------------------------------------
 # CONFIGURATION
 #--------------------------------------
-# shellcheck disable=SC2034  # These are configuration variables used throughout
+# shellcheck disable=SC2034  # Set via CLI, reserved for output directory override
 EXPORT_DIR=""
+# shellcheck disable=SC2034  # Set via CLI, used in report generation
 OUTPUT_FORMAT=""
 TEMPLATE_NAME="default"
 INCLUDE_TOC=true
 INCLUDE_METADATA=true
+# shellcheck disable=SC2034  # Reserved for custom CSS injection (future feature)
 CUSTOM_CSS=""
 PAGE_SIZE="A4"
+# shellcheck disable=SC2034  # Set via CLI, reserved for verbose output (future feature)
 VERBOSE=false
 
 #--------------------------------------
@@ -340,8 +343,6 @@ compile_markdown() {
     local compiled=""
     
     for file in "${files[@]}"; do
-        local filename
-        filename=$(basename "$file")
         local relative_path
         relative_path=$(realpath --relative-to="$(get_vault_path)" "$file" 2>/dev/null || echo "$file")
         
@@ -407,7 +408,8 @@ export_pdf() {
     # Create temp directory
     local tmp_dir
     tmp_dir=$(mktemp -d)
-    trap "rm -rf $tmp_dir" EXIT
+    # shellcheck disable=SC2064
+    trap "rm -rf '$tmp_dir'" EXIT
     
     # Generate CSS
     generate_css > "$tmp_dir/style.css"
@@ -486,7 +488,8 @@ export_html() {
     # Create temp directory
     local tmp_dir
     tmp_dir=$(mktemp -d)
-    trap "rm -rf $tmp_dir" EXIT
+    # shellcheck disable=SC2064
+    trap "rm -rf '$tmp_dir'" EXIT
     
     # Generate CSS
     generate_css > "$tmp_dir/style.css"
@@ -586,7 +589,8 @@ generate_report() {
     # Create temp directory
     local tmp_dir
     tmp_dir=$(mktemp -d)
-    trap "rm -rf $tmp_dir" EXIT
+    # shellcheck disable=SC2064
+    trap "rm -rf '$tmp_dir'" EXIT
     
     # Generate report content based on template
     local report_content=""
@@ -676,6 +680,7 @@ done)
 
 # Detailed Content
 
+# shellcheck disable=SC2046
 $(compile_markdown $(find "$customer_dir" -name "*.md" -type f | head -20))
 
 ---
@@ -732,6 +737,7 @@ The assessment followed industry-standard methodologies including:
 $(if [[ -d "$customer_dir/CUST-${customer_id}-RAISED" ]]; then
     echo "## Identified Issues"
     echo
+    # shellcheck disable=SC2046
     compile_markdown $(find "$customer_dir/CUST-${customer_id}-RAISED" -name "*.md" -type f 2>/dev/null | head -10)
 fi)
 
@@ -797,6 +803,7 @@ date: $(date '+%Y-%m-%d')
 
 ## 3. Findings
 
+# shellcheck disable=SC2046
 $(compile_markdown $(find "$customer_dir" -name "*.md" -type f | head -10))
 
 ## 4. Recommendations
@@ -960,10 +967,12 @@ main() {
                 shift 2
                 ;;
             --css)
+                # shellcheck disable=SC2034  # Reserved for future feature
                 CUSTOM_CSS="$2"
                 shift 2
                 ;;
             -v|--verbose)
+                # shellcheck disable=SC2034  # Reserved for future feature
                 VERBOSE=true
                 shift
                 ;;

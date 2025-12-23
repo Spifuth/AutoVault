@@ -251,6 +251,7 @@ spinner_start() {
 
 # Stop the spinner
 # Usage: spinner_stop [final_message]
+# shellcheck disable=SC2120  # Message parameter is optional
 spinner_stop() {
   local message="${1:-}"
   

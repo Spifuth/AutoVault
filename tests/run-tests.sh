@@ -38,6 +38,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+export PROJECT_ROOT
 
 # Detect CI environment (no TTY, no TERM, or CI variable set)
 CI_MODE=false
@@ -2238,10 +2239,7 @@ test_nmap_cli_routing() {
 }
 
 test_nmap_help_function() {
-    local content
-    content=$(cat "$PROJECT_ROOT/bash/lib/help.sh")
-    
-    echo "$content" | grep -q "help_nmap"
+    grep -q "help_nmap" "$PROJECT_ROOT/bash/lib/help.sh"
 }
 
 #######################################
@@ -2299,10 +2297,7 @@ test_burp_cli_routing() {
 }
 
 test_burp_help_function() {
-    local content
-    content=$(cat "$PROJECT_ROOT/bash/lib/help.sh")
-    
-    echo "$content" | grep -q "help_burp"
+    grep -q "help_burp" "$PROJECT_ROOT/bash/lib/help.sh"
 }
 
 #######################################

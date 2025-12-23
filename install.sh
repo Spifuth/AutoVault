@@ -129,7 +129,8 @@ get_latest_version() {
 download_and_extract() {
     local tmp_dir
     tmp_dir=$(mktemp -d)
-    trap "rm -rf $tmp_dir" EXIT
+    # shellcheck disable=SC2064
+    trap "rm -rf '$tmp_dir'" EXIT
     
     log_info "Downloading AutoVault..."
     

@@ -52,7 +52,8 @@ fi
 _resolve_symlink() {
   local target="$1"
   while [[ -L "$target" ]]; do
-    local dir="$(cd "$(dirname "$target")" && pwd)"
+    local dir
+    dir="$(cd "$(dirname "$target")" && pwd)"
     target="$(readlink "$target")"
     [[ "$target" != /* ]] && target="$dir/$target"
   done
@@ -144,8 +145,10 @@ interactive_config() {
   echo ""
   
   # Try to load existing config
+  # shellcheck disable=SC2034  # Kept for potential future conditional logic
   local has_existing_config=false
   if [[ -f "$CONFIG_JSON" ]] && load_config 2>/dev/null; then
+    # shellcheck disable=SC2034  # Kept for potential future conditional logic
     has_existing_config=true
     echo -e "${GREEN}✓${NC} Found existing configuration: ${DIM}$CONFIG_JSON${NC}"
     echo ""

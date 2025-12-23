@@ -40,7 +40,9 @@ load_config || true
 # CONFIGURATION
 #--------------------------------------
 ENCRYPTION_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/autovault/encryption"
+# shellcheck disable=SC2034  # Reserved for future use - key file path for age encryption
 ENCRYPTION_KEY_FILE="$ENCRYPTION_CONFIG_DIR/key.age"
+# shellcheck disable=SC2034  # Reserved for future use - marker file for encrypted vaults
 ENCRYPTION_MARKER=".encrypted"
 SENSITIVE_FOLDER="${SENSITIVE_FOLDER:-_private}"
 

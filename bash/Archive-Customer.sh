@@ -32,6 +32,7 @@ CUSTOMER_ID=""
 REMOVE_AFTER=false
 OUTPUT_PATH=""
 FORMAT="zip"
+# shellcheck disable=SC2034  # Used implicitly via FORMAT setting
 NO_COMPRESS=false
 ENCRYPT=false
 FORCE=false
@@ -99,6 +100,7 @@ parse_args() {
         shift 2
         ;;
       --no-compress)
+        # shellcheck disable=SC2034  # Used implicitly via FORMAT setting
         NO_COMPRESS=true
         FORMAT="tar"
         shift

@@ -316,7 +316,6 @@ search_files() {
     find_cmd="$find_cmd -path \"*/${SECTION}/*\""
   fi
 
-  local current_file=""
   local result_count=0
 
   # Execute search

@@ -37,9 +37,6 @@ AUTOVAULT_REPO_URL="https://github.com/${AUTOVAULT_REPO}"
 # SHOW VERSION
 #--------------------------------------
 show_version() {
-    local script_name
-    script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
-    
     cat <<EOF
 $(_h_cyan)AutoVault$(_h_reset) version $(_h_bold)${AUTOVAULT_VERSION}$(_h_reset)
 

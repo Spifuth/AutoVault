@@ -209,7 +209,8 @@ cmd_info() {
         if [[ -d "$PLUGINS_DIR/$plugin_name/commands" ]]; then
             for cmd_file in "$PLUGINS_DIR/$plugin_name/commands"/*.sh; do
                 [[ -f "$cmd_file" ]] || continue
-                local cmd_name=$(basename "$cmd_file" .sh)
+                local cmd_name
+                cmd_name=$(basename "$cmd_file" .sh)
                 echo "  - $cmd_name"
             done
         else
