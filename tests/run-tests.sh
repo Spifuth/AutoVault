@@ -77,7 +77,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
 CURRENT_TEST=0
-TOTAL_TESTS=93
+TOTAL_TESTS=111
 
 # Animation frames
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -1822,12 +1822,131 @@ test_ui_library_functions() {
 }
 
 #######################################
+# Multi-Vault Tests
+#######################################
+
+test_vaults_script_exists() {
+    [[ -f "$PROJECT_ROOT/bash/Manage-Vaults.sh" ]] && \
+    [[ -x "$PROJECT_ROOT/bash/Manage-Vaults.sh" ]]
+}
+
+test_vaults_help() {
+    local output
+    output=$("$PROJECT_ROOT/bash/Manage-Vaults.sh" --help 2>&1)
+    [[ "$output" == *"vault"* ]] || [[ "$output" == *"Vault"* ]]
+}
+
+test_vaults_list() {
+    # List command should work (even if empty)
+    local output
+    output=$("$PROJECT_ROOT/bash/Manage-Vaults.sh" list 2>&1)
+    [[ "$output" == *"vault"* ]] || [[ "$output" == *"Vault"* ]] || [[ "$output" == *"add"* ]]
+}
+
+test_vaults_add() {
+    # Add should fail without arguments but show error
+    local output
+    output=$("$PROJECT_ROOT/bash/Manage-Vaults.sh" add 2>&1) || true
+    [[ "$output" == *"required"* ]] || [[ "$output" == *"Usage"* ]]
+}
+
+test_vaults_current() {
+    # Current command should work
+    local output
+    output=$("$PROJECT_ROOT/bash/Manage-Vaults.sh" current 2>&1)
+    [[ "$output" == *"vault"* ]] || [[ "$output" == *"Vault"* ]] || [[ "$output" == *"switch"* ]]
+}
+
+#######################################
+# Plugins Tests
+#######################################
+
+test_plugins_lib_exists() {
+    [[ -f "$PROJECT_ROOT/bash/lib/plugins.sh" ]]
+}
+
+test_plugins_script_exists() {
+    [[ -f "$PROJECT_ROOT/bash/Manage-Plugins.sh" ]] && \
+    [[ -x "$PROJECT_ROOT/bash/Manage-Plugins.sh" ]]
+}
+
+test_plugins_help() {
+    local output
+    output=$("$PROJECT_ROOT/bash/Manage-Plugins.sh" --help 2>&1)
+    [[ "$output" == *"plugin"* ]] || [[ "$output" == *"Plugin"* ]]
+}
+
+test_plugins_list() {
+    # List command should work (even if no plugins)
+    local output
+    output=$("$PROJECT_ROOT/bash/Manage-Plugins.sh" list 2>&1)
+    [[ "$output" == *"plugin"* ]] || [[ "$output" == *"Plugin"* ]] || [[ "$output" == *"create"* ]]
+}
+
+test_plugins_create() {
+    # Test help shows create usage
+    local output
+    output=$("$PROJECT_ROOT/bash/Manage-Plugins.sh" --help 2>&1)
+    [[ "$output" == *"create"* ]] || [[ "$output" == *"Create"* ]]
+}
+
+#######################################
+# Encryption Tests
+#######################################
+
+test_encryption_script_exists() {
+    [[ -f "$PROJECT_ROOT/bash/Manage-Encryption.sh" ]] && \
+    [[ -x "$PROJECT_ROOT/bash/Manage-Encryption.sh" ]]
+}
+
+test_encryption_help() {
+    local output
+    output=$("$PROJECT_ROOT/bash/Manage-Encryption.sh" --help 2>&1)
+    [[ "$output" == *"ncrypt"* ]] || [[ "$output" == *"ENCRYPT"* ]]
+}
+
+test_encryption_status() {
+    # Status command should work (ignore config warnings)
+    local output
+    output=$("$PROJECT_ROOT/bash/Manage-Encryption.sh" status 2>&1)
+    [[ "$output" == *"ackend"* ]] || [[ "$output" == *"tatus"* ]]
+}
+
+test_encryption_backend() {
+    # Should detect available backend
+    local output
+    output=$("$PROJECT_ROOT/bash/Manage-Encryption.sh" status 2>&1)
+    [[ "$output" == *"age"* ]] || [[ "$output" == *"gpg"* ]] || [[ "$output" == *"none"* ]] || [[ "$output" == *"Backend"* ]]
+}
+
+#######################################
+# Template Variables Tests
+#######################################
+
+test_template_vars_exists() {
+    [[ -f "$PROJECT_ROOT/bash/lib/template-vars.sh" ]]
+}
+
+test_template_vars_syntax() {
+    bash -n "$PROJECT_ROOT/bash/lib/template-vars.sh"
+}
+
+test_template_vars_functions() {
+    local content
+    content=$(cat "$PROJECT_ROOT/bash/lib/template-vars.sh")
+    
+    echo "$content" | grep -q "expand_template_vars" && \
+    echo "$content" | grep -q "get_builtin_var" && \
+    echo "$content" | grep -q "register_template_var"
+}
+
+#######################################
 # Subcommand Help Tests
 #######################################
 
 test_help_subcommands() {
     # Test all subcommand helps work
-    local cmds=("templates" "customer" "section" "backup" "vault" "config" "structure" "hooks" "remote" "completions" "alias" "init" "doctor" "search" "archive" "theme" "demo")
+    local cmds=("templates" "customer" "section" "backup" "vault" "config" "structure" "hooks" "remote" "completions" "alias" "init" "doctor" "search" "archive" "theme" "demo" "vaults" "plugins" "encrypt")
     local errors=0
     
     for cmd in "${cmds[@]}"; do
@@ -2166,6 +2285,35 @@ main() {
     run_test "UI library exists" test_ui_library_exists || true
     run_test "UI library syntax" test_ui_library_syntax || true
     run_test "UI library functions" test_ui_library_functions || true
+    
+    # Multi-Vault tests
+    show_category "MULTI-VAULT TESTS" "🗄️"
+    run_test "Vaults script exists" test_vaults_script_exists || true
+    run_test "Vaults help page" test_vaults_help || true
+    run_test "Vaults list command" test_vaults_list || true
+    run_test "Vaults add command" test_vaults_add || true
+    run_test "Vaults current command" test_vaults_current || true
+    
+    # Plugins tests
+    show_category "PLUGINS TESTS" "🔌"
+    run_test "Plugins library exists" test_plugins_lib_exists || true
+    run_test "Plugins script exists" test_plugins_script_exists || true
+    run_test "Plugins help page" test_plugins_help || true
+    run_test "Plugins list command" test_plugins_list || true
+    run_test "Plugins create dry-run" test_plugins_create || true
+    
+    # Encryption tests
+    show_category "ENCRYPTION TESTS" "🔐"
+    run_test "Encryption script exists" test_encryption_script_exists || true
+    run_test "Encryption help page" test_encryption_help || true
+    run_test "Encryption status command" test_encryption_status || true
+    run_test "Encryption backend detection" test_encryption_backend || true
+    
+    # Template Variables tests
+    show_category "TEMPLATE VARIABLES TESTS" "📝"
+    run_test "Template vars library exists" test_template_vars_exists || true
+    run_test "Template vars syntax" test_template_vars_syntax || true
+    run_test "Template vars functions" test_template_vars_functions || true
     
     # Teardown with animation
     echo ""

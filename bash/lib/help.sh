@@ -57,6 +57,9 @@ usage() {
     section)      help_section ;;
     backup)       help_backup ;;
     vault)        help_vault ;;
+    vaults)       help_vaults ;;
+    plugins)      help_plugins ;;
+    encrypt)      help_encrypt ;;
     hooks)        help_hooks ;;
     completions)  help_completions ;;
     alias)        help_alias ;;
@@ -125,11 +128,16 @@ $(_h_bold)COMMANDS$(_h_reset)
     init                Initialize new vault from scratch
     vault               Obsidian setup (init/plugins/check/hub)
     remote              Remote vault sync via SSH (push/pull)
+    vaults              Multi-vault management (switch/add/list)
 
     $(_h_yellow)Utilities$(_h_reset)
     doctor              Run diagnostics (config, structure, perms)
     search              Search across all customers/notes
     stats               Show vault statistics
+
+    $(_h_yellow)Advanced$(_h_reset)
+    plugins             Manage plugins (list/enable/create)
+    encrypt             Encrypt sensitive notes (init/lock/unlock)
 
     $(_h_yellow)System$(_h_reset)
     requirements        Check/install dependencies
@@ -1095,5 +1103,134 @@ $(_h_bold)EXAMPLES$(_h_reset)
 
     $(_h_dim)# Preview themes$(_h_reset)
     $script_name demo theme
+EOF
+}
+
+#--------------------------------------
+# VAULTS (MULTI-VAULT) HELP
+#--------------------------------------
+help_vaults() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - VAULTS (MULTI-VAULT)$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name vaults <command> [args]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Manage multiple AutoVault configurations. Each profile points
+    to a different Obsidian vault with its own settings.
+
+$(_h_bold)COMMANDS$(_h_reset)
+    $(_h_green)list$(_h_reset)              List all vault profiles
+    $(_h_green)add$(_h_reset) <name> <path> Add a new vault profile
+    $(_h_green)remove$(_h_reset) <name>     Remove a vault profile
+    $(_h_green)switch$(_h_reset) <name>     Switch to a different vault
+    $(_h_green)current$(_h_reset)           Show current active vault
+    $(_h_green)info$(_h_reset) [name]       Show vault details
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $(_h_dim)# Add vaults$(_h_reset)
+    $script_name vaults add work ~/Documents/WorkVault
+    $script_name vaults add personal ~/Obsidian/Personal
+
+    $(_h_dim)# Switch between vaults$(_h_reset)
+    $script_name vaults switch work
+    $script_name vaults switch personal
+
+    $(_h_dim)# Check current vault$(_h_reset)
+    $script_name vaults current
+EOF
+}
+
+#--------------------------------------
+# PLUGINS HELP
+#--------------------------------------
+help_plugins() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - PLUGINS$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name plugins <command> [args]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Extend AutoVault with custom plugins. Plugins can hook into
+    events and add custom commands.
+
+$(_h_bold)COMMANDS$(_h_reset)
+    $(_h_green)list$(_h_reset)              List installed plugins
+    $(_h_green)info$(_h_reset) <name>       Show plugin details
+    $(_h_green)enable$(_h_reset) <name>     Enable a plugin
+    $(_h_green)disable$(_h_reset) <name>    Disable a plugin
+    $(_h_green)create$(_h_reset) <name>     Create a new plugin
+    $(_h_green)run$(_h_reset) <p> <cmd>     Run a plugin command
+
+$(_h_bold)PLUGIN EVENTS$(_h_reset)
+    on-init             AutoVault starts
+    on-customer-create  After customer creation
+    on-customer-remove  Before customer removal
+    on-template-apply   After templates applied
+    on-backup-create    After backup created
+    on-vault-switch     When switching vaults
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $(_h_dim)# Create a new plugin$(_h_reset)
+    $script_name plugins create my-plugin
+
+    $(_h_dim)# Enable/disable$(_h_reset)
+    $script_name plugins enable my-plugin
+    $script_name plugins disable my-plugin
+
+    $(_h_dim)# Run plugin command$(_h_reset)
+    $script_name plugins run my-plugin my-command arg1
+EOF
+}
+
+#--------------------------------------
+# ENCRYPT HELP
+#--------------------------------------
+help_encrypt() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - ENCRYPTION$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name encrypt <command> [args]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Encrypt and decrypt sensitive notes in your vault.
+    Supports 'age' (recommended) or GPG encryption.
+
+$(_h_bold)COMMANDS$(_h_reset)
+    $(_h_green)init$(_h_reset)              Initialize encryption (generate keys)
+    $(_h_green)encrypt$(_h_reset) <path>    Encrypt a file or folder
+    $(_h_green)decrypt$(_h_reset) <path>    Decrypt a file or folder
+    $(_h_green)status$(_h_reset)            Show encryption status
+    $(_h_green)lock$(_h_reset)              Encrypt all _private folders
+    $(_h_green)unlock$(_h_reset)            Decrypt all _private folders
+
+$(_h_bold)BACKENDS$(_h_reset)
+    $(_h_green)age$(_h_reset) (recommended) - Modern, simple encryption
+    $(_h_green)gpg$(_h_reset)               - Traditional GPG encryption
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $(_h_dim)# First time setup$(_h_reset)
+    $script_name encrypt init
+
+    $(_h_dim)# Encrypt a file$(_h_reset)
+    $script_name encrypt encrypt path/to/secret.md
+
+    $(_h_dim)# Lock all private notes before commit$(_h_reset)
+    $script_name encrypt lock
+
+    $(_h_dim)# Unlock for editing$(_h_reset)
+    $script_name encrypt unlock
 EOF
 }

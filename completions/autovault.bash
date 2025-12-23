@@ -34,7 +34,7 @@ _autovault_completions() {
     _init_completion || return
     
     # All main commands
-    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks completions alias requirements help init doctor search archive theme demo"
+    local commands="config validate status diff stats structure templates test cleanup customer section backup vault remote hooks completions alias requirements help init doctor search archive theme demo vaults plugins encrypt"
     
     # Global options
     local global_opts="-v --verbose -q --quiet --silent --no-color --dry-run --diff -h --help --version"
@@ -51,6 +51,9 @@ _autovault_completions() {
     local alias_cmds="install uninstall status"
     local theme_cmds="status set preview config reset"
     local demo_cmds="all progress spinner theme menu notify box"
+    local vaults_cmds="list add remove switch current info"
+    local plugins_cmds="list info enable disable create run"
+    local encrypt_cmds="init encrypt decrypt status lock unlock"
     
     # Get the main command (skip options)
     local main_cmd=""
@@ -299,6 +302,66 @@ _autovault_completions() {
             COMPREPLY=($(compgen -W "$demo_cmds --help" -- "$cur"))
             ;;
         
+        vaults|vault-switch)
+            case "$prev" in
+                switch|use|select|remove|rm|info|show)
+                    # Suggest configured vault profiles
+                    local vaults=$(_autovault_get_vaults)
+                    COMPREPLY=($(compgen -W "$vaults" -- "$cur"))
+                    ;;
+                add)
+                    # First arg is name, second is path
+                    _filedir -d
+                    ;;
+                vaults|vault-switch)
+                    COMPREPLY=($(compgen -W "$vaults_cmds --help" -- "$cur"))
+                    ;;
+                *)
+                    COMPREPLY=($(compgen -W "$vaults_cmds --help" -- "$cur"))
+                    ;;
+            esac
+            ;;
+        
+        plugins|plugin)
+            case "$prev" in
+                info|show|enable|disable)
+                    # Suggest installed plugins
+                    local plugins=$(_autovault_get_plugins)
+                    COMPREPLY=($(compgen -W "$plugins" -- "$cur"))
+                    ;;
+                run|exec)
+                    local plugins=$(_autovault_get_plugins)
+                    COMPREPLY=($(compgen -W "$plugins" -- "$cur"))
+                    ;;
+                plugins|plugin)
+                    COMPREPLY=($(compgen -W "$plugins_cmds --help" -- "$cur"))
+                    ;;
+                *)
+                    COMPREPLY=($(compgen -W "$plugins_cmds --help" -- "$cur"))
+                    ;;
+            esac
+            ;;
+        
+        encrypt|encryption|crypto)
+            case "$prev" in
+                encrypt|enc|decrypt|dec)
+                    _filedir
+                    ;;
+                init|setup)
+                    COMPREPLY=($(compgen -W "--password -p --backend" -- "$cur"))
+                    ;;
+                --backend|-b)
+                    COMPREPLY=($(compgen -W "age gpg" -- "$cur"))
+                    ;;
+                encrypt|encryption|crypto)
+                    COMPREPLY=($(compgen -W "$encrypt_cmds --help" -- "$cur"))
+                    ;;
+                *)
+                    COMPREPLY=($(compgen -W "$encrypt_cmds --help" -- "$cur"))
+                    ;;
+            esac
+            ;;
+        
         validate|status|test|cleanup|requirements)
             COMPREPLY=($(compgen -W "--help" -- "$cur"))
             ;;
@@ -349,6 +412,22 @@ _autovault_get_templates() {
     local config_file="${CONFIG_JSON:-./config/templates.json}"
     if [[ -f "$config_file" ]] && command -v jq &>/dev/null; then
         jq -r 'keys[]' "$config_file" 2>/dev/null
+    fi
+}
+
+# Helper: Get vault profiles
+_autovault_get_vaults() {
+    local config_file="${XDG_CONFIG_HOME:-$HOME/.config}/autovault/vaults.json"
+    if [[ -f "$config_file" ]] && command -v jq &>/dev/null; then
+        jq -r '.vaults | keys[]' "$config_file" 2>/dev/null
+    fi
+}
+
+# Helper: Get installed plugins
+_autovault_get_plugins() {
+    local plugins_dir="${PLUGINS_DIR:-./plugins}"
+    if [[ -d "$plugins_dir" ]]; then
+        find "$plugins_dir" -maxdepth 1 -type d -printf "%f\n" 2>/dev/null | tail -n +2
     fi
 }
 

@@ -588,6 +588,21 @@ main() {
       run_bash "Configure-Theme.sh" "$@"
       ;;
 
+    #--- Multi-Vault Management ---
+    vaults|vault-switch)
+      run_bash "Manage-Vaults.sh" "$@"
+      ;;
+
+    #--- Plugins Management ---
+    plugins|plugin)
+      run_bash "Manage-Plugins.sh" "$@"
+      ;;
+
+    #--- Encryption ---
+    encrypt|encryption|crypto)
+      run_bash "Manage-Encryption.sh" "$@"
+      ;;
+
     #--- Hooks Management ---
     hooks)
       CURRENT_OPERATION="hooks"

@@ -5,7 +5,47 @@ All notable changes to AutoVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - Phase 2.2
+## [Unreleased] - Phase 2.3
+
+### Added
+- **Multi-Vault Management** (`vaults`) - Manage multiple vault profiles
+  - `vaults list` - List all configured vault profiles
+  - `vaults add <name> <path>` - Add a new vault profile
+  - `vaults remove <name>` - Remove a vault profile
+  - `vaults switch <name>` - Switch to a different vault
+  - `vaults current` - Show current active vault
+  - `vaults info [name]` - Show detailed vault info
+  - Configuration stored in `~/.config/autovault/vaults.json`
+
+- **Plugin System** (`plugins`) - Extensible architecture
+  - `plugins list` - List installed plugins
+  - `plugins info <name>` - Show plugin details
+  - `plugins enable/disable <name>` - Enable/disable plugins
+  - `plugins create <name>` - Create new plugin from template
+  - `plugins run <plugin> <cmd>` - Run plugin commands
+  - Event-driven hooks (on-init, on-customer-create, etc.)
+  - Plugin library (`bash/lib/plugins.sh`)
+
+- **Encryption** (`encrypt`) - Encrypt sensitive notes
+  - `encrypt init` - Initialize encryption (generate keys)
+  - `encrypt encrypt/decrypt <path>` - Encrypt/decrypt files or folders
+  - `encrypt status` - Show encryption status
+  - `encrypt lock` - Encrypt all _private folders
+  - `encrypt unlock` - Decrypt all _private folders
+  - Supports `age` (recommended) and GPG backends
+
+- **Dynamic Template Variables** (`bash/lib/template-vars.sh`)
+  - Built-in variables: `{{DATE}}`, `{{TIME}}`, `{{USER}}`, `{{UUID}}`, etc.
+  - Conditional syntax: `{{IF:VAR}}...{{ENDIF:VAR}}`
+  - Custom variable registration
+  - Template validation
+
+### Changed
+- Help system updated with new commands documentation
+- Test suite expanded to 112 tests (from 94)
+- Shell completions updated for vaults, plugins, encrypt commands
+
+## [2.4.0] - 2024-12-22 - Phase 2.2
 
 ### Added
 - **UI Library** (`bash/lib/ui.sh`) - Comprehensive UI utilities

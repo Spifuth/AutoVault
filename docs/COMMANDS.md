@@ -652,6 +652,125 @@ Demonstrate AutoVault's UI components. Useful for testing themes and terminal co
 
 ---
 
+## Multi-Vault Management
+
+### `vaults`
+
+Manage multiple vault profiles. Switch between different Obsidian vaults.
+
+```bash
+# List all vault profiles
+./cust-run-config.sh vaults list
+
+# Add a new vault profile
+./cust-run-config.sh vaults add work ~/Documents/WorkVault
+./cust-run-config.sh vaults add personal ~/Obsidian/Personal
+
+# Switch to a different vault
+./cust-run-config.sh vaults switch work
+./cust-run-config.sh vaults switch personal
+
+# Show current active vault
+./cust-run-config.sh vaults current
+
+# Show vault details
+./cust-run-config.sh vaults info work
+
+# Remove a vault profile (doesn't delete files)
+./cust-run-config.sh vaults remove old-project
+```
+
+**Configuration:** `~/.config/autovault/vaults.json`
+
+---
+
+## Plugin System
+
+### `plugins`
+
+Extend AutoVault with custom plugins.
+
+```bash
+# List installed plugins
+./cust-run-config.sh plugins list
+
+# Show plugin details
+./cust-run-config.sh plugins info my-plugin
+
+# Enable/disable plugins
+./cust-run-config.sh plugins enable my-plugin
+./cust-run-config.sh plugins disable my-plugin
+
+# Create a new plugin from template
+./cust-run-config.sh plugins create my-new-plugin
+
+# Run a plugin command
+./cust-run-config.sh plugins run my-plugin my-command arg1 arg2
+```
+
+**Plugin events:**
+
+| Event | Triggered When |
+|-------|----------------|
+| `on-init` | AutoVault starts |
+| `on-customer-create` | After customer creation |
+| `on-customer-remove` | Before customer removal |
+| `on-template-apply` | After templates applied |
+| `on-backup-create` | After backup created |
+| `on-vault-switch` | When switching vaults |
+
+**Plugin structure:**
+```
+plugins/
+  my-plugin/
+    plugin.json       # Metadata
+    init.sh           # Initialization
+    on-customer-create.sh  # Event handler
+    commands/
+      my-command.sh   # Custom command
+```
+
+---
+
+## Encryption
+
+### `encrypt`
+
+Encrypt and decrypt sensitive notes. Supports `age` (recommended) or GPG.
+
+```bash
+# Initialize encryption (generate keys)
+./cust-run-config.sh encrypt init
+./cust-run-config.sh encrypt init --password  # Use password instead of keyfile
+
+# Show encryption status
+./cust-run-config.sh encrypt status
+
+# Encrypt a file or folder
+./cust-run-config.sh encrypt encrypt path/to/secret.md
+./cust-run-config.sh encrypt encrypt path/to/folder/
+
+# Decrypt
+./cust-run-config.sh encrypt decrypt path/to/secret.md.age
+
+# Lock all _private folders (encrypt)
+./cust-run-config.sh encrypt lock
+
+# Unlock all _private folders (decrypt)
+./cust-run-config.sh encrypt unlock
+```
+
+**Backends:**
+
+| Backend | Description |
+|---------|-------------|
+| `age` | Modern, simple encryption (recommended) |
+| `gpg` | Traditional GPG encryption |
+
+**Install age:** `brew install age` or `apt install age`
+
+---
+
 ## Examples
 
 ```bash
@@ -678,4 +797,16 @@ av customer add 42 --create
 # Update templates after editing templates.json
 ./cust-run-config.sh templates sync
 ./cust-run-config.sh templates apply
+
+# Multi-vault workflow
+av vaults add work ~/Work/Vault
+av vaults add personal ~/Personal/Vault
+av vaults switch work
+av status
+
+# Encrypt sensitive notes before pushing
+av encrypt lock
+git commit -am "Update notes"
+git push
+av encrypt unlock
 ```
