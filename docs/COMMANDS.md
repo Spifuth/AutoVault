@@ -919,6 +919,125 @@ SORT port ASC
 
 ---
 
+## Burp Suite Integration Command
+
+### `burp`
+
+Import Burp Suite scan results into customer folders. Parses XML exports and generates structured Markdown vulnerability reports.
+
+```bash
+# Import Burp scan for a customer
+./cust-run-config.sh burp import burp-scan.xml --customer CUST-001
+
+# Import only High and Medium findings
+./cust-run-config.sh burp import scan.xml -c CUST-002 --severity Medium
+
+# Parse and preview without importing
+./cust-run-config.sh burp parse burp-export.xml
+
+# List available templates
+./cust-run-config.sh burp templates list
+
+# Keep original XML file
+./cust-run-config.sh burp import scan.xml -c CUST-001 --raw
+```
+
+### Burp Subcommands
+
+| Subcommand | Description |
+|------------|-------------|
+| `import` | Import Burp scan into customer folder |
+| `parse` | Parse and display findings (preview) |
+| `templates` | Manage Burp report templates |
+
+### Burp Options
+
+| Option | Description |
+|--------|-------------|
+| `-c, --customer <ID>` | Target customer ID (required for import) |
+| `--severity <level>` | Filter by minimum: `High`, `Medium`, `Low`, `Info` |
+| `-o, --output-dir <path>` | Custom output directory |
+| `--raw` | Preserve original XML file |
+| `--no-summary` | Skip summary generation |
+| `-q, --quiet` | Suppress output |
+
+### Severity Levels
+
+| Level | Icon | Description |
+|-------|------|-------------|
+| High | 🔴 | Critical vulnerabilities |
+| Medium | 🟠 | Significant issues |
+| Low | 🟡 | Minor concerns |
+| Info | 🔵 | Informational findings |
+
+### Generated Files
+
+When importing Burp scans, the following structure is created:
+
+```
+CUST-001/
+├── Vulnerabilities/
+│   ├── Burp/
+│   │   ├── 2024-01-15_burp-summary.md     # Overview report
+│   │   ├── burp-scan.xml                   # Original (if --raw)
+│   │   └── findings/
+│   │       ├── sql-injection.md            # Per-vulnerability
+│   │       ├── xss-reflected.md
+│   │       ├── csrf.md
+│   │       └── ...
+```
+
+### Burp Export Instructions
+
+1. In Burp Suite: **Target** > **Site map** > Right-click target
+2. Select: **Issues** > **Report issues**
+3. Choose **XML** format
+4. Enable "**Base64-encode requests and responses**" for full data
+5. Save as `.xml` file
+
+### Markdown Report Contents
+
+Generated reports include:
+
+- **Frontmatter**: YAML metadata for Dataview
+- **Severity badge**: Visual indicator (🔴🟠🟡🔵)
+- **Issue details**: Background, remediation guidance
+- **HTTP Request/Response**: Decoded evidence
+- **Status checklist**: Confirmed/Exploited/Reported/Fixed/Verified
+- **Dataview queries**: For vulnerability tracking
+
+### Examples
+
+```bash
+# Basic import
+./cust-run-config.sh burp import webapp-scan.xml -c CUST-001
+
+# High severity only
+./cust-run-config.sh burp import pentest.xml -c CUST-002 --severity High
+
+# Preview findings
+./cust-run-config.sh burp parse quick-scan.xml
+
+# Quiet mode for scripting
+./cust-run-config.sh burp import scan.xml -c CUST-001 -q
+
+# Show templates
+./cust-run-config.sh burp templates list
+```
+
+### Integration with Obsidian
+
+The generated Markdown files include Dataview queries for tracking:
+
+```dataview
+TABLE severity, confidence, host, path
+FROM "CUST-001/Vulnerabilities/Burp"
+WHERE severity = "High"
+SORT file.name ASC
+```
+
+---
+
 ## Theme Command
 
 ### `theme`

@@ -66,6 +66,7 @@ _autovault() {
                 'export:Export vault/customer to PDF/HTML/Markdown'
                 'git-sync:Automatic git synchronization (commit/push)'
                 'nmap:Import Nmap scan results into customer folder'
+                'burp:Import Burp Suite findings into customer folder'
                 'init:Initialize new vault from scratch'
                 'vault:Obsidian setup (init/plugins/check/hub)'
                 'remote:Remote vault sync via SSH (push/pull)'
@@ -130,6 +131,9 @@ _autovault() {
                     ;;
                 nmap|import-nmap)
                     _autovault_nmap
+                    ;;
+                burp|burp-suite|burpsuite)
+                    _autovault_burp
                     ;;
                 theme)
                     _autovault_theme
@@ -677,6 +681,55 @@ _autovault_nmap() {
                         'list:List available Nmap templates'
                         'show:Show template content'
                         'create:Create new Nmap template'
+                    )
+                    _describe 'template command' template_cmds
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_autovault_burp() {
+    local -a subcmds
+    subcmds=(
+        'import:Import Burp Suite scan into customer folder'
+        'parse:Parse and display findings (preview)'
+        'templates:Manage Burp report templates'
+    )
+    
+    _arguments \
+        '1: :->subcmd' \
+        '*: :->args' \
+        '--customer[Target customer ID]:customer:($(_autovault_get_customer_ids))' \
+        '-c[Target customer ID]:customer:($(_autovault_get_customer_ids))' \
+        '--severity[Filter by minimum severity]:severity:(High Medium Low Info)' \
+        '--output-dir[Output directory]:directory:_files -/' \
+        '-o[Output directory]:directory:_files -/' \
+        '--raw[Preserve original XML file]' \
+        '--no-summary[Skip summary generation]' \
+        '--quiet[Suppress output]' \
+        '-q[Suppress output]' \
+        '--help[Show help]'
+    
+    case "$state" in
+        subcmd)
+            _describe 'burp command' subcmds
+            ;;
+        args)
+            case "${words[2]}" in
+                import|parse)
+                    _arguments \
+                        '1:Burp file:_files -g "*.xml"' \
+                        '--customer[Target customer ID]:customer:($(_autovault_get_customer_ids))' \
+                        '-c[Target customer ID]:customer:($(_autovault_get_customer_ids))' \
+                        '--severity[Filter by minimum severity]:severity:(High Medium Low Info)'
+                    ;;
+                templates)
+                    local -a template_cmds
+                    template_cmds=(
+                        'list:List available Burp templates'
+                        'show:Show template content'
+                        'create:Create new Burp template'
                     )
                     _describe 'template command' template_cmds
                     ;;

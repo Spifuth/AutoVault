@@ -77,7 +77,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
 CURRENT_TEST=0
-TOTAL_TESTS=151
+TOTAL_TESTS=160
 
 # Animation frames
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -2245,6 +2245,67 @@ test_nmap_help_function() {
 }
 
 #######################################
+# Burp Suite Integration Tests
+#######################################
+
+test_burp_script_exists() {
+    [[ -f "$PROJECT_ROOT/bash/Import-Burp.sh" ]]
+}
+
+test_burp_script_syntax() {
+    bash -n "$PROJECT_ROOT/bash/Import-Burp.sh"
+}
+
+test_burp_script_executable() {
+    [[ -x "$PROJECT_ROOT/bash/Import-Burp.sh" ]]
+}
+
+test_burp_help() {
+    local output
+    output=$("$PROJECT_ROOT/bash/Import-Burp.sh" --help 2>&1 || true)
+    
+    echo "$output" | grep -qiE "(burp|import|usage)"
+}
+
+test_burp_functions() {
+    local content
+    content=$(cat "$PROJECT_ROOT/bash/Import-Burp.sh")
+    
+    # Check essential functions exist
+    echo "$content" | grep -q "parse_burp_xml" && \
+    echo "$content" | grep -q "generate_issue_markdown\|generate_summary_markdown" && \
+    echo "$content" | grep -q "do_import"
+}
+
+test_burp_completion_bash() {
+    local content
+    content=$(cat "$PROJECT_ROOT/completions/autovault.bash")
+    
+    echo "$content" | grep -q "burp"
+}
+
+test_burp_completion_zsh() {
+    local content
+    content=$(cat "$PROJECT_ROOT/completions/_autovault")
+    
+    echo "$content" | grep -q "burp"
+}
+
+test_burp_cli_routing() {
+    local content
+    content=$(cat "$PROJECT_ROOT/cust-run-config.sh")
+    
+    echo "$content" | grep -q "burp"
+}
+
+test_burp_help_function() {
+    local content
+    content=$(cat "$PROJECT_ROOT/bash/lib/help.sh")
+    
+    echo "$content" | grep -q "help_burp"
+}
+
+#######################################
 # Subcommand Help Tests
 #######################################
 
@@ -2670,6 +2731,18 @@ main() {
     run_test "Nmap zsh completion" test_nmap_completion_zsh || true
     run_test "Nmap CLI routing" test_nmap_cli_routing || true
     run_test "Nmap help function" test_nmap_help_function || true
+    
+    # Burp Suite tests
+    show_category "BURP SUITE INTEGRATION TESTS" "🔒"
+    run_test "Burp script exists" test_burp_script_exists || true
+    run_test "Burp script syntax" test_burp_script_syntax || true
+    run_test "Burp script executable" test_burp_script_executable || true
+    run_test "Burp help page" test_burp_help || true
+    run_test "Burp functions defined" test_burp_functions || true
+    run_test "Burp bash completion" test_burp_completion_bash || true
+    run_test "Burp zsh completion" test_burp_completion_zsh || true
+    run_test "Burp CLI routing" test_burp_cli_routing || true
+    run_test "Burp help function" test_burp_help_function || true
     
     # Teardown with animation
     echo ""

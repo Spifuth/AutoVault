@@ -618,6 +618,11 @@ main() {
       run_bash "Import-Nmap.sh" "$@"
       ;;
 
+    #--- Burp Suite Import ---
+    burp|burp-suite|burpsuite)
+      run_bash "Import-Burp.sh" "$@"
+      ;;
+
     #--- Hooks Management ---
     hooks)
       CURRENT_OPERATION="hooks"

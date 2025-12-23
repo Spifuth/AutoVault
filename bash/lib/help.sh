@@ -71,6 +71,7 @@ usage() {
     export)       help_export ;;
     git-sync)     help_git_sync ;;
     nmap)         help_nmap ;;
+    burp|burp-suite)  help_burp ;;
     theme)        help_theme ;;
     demo)         help_demo ;;
     *)            help_main ;;
@@ -1268,6 +1269,100 @@ $(_h_bold)DEPENDENCIES$(_h_reset)
 
     Install on macOS:
         brew install libxml2 jq
+EOF
+}
+
+#--------------------------------------
+# BURP SUITE HELP
+#--------------------------------------
+help_burp() {
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[2]:-$0}")"
+  
+  cat <<EOF
+$(_h_bold)AUTOVAULT - BURP SUITE IMPORT$(_h_reset)
+
+$(_h_bold)SYNOPSIS$(_h_reset)
+    $script_name burp <command> [OPTIONS]
+
+$(_h_bold)DESCRIPTION$(_h_reset)
+    Import Burp Suite scan results into customer folders.
+    Parses XML exports and generates Markdown vulnerability reports.
+
+    This is useful for:
+    - Importing web application scan findings
+    - Documenting vulnerabilities with severity
+    - Tracking remediation status
+
+$(_h_bold)COMMANDS$(_h_reset)
+    $(_h_green)import$(_h_reset) <file> --customer <ID>
+        Import scan to customer folder
+        Creates per-vulnerability Markdown files
+
+    $(_h_green)parse$(_h_reset) <file>
+        Preview parsed results without importing
+
+    $(_h_green)templates$(_h_reset)
+        List available report templates
+
+$(_h_bold)OPTIONS$(_h_reset)
+    $(_h_green)-c, --customer <ID>$(_h_reset)
+        Target customer ID (required for import)
+
+    $(_h_green)-o, --output-dir <path>$(_h_reset)
+        Custom output directory
+
+    $(_h_green)--severity <level>$(_h_reset)
+        Filter by minimum severity (High/Medium/Low/Info)
+
+    $(_h_green)--raw$(_h_reset)
+        Preserve original XML file
+
+    $(_h_green)--no-summary$(_h_reset)
+        Skip summary generation
+
+$(_h_bold)SEVERITY LEVELS$(_h_reset)
+    $(_h_red)🔴 High$(_h_reset)        Critical vulnerabilities
+    $(_h_yellow)🟠 Medium$(_h_reset)      Significant issues
+    $(_h_cyan)🟡 Low$(_h_reset)         Minor concerns
+    $(_h_dim)🔵 Info$(_h_reset)        Informational findings
+
+$(_h_bold)EXAMPLES$(_h_reset)
+    $(_h_dim)# Import all findings for customer$(_h_reset)
+    $script_name burp import burp-scan.xml -c CUST-001
+
+    $(_h_dim)# Import only High and Medium findings$(_h_reset)
+    $script_name burp import scan.xml -c CUST-001 --severity Medium
+
+    $(_h_dim)# Preview findings$(_h_reset)
+    $script_name burp parse burp-export.xml
+
+    $(_h_dim)# Keep raw XML file$(_h_reset)
+    $script_name burp import scan.xml -c CUST-001 --raw
+
+$(_h_bold)BURP EXPORT INSTRUCTIONS$(_h_reset)
+    1. In Burp Suite: Target > Site map > Right-click
+    2. Select: Issues > Report issues
+    3. Choose XML format
+    4. Enable "Base64-encode requests and responses"
+    5. Save as .xml file
+
+$(_h_bold)OUTPUT FILES$(_h_reset)
+    CUST-001/Vulnerabilities/Burp/
+    ├── YYYY-MM-DD_burp-summary.md    (Overview)
+    └── findings/
+        ├── sql-injection.md          (Per-vuln)
+        ├── xss-reflected.md
+        └── ...
+
+$(_h_bold)DEPENDENCIES$(_h_reset)
+    - xmllint (libxml2-utils) for XML parsing
+
+    Install on Debian/Ubuntu:
+        sudo apt-get install libxml2-utils
+
+    Install on macOS:
+        brew install libxml2
 EOF
 }
 

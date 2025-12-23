@@ -5,10 +5,35 @@ All notable changes to AutoVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - Phase 4.3
+## [Unreleased] - Phase 5
 
 ### Planned
-- **Burp Suite Integration** - Import findings from Burp Suite
+- Phase 5.1: Multi-vault Management (vault profiles, switching)
+- Phase 5.2: Plugin System (custom automation hooks)
+- Phase 5.3: Web UI Dashboard (optional)
+
+---
+
+## [2.8.0] - 2025-12-23 - Phase 4.3 (Burp Suite Integration)
+
+### Added
+- **Burp Suite Integration** (`burp`) - Import Burp Suite findings into customer folders
+  - `burp import <file>` - Import XML scan into customer folder
+  - `burp parse <file>` - Parse and preview findings
+  - `burp templates` - Manage Burp report templates
+  - XML export format support
+  - Severity filtering (High/Medium/Low/Info)
+  - Per-vulnerability Markdown files
+  - HTTP request/response preservation (base64 decoded)
+  - Status tracking checklist (Confirmed/Exploited/Reported/Fixed/Verified)
+  - Dataview integration for vulnerability tracking
+
+### Changed
+- Test suite expanded to 160 tests (100% passing)
+- Shell completions updated for burp command (Bash and Zsh)
+- Help system updated with burp documentation
+- COMMANDS.md updated with burp reference
+- Phase 4.3 complete: Git-Sync + Nmap + Burp integrations
 
 ---
 
