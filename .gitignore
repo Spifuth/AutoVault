@@ -1,0 +1,31 @@
+# AutoVault .gitignore
+
+# Coverage reports
+coverage/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Test artifacts
+tests/*.log
+tests/tmp/
+
+# Local config overrides
+*.local
+*.local.json
+
+# Temporary files
+tmp/
+temp/

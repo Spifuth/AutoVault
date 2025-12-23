@@ -8,7 +8,12 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: Run Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-22.04, macos-latest]
     
     steps:
       - name: Checkout code
@@ -19,9 +24,17 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install jq
-        run: sudo apt-get install -y jq
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq rsync
 
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install jq rsync
+          
       - name: Make scripts executable
         run: |
           chmod +x cust-run-config.sh
@@ -30,8 +43,20 @@ jobs:
 
       - name: Run tests
         run: ./tests/run-tests.sh
+        env:
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: |
+            tests/*.log
+          retention-days: 7
 
   shellcheck:
+    name: ShellCheck Linting
     runs-on: ubuntu-latest
     
     steps:
@@ -41,17 +66,45 @@ jobs:
       - name: Install ShellCheck
         run: sudo apt-get install -y shellcheck
 
-      - name: Run ShellCheck on main script
-        run: shellcheck -x cust-run-config.sh || true
-
-      - name: Run ShellCheck on bash scripts
+      - name: Run ShellCheck
         run: |
+          echo "::group::Checking cust-run-config.sh"
+          shellcheck -x -S warning cust-run-config.sh || true
+          echo "::endgroup::"
+          
+          echo "::group::Checking bash/*.sh"
+          shopt -s nullglob
           for script in bash/*.sh; do
             echo "Checking $script..."
-            shellcheck -x "$script" || true
+            shellcheck -x -S warning "$script" || true
           done
+          echo "::endgroup::"
+          
+          echo "::group::Checking bash/lib/*.sh"
+          for script in bash/lib/*.sh; do
+            echo "Checking $script..."
+            shellcheck -x -S warning "$script" || true
+          done
+          echo "::endgroup::"
+
+      - name: ShellCheck Report
+        run: |
+          echo "## ShellCheck Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Count issues per severity
+          errors=$(shellcheck -x -f gcc bash/*.sh bash/lib/*.sh cust-run-config.sh 2>/dev/null | grep -c "error:" || echo "0")
+          warnings=$(shellcheck -x -f gcc bash/*.sh bash/lib/*.sh cust-run-config.sh 2>/dev/null | grep -c "warning:" || echo "0")
+          notes=$(shellcheck -x -f gcc bash/*.sh bash/lib/*.sh cust-run-config.sh 2>/dev/null | grep -c "note:" || echo "0")
+          
+          echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Errors   | $errors |" >> $GITHUB_STEP_SUMMARY
+          echo "| Warnings | $warnings |" >> $GITHUB_STEP_SUMMARY
+          echo "| Notes    | $notes |" >> $GITHUB_STEP_SUMMARY
 
   json-validation:
+    name: Validate JSON Files
     runs-on: ubuntu-latest
     
     steps:
@@ -63,10 +116,130 @@ jobs:
 
       - name: Validate JSON files
         run: |
-          echo "Validating config/templates.json..."
-          jq empty config/templates.json
+          echo "## JSON Validation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           
-          echo "Validating config/obsidian-settings.json..."
-          jq empty config/obsidian-settings.json
+          for json_file in config/*.json; do
+            echo "Validating $json_file..."
+            if jq empty "$json_file" 2>/dev/null; then
+              echo "✅ $json_file is valid" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ $json_file is INVALID" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            fi
+          done
+
+  syntax-check:
+    name: Bash Syntax Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check bash syntax
+        run: |
+          echo "## Bash Syntax Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           
-          echo "All JSON files are valid!"
+          errors=0
+          for script in cust-run-config.sh bash/*.sh bash/lib/*.sh; do
+            if bash -n "$script" 2>/dev/null; then
+              echo "✅ $script" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ $script - SYNTAX ERROR" >> $GITHUB_STEP_SUMMARY
+              bash -n "$script"
+              ((errors++)) || true
+            fi
+          done
+          
+          if [ $errors -gt 0 ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**$errors script(s) with syntax errors!**" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**All scripts have valid syntax!**" >> $GITHUB_STEP_SUMMARY
+
+  completions-check:
+    name: Validate Shell Completions
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check Bash completions syntax
+        run: |
+          echo "Checking Bash completions..."
+          bash -n completions/autovault.bash
+
+      - name: Check Zsh completions
+        run: |
+          echo "Checking Zsh completions file exists..."
+          test -f completions/_autovault
+
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    needs: [test]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Make scripts executable
+        run: |
+          chmod +x tests/coverage.sh
+          chmod +x bash/*.sh
+          chmod +x bash/lib/*.sh
+
+      - name: Generate coverage report
+        run: |
+          ./tests/coverage.sh --json
+          ./tests/coverage.sh --html
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+      - name: Coverage Summary
+        run: |
+          coverage=$(cat coverage/coverage.txt)
+          
+          echo "## 📊 Code Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Overall Coverage: ${coverage}%**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$coverage" -ge 80 ]; then
+            echo "🟢 Coverage is excellent!" >> $GITHUB_STEP_SUMMARY
+          elif [ "$coverage" -ge 50 ]; then
+            echo "🟡 Coverage is acceptable but could be improved" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🔴 Coverage needs improvement" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [test, shellcheck, json-validation, syntax-check, completions-check, coverage]
+    if: always()
+    
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "# AutoVault CI Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ShellCheck | ${{ needs.shellcheck.result == 'success' && '✅ Passed' || '⚠️ Issues' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| JSON Validation | ${{ needs.json-validation.result == 'success' && '✅ Valid' || '❌ Invalid' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Syntax Check | ${{ needs.syntax-check.result == 'success' && '✅ Valid' || '❌ Errors' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Completions | ${{ needs.completions-check.result == 'success' && '✅ Valid' || '⚠️ Issues' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Coverage | ${{ needs.coverage.result == 'success' && '✅ Generated' || '⚠️ Issues' }} |" >> $GITHUB_STEP_SUMMARY

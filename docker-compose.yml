@@ -1,0 +1,56 @@
+# Docker Compose for AutoVault testing
+# Run: docker-compose up tests
+# Dev: docker-compose run dev
+
+version: '3.8'
+
+services:
+  # Run tests
+  tests:
+    build:
+      context: .
+      target: base
+    environment:
+      - CI=true
+    volumes:
+      - ./tests:/home/testuser/autovault/tests:ro
+    command: ./tests/run-tests.sh
+
+  # Alpine-based tests (lightweight)
+  tests-alpine:
+    build:
+      context: .
+      target: alpine
+    environment:
+      - CI=true
+    command: ./tests/run-tests.sh
+
+  # Development environment
+  dev:
+    build:
+      context: .
+      target: dev
+    environment:
+      - TERM=xterm-256color
+    volumes:
+      - .:/home/developer/autovault
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+  # ShellCheck linting
+  shellcheck:
+    image: koalaman/shellcheck:stable
+    volumes:
+      - .:/mnt:ro
+    working_dir: /mnt
+    command: >
+      sh -c "
+        echo 'Checking main script...' &&
+        shellcheck -x cust-run-config.sh &&
+        echo 'Checking bash scripts...' &&
+        shellcheck -x bash/*.sh &&
+        echo 'Checking library scripts...' &&
+        shellcheck -x bash/lib/*.sh &&
+        echo 'All checks passed!'
+      "
