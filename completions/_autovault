@@ -63,6 +63,7 @@ _autovault() {
                 'section:Manage sections (add/remove/list)'
                 'backup:Manage backups (create/list/restore/cleanup)'
                 'archive:Archive a customer (zip + optional remove)'
+                'export:Export vault/customer to PDF/HTML/Markdown'
                 'init:Initialize new vault from scratch'
                 'vault:Obsidian setup (init/plugins/check/hub)'
                 'remote:Remote vault sync via SSH (push/pull)'
@@ -118,6 +119,9 @@ _autovault() {
                     ;;
                 archive)
                     _autovault_archive
+                    ;;
+                export)
+                    _autovault_export
                     ;;
                 theme)
                     _autovault_theme
@@ -459,6 +463,59 @@ _autovault_search() {
         '--json[Output as JSON]' \
         '--help[Show help]' \
         '*:query:'
+}
+
+_autovault_export() {
+    local state
+    _arguments -C \
+        '--help[Show help]' \
+        '1: :->subcmd' \
+        '*: :->args'
+    
+    case "$state" in
+        subcmd)
+            local -a subcmds
+            subcmds=(
+                'pdf:Export to PDF format'
+                'html:Export to HTML format'
+                'markdown:Export to single Markdown file'
+                'report:Generate client report'
+            )
+            _describe 'export command' subcmds
+            ;;
+        args)
+            case "${line[2]}" in
+                pdf|html|markdown|report)
+                    local -a targets opts
+                    targets=(
+                        'customer:Export specific customer'
+                        'section:Export specific section'
+                        'vault:Export entire vault'
+                        'file:Export single file'
+                    )
+                    opts=(
+                        '-o[Output file path]:file:_files'
+                        '--output=[Output file path]:file:_files'
+                        '-t[Report template]:template:(default pentest audit summary)'
+                        '--template=[Report template]:template:(default pentest audit summary)'
+                        '--no-toc[Disable table of contents]'
+                        '--no-metadata[Disable metadata header]'
+                        '--page-size=[PDF page size]:size:(A4 Letter Legal A3)'
+                        '--css=[Custom CSS file]:file:_files -g "*.css"'
+                        '--title=[Document title]:title:'
+                        '--author=[Document author]:author:'
+                    )
+                    _describe 'target' targets
+                    _arguments $opts
+                    ;;
+                customer)
+                    local -a ids
+                    ids=(${(f)"$(_autovault_get_customer_ids)"})
+                    [[ -n "$ids" ]] && _describe 'customer ID' ids
+                    ;;
+            esac
+            ;;
+    esac
 }
 
 _autovault_archive() {
