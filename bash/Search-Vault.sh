@@ -181,7 +181,7 @@ parse_args() {
 # GET SEARCH PATH
 #--------------------------------------
 get_search_path() {
-  local config_file="$SCRIPT_DIR/../config/cust-run-config.json"
+  local config_file="${CONFIG_JSON:-$SCRIPT_DIR/../config/cust-run-config.json}"
   
   if [[ ! -f "$config_file" ]]; then
     log_error "Configuration file not found: $config_file"
@@ -189,7 +189,7 @@ get_search_path() {
   fi
 
   local vault_root
-  vault_root=$(jq -r '.vault_root // empty' "$config_file")
+  vault_root=$(jq -r '.VaultRoot // empty' "$config_file")
   
   if [[ -z "$vault_root" ]] || [[ ! -d "$vault_root" ]]; then
     log_error "Vault root not configured or does not exist"
@@ -280,9 +280,9 @@ build_find_pattern() {
 #--------------------------------------
 format_file_path() {
   local file_path="$1"
-  local config_file="$SCRIPT_DIR/../config/cust-run-config.json"
+  local config_file="${CONFIG_JSON:-$SCRIPT_DIR/../config/cust-run-config.json}"
   local vault_root
-  vault_root=$(jq -r '.vault_root // empty' "$config_file")
+  vault_root=$(jq -r '.VaultRoot // empty' "$config_file")
   
   # Make path relative to vault root
   local relative_path="${file_path#$vault_root/}"
@@ -297,7 +297,7 @@ search_files() {
   local grep_opts
   grep_opts=$(build_grep_opts)
 
-  local config_file="$SCRIPT_DIR/../config/cust-run-config.json"
+  local config_file="${CONFIG_JSON:-$SCRIPT_DIR/../config/cust-run-config.json}"
   local prefix
   prefix=$(jq -r '.customer_prefix // "CustRun"' "$config_file")
 

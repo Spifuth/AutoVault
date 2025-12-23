@@ -138,7 +138,7 @@ if [[ "$UI_AVAILABLE" == "true" ]]; then
 fi
 
 for id in "${CUSTOMER_IDS[@]}"; do
-    ((current_customer++))
+    ((current_customer++)) || true
     
     # Check integer
     if ! [[ "$id" =~ ^[0-9]+$ ]]; then
@@ -150,7 +150,7 @@ for id in "${CUSTOMER_IDS[@]}"; do
     
     # Show progress bar if UI available
     if [[ "$UI_AVAILABLE" == "true" ]]; then
-        progress_bar "$current_customer" "$total_customers" 40 "$code"
+        progress_bar "$current_customer" "$total_customers" "$code" 40
     else
         log_info "Processing $code"
     fi
