@@ -115,12 +115,12 @@ show_statistics() {
         # Analyze each customer
         for dir in "$run_dir"/CUST-*/; do
             [[ -d "$dir" ]] || continue
-            ((actual_cust_dirs++))
+            ((actual_cust_dirs++)) || true
             
             # Count section directories
             for subdir in "$dir"*/; do
                 [[ -d "$subdir" ]] || continue
-                ((actual_section_dirs++))
+                ((actual_section_dirs++)) || true
             done
             
             # Count files
@@ -178,7 +178,7 @@ show_statistics() {
                     # Check completeness
                     local sections_present=0
                     for section in "${SECTIONS[@]}"; do
-                        [[ -d "$cust_dir/$cust_code-$section" ]] && ((sections_present++))
+                        [[ -d "$cust_dir/$cust_code-$section" ]] && { ((sections_present++)) || true; }
                     done
                     
                     local status
@@ -215,7 +215,7 @@ show_statistics() {
                 local section_dir="$run_dir/$cust_code/$cust_code-$section"
                 
                 if [[ -d "$section_dir" ]]; then
-                    ((section_count++))
+                    ((section_count++)) || true
                     local files
                     files=$(find "$section_dir" -type f 2>/dev/null | wc -l)
                     section_files=$((section_files + files))
