@@ -77,7 +77,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
 CURRENT_TEST=0
-TOTAL_TESTS=118
+TOTAL_TESTS=134
 
 # Animation frames
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -1779,6 +1779,113 @@ test_export_dependencies() {
     echo "$output" | grep -qi "pandoc"
 }
 
+test_export_script_exists() {
+    # Test Export-Vault.sh script exists
+    [[ -f "$PROJECT_ROOT/bash/Export-Vault.sh" ]]
+}
+
+test_export_script_syntax() {
+    # Test Export-Vault.sh has valid syntax
+    bash -n "$PROJECT_ROOT/bash/Export-Vault.sh"
+}
+
+test_export_script_executable() {
+    # Test Export-Vault.sh is executable
+    [[ -x "$PROJECT_ROOT/bash/Export-Vault.sh" ]]
+}
+
+test_export_options_documented() {
+    # Test all export options are documented in help
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" export --help 2>&1)
+    
+    # Check key options
+    echo "$output" | grep -qi "\-\-output" && \
+    echo "$output" | grep -qi "\-\-template" && \
+    echo "$output" | grep -qi "\-\-no-toc"
+}
+
+test_export_report_subcommand() {
+    # Test export report subcommand shows templates
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" export report --help 2>&1) || true
+    output+=$("$PROJECT_ROOT/cust-run-config.sh" export --help 2>&1)
+    
+    # Should mention report templates
+    echo "$output" | grep -qiE "report|template"
+}
+
+#######################################
+# Packaging Tests
+#######################################
+
+test_packaging_dir_exists() {
+    # Test packaging directory exists
+    [[ -d "$PROJECT_ROOT/packaging" ]]
+}
+
+test_packaging_build_script_exists() {
+    # Test build-packages.sh exists
+    [[ -f "$PROJECT_ROOT/packaging/build-packages.sh" ]]
+}
+
+test_packaging_build_script_syntax() {
+    # Test build-packages.sh has valid syntax
+    bash -n "$PROJECT_ROOT/packaging/build-packages.sh"
+}
+
+test_packaging_build_script_executable() {
+    # Test build-packages.sh is executable
+    [[ -x "$PROJECT_ROOT/packaging/build-packages.sh" ]]
+}
+
+test_packaging_build_help() {
+    # Test build-packages.sh shows help
+    local output
+    output=$("$PROJECT_ROOT/packaging/build-packages.sh" help 2>&1)
+    
+    echo "$output" | grep -qiE "deb|rpm|usage"
+}
+
+test_packaging_debian_control() {
+    # Test Debian control file exists and is valid
+    [[ -f "$PROJECT_ROOT/packaging/debian/control" ]] && \
+    grep -q "Package: autovault" "$PROJECT_ROOT/packaging/debian/control"
+}
+
+test_packaging_debian_changelog() {
+    # Test Debian changelog exists
+    [[ -f "$PROJECT_ROOT/packaging/debian/changelog" ]]
+}
+
+test_packaging_debian_rules() {
+    # Test Debian rules file exists and is valid
+    [[ -f "$PROJECT_ROOT/packaging/debian/rules" ]] && \
+    grep -q "dh_auto_install" "$PROJECT_ROOT/packaging/debian/rules"
+}
+
+test_packaging_rpm_spec() {
+    # Test RPM spec file exists and is valid
+    [[ -f "$PROJECT_ROOT/packaging/rpm/autovault.spec" ]] && \
+    grep -q "Name:.*autovault" "$PROJECT_ROOT/packaging/rpm/autovault.spec"
+}
+
+test_packaging_rpm_requires() {
+    # Test RPM spec has proper requirements
+    local spec="$PROJECT_ROOT/packaging/rpm/autovault.spec"
+    [[ -f "$spec" ]] && \
+    grep -q "Requires:.*bash" "$spec" && \
+    grep -q "Requires:.*jq" "$spec"
+}
+
+test_packaging_debian_depends() {
+    # Test Debian control has proper dependencies
+    local control="$PROJECT_ROOT/packaging/debian/control"
+    [[ -f "$control" ]] && \
+    grep -q "Depends:.*bash" "$control" && \
+    grep -q "Depends:.*jq" "$control"
+}
+
 #######################################
 # Theme Command Tests
 #######################################
@@ -2343,6 +2450,25 @@ main() {
     run_test "Export no args error" test_export_no_args || true
     run_test "Export PDF no target error" test_export_pdf_no_target || true
     run_test "Export dependencies documented" test_export_dependencies || true
+    run_test "Export script exists" test_export_script_exists || true
+    run_test "Export script syntax" test_export_script_syntax || true
+    run_test "Export script executable" test_export_script_executable || true
+    run_test "Export options documented" test_export_options_documented || true
+    run_test "Export report subcommand" test_export_report_subcommand || true
+    
+    # Packaging tests
+    show_category "PACKAGING TESTS" "📦"
+    run_test "Packaging directory exists" test_packaging_dir_exists || true
+    run_test "Build script exists" test_packaging_build_script_exists || true
+    run_test "Build script syntax" test_packaging_build_script_syntax || true
+    run_test "Build script executable" test_packaging_build_script_executable || true
+    run_test "Build script help" test_packaging_build_help || true
+    run_test "Debian control file" test_packaging_debian_control || true
+    run_test "Debian changelog file" test_packaging_debian_changelog || true
+    run_test "Debian rules file" test_packaging_debian_rules || true
+    run_test "RPM spec file" test_packaging_rpm_spec || true
+    run_test "RPM requirements" test_packaging_rpm_requires || true
+    run_test "Debian dependencies" test_packaging_debian_depends || true
     
     # Theme command tests
     show_category "THEME COMMAND TESTS" "🎨"

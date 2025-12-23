@@ -180,6 +180,138 @@ jobs:
           echo "Checking Zsh completions file exists..."
           test -f completions/_autovault
 
+  export-check:
+    name: Validate Export Command
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Make scripts executable
+        run: |
+          chmod +x cust-run-config.sh
+          chmod +x bash/*.sh
+
+      - name: Check Export-Vault.sh exists
+        run: test -f bash/Export-Vault.sh
+
+      - name: Check Export-Vault.sh syntax
+        run: bash -n bash/Export-Vault.sh
+
+      - name: Check export help
+        run: |
+          ./cust-run-config.sh export --help | grep -qi "pdf"
+          ./cust-run-config.sh export --help | grep -qi "html"
+          ./cust-run-config.sh export --help | grep -qi "markdown"
+
+      - name: Export Check Summary
+        run: |
+          echo "## 📄 Export Command Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Script exists | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| Syntax valid | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| Help works | ✅ |" >> $GITHUB_STEP_SUMMARY
+
+  packaging-check:
+    name: Validate Packaging Files
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check packaging structure
+        run: |
+          test -d packaging
+          test -d packaging/debian
+          test -d packaging/rpm
+
+      - name: Validate build script
+        run: |
+          test -f packaging/build-packages.sh
+          test -x packaging/build-packages.sh
+          bash -n packaging/build-packages.sh
+
+      - name: Validate Debian files
+        run: |
+          test -f packaging/debian/control
+          test -f packaging/debian/changelog
+          test -f packaging/debian/rules
+          test -f packaging/debian/copyright
+          grep -q "Package: autovault" packaging/debian/control
+          grep -q "Depends:" packaging/debian/control
+
+      - name: Validate RPM spec
+        run: |
+          test -f packaging/rpm/autovault.spec
+          grep -q "Name:.*autovault" packaging/rpm/autovault.spec
+          grep -q "Requires:" packaging/rpm/autovault.spec
+
+      - name: Test build script help
+        run: ./packaging/build-packages.sh help | grep -qiE "deb|rpm"
+
+      - name: Packaging Check Summary
+        run: |
+          echo "## 📦 Packaging Files Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build script | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| Debian control | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| Debian changelog | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| Debian rules | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| RPM spec | ✅ |" >> $GITHUB_STEP_SUMMARY
+
+  build-deb:
+    name: Test DEB Build
+    runs-on: ubuntu-latest
+    needs: [packaging-check]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev fakeroot
+
+      - name: Make scripts executable
+        run: chmod +x packaging/build-packages.sh
+
+      - name: Build DEB package
+        run: ./packaging/build-packages.sh deb
+
+      - name: Verify DEB package
+        run: |
+          test -f dist/autovault_*.deb
+          dpkg-deb --info dist/autovault_*.deb
+
+      - name: Upload DEB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-package
+          path: dist/*.deb
+          retention-days: 7
+
+      - name: DEB Build Summary
+        run: |
+          echo "## 🐧 DEB Package Build" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Package built successfully!**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          dpkg-deb --info dist/autovault_*.deb >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
@@ -227,7 +359,7 @@ jobs:
   summary:
     name: CI Summary
     runs-on: ubuntu-latest
-    needs: [test, shellcheck, json-validation, syntax-check, completions-check, coverage]
+    needs: [test, shellcheck, json-validation, syntax-check, completions-check, export-check, packaging-check, build-deb, coverage]
     if: always()
     
     steps:
@@ -242,4 +374,7 @@ jobs:
           echo "| JSON Validation | ${{ needs.json-validation.result == 'success' && '✅ Valid' || '❌ Invalid' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Syntax Check | ${{ needs.syntax-check.result == 'success' && '✅ Valid' || '❌ Errors' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Completions | ${{ needs.completions-check.result == 'success' && '✅ Valid' || '⚠️ Issues' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Export Check | ${{ needs.export-check.result == 'success' && '✅ Valid' || '❌ Errors' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Packaging Check | ${{ needs.packaging-check.result == 'success' && '✅ Valid' || '❌ Errors' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| DEB Build | ${{ needs.build-deb.result == 'success' && '✅ Built' || '⚠️ Issues' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Coverage | ${{ needs.coverage.result == 'success' && '✅ Generated' || '⚠️ Issues' }} |" >> $GITHUB_STEP_SUMMARY
