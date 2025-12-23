@@ -1,0 +1,108 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Run tests before release
+        run: |
+          chmod +x cust-run-config.sh bash/*.sh tests/*.sh
+          ./tests/run-tests.sh
+        env:
+          CI: true
+
+      - name: Generate changelog for release
+        id: changelog
+        run: |
+          # Extract changelog for this version
+          if [ -f CHANGELOG.md ]; then
+            # Get content between this version and the next version header
+            awk '/^## \['"${{ steps.version.outputs.version }}"'\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md > release_notes.md
+            
+            # If empty, try unreleased section
+            if [ ! -s release_notes.md ]; then
+              awk '/^## \[Unreleased\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md > release_notes.md
+            fi
+            
+            # If still empty, use generic message
+            if [ ! -s release_notes.md ]; then
+              echo "Release ${{ steps.version.outputs.tag }}" > release_notes.md
+              echo "" >> release_notes.md
+              echo "See [CHANGELOG.md](CHANGELOG.md) for details." >> release_notes.md
+            fi
+          else
+            echo "Release ${{ steps.version.outputs.tag }}" > release_notes.md
+          fi
+          
+          echo "Release notes:"
+          cat release_notes.md
+
+      - name: Create release archive
+        run: |
+          # Create release directory
+          mkdir -p release/autovault-${{ steps.version.outputs.version }}
+          
+          # Copy essential files
+          cp -r bash/ release/autovault-${{ steps.version.outputs.version }}/
+          cp -r config/ release/autovault-${{ steps.version.outputs.version }}/
+          cp -r completions/ release/autovault-${{ steps.version.outputs.version }}/
+          cp -r hooks/ release/autovault-${{ steps.version.outputs.version }}/
+          cp -r docs/ release/autovault-${{ steps.version.outputs.version }}/
+          cp cust-run-config.sh release/autovault-${{ steps.version.outputs.version }}/
+          cp README.md release/autovault-${{ steps.version.outputs.version }}/
+          cp CHANGELOG.md release/autovault-${{ steps.version.outputs.version }}/
+          cp LICENSE release/autovault-${{ steps.version.outputs.version }}/ 2>/dev/null || true
+          
+          # Create archives
+          cd release
+          tar -czvf autovault-${{ steps.version.outputs.version }}.tar.gz autovault-${{ steps.version.outputs.version }}/
+          zip -r autovault-${{ steps.version.outputs.version }}.zip autovault-${{ steps.version.outputs.version }}/
+          
+          # Generate checksums
+          sha256sum autovault-${{ steps.version.outputs.version }}.tar.gz > autovault-${{ steps.version.outputs.version }}.tar.gz.sha256
+          sha256sum autovault-${{ steps.version.outputs.version }}.zip > autovault-${{ steps.version.outputs.version }}.zip.sha256
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: AutoVault ${{ steps.version.outputs.tag }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.tag, 'beta') || contains(steps.version.outputs.tag, 'alpha') || contains(steps.version.outputs.tag, 'rc') }}
+          files: |
+            release/autovault-${{ steps.version.outputs.version }}.tar.gz
+            release/autovault-${{ steps.version.outputs.version }}.tar.gz.sha256
+            release/autovault-${{ steps.version.outputs.version }}.zip
+            release/autovault-${{ steps.version.outputs.version }}.zip.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Homebrew formula (if exists)
+        if: success() && !contains(steps.version.outputs.tag, 'beta') && !contains(steps.version.outputs.tag, 'alpha')
+        run: |
+          echo "Homebrew formula update would go here"
+          # This would trigger a workflow in a homebrew-tap repo
+          # curl -X POST ... to trigger workflow dispatch
+        continue-on-error: true
