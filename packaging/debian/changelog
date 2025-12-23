@@ -1,0 +1,35 @@
+autovault (2.5.0-1) unstable; urgency=medium
+
+  * Phase 4.1: Export & Reporting
+    - Export to PDF, HTML, Markdown formats
+    - Client report generation with templates
+    - Pandoc-based conversion
+  * Phase 4.2: Extended Packaging
+    - DEB package support
+    - RPM package support
+
+ -- Spifuth <spifuth@protonmail.com>  Mon, 23 Dec 2024 12:00:00 +0000
+
+autovault (2.4.0-1) unstable; urgency=medium
+
+  * Phase 3.1: CI/CD Pipeline
+    - GitHub Actions workflows
+    - Docker support
+  * Phase 3.2: Packaging
+    - Install script
+    - Homebrew formula
+    - AUR PKGBUILD
+
+ -- Spifuth <spifuth@protonmail.com>  Sat, 21 Dec 2024 12:00:00 +0000
+
+autovault (2.0.0-1) unstable; urgency=medium
+
+  * Initial Debian package release
+  * Core features:
+    - Customer management
+    - Template management
+    - Backup management
+    - Remote sync
+    - Encryption support
+
+ -- Spifuth <spifuth@protonmail.com>  Fri, 20 Dec 2024 12:00:00 +0000
