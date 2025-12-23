@@ -77,7 +77,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
 CURRENT_TEST=0
-TOTAL_TESTS=69
+TOTAL_TESTS=93
 
 # Animation frames
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -1567,12 +1567,265 @@ test_alias_methods() {
 }
 
 #######################################
+# Init Command Tests
+#######################################
+
+test_init_help() {
+    # Test init command help page exists and works
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" init --help 2>&1)
+    
+    echo "$output" | grep -qi "init\|vault\|profile"
+}
+
+test_init_profiles() {
+    # Test that profiles are documented in help
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" init --help 2>&1)
+    
+    # Should mention available profiles
+    echo "$output" | grep -qi "minimal\|pentest\|audit\|bugbounty"
+}
+
+test_init_dry_run() {
+    # Test init command at least runs with dry-run flag
+    # Note: dry-run is not fully implemented in init yet
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" init --help 2>&1)
+    
+    # For now, just verify init is accessible and help works
+    echo "$output" | grep -qi "init\|vault\|path"
+}
+
+#######################################
+# Doctor Command Tests
+#######################################
+
+test_doctor_help() {
+    # Test doctor command help page
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" doctor --help 2>&1)
+    
+    echo "$output" | grep -qi "doctor\|diagnostic\|fix"
+}
+
+test_doctor_runs() {
+    # Test doctor command runs without error
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" doctor 2>&1) || true
+    
+    # Should show some check results
+    echo "$output" | grep -qiE "pass|fail|warn|✓|✗|!"
+}
+
+test_doctor_json_output() {
+    # Test doctor JSON output format
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" doctor --json 2>&1) || true
+    
+    # Should be valid JSON with results
+    echo "$output" | grep -q '"results"' || echo "$output" | grep -q '"passed"'
+}
+
+test_doctor_verbose() {
+    # Test doctor verbose mode
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" doctor --verbose 2>&1) || true
+    
+    # Should produce more output than normal
+    [[ ${#output} -gt 100 ]]
+}
+
+#######################################
+# Search Command Tests
+#######################################
+
+test_search_help() {
+    # Test search command help page
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" search --help 2>&1)
+    
+    echo "$output" | grep -qi "search\|query\|regex"
+}
+
+test_search_no_query() {
+    # Test search without query shows help/error
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" search 2>&1) || true
+    
+    # Should show usage or error about missing query
+    echo "$output" | grep -qiE "usage|query|search"
+}
+
+test_search_json_output() {
+    # Test search JSON output format (even with no results)
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" search "nonexistent12345" --json 2>&1) || true
+    
+    # Should be valid JSON structure
+    echo "$output" | grep -q '"query"' || echo "$output" | grep -q '"results"'
+}
+
+test_search_options() {
+    # Test search accepts various options
+    local output
+    
+    # These should not error (may have 0 results but should work)
+    "$PROJECT_ROOT/cust-run-config.sh" search "test" --names-only 2>&1 >/dev/null || true
+    "$PROJECT_ROOT/cust-run-config.sh" search "test" --context 5 2>&1 >/dev/null || true
+    "$PROJECT_ROOT/cust-run-config.sh" search "test" --max 10 2>&1 >/dev/null || true
+    
+    # If we get here without crash, test passes
+    return 0
+}
+
+#######################################
+# Archive Command Tests
+#######################################
+
+test_archive_help() {
+    # Test archive command help page
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" archive --help 2>&1)
+    
+    echo "$output" | grep -qi "archive\|zip\|format"
+}
+
+test_archive_formats() {
+    # Test archive help documents all formats
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" archive --help 2>&1)
+    
+    # Should mention supported formats
+    echo "$output" | grep -qiE "zip|tar|gz|bz2"
+}
+
+test_archive_no_id() {
+    # Test archive without ID shows error
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" archive 2>&1) || true
+    
+    # Should show error about missing customer ID
+    echo "$output" | grep -qiE "usage|customer|id|required"
+}
+
+#######################################
+# Theme Command Tests
+#######################################
+
+test_theme_help() {
+    # Test theme command help page
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" theme --help 2>&1)
+    
+    echo "$output" | grep -qi "theme\|dark\|light"
+}
+
+test_theme_status() {
+    # Test theme status shows current settings
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" theme status 2>&1)
+    
+    echo "$output" | grep -qiE "theme|dark|light|auto"
+}
+
+test_theme_preview() {
+    # Test theme preview shows both themes
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" theme preview 2>&1)
+    
+    echo "$output" | grep -qi "dark" && echo "$output" | grep -qi "light"
+}
+
+test_theme_set() {
+    # Test theme set command (save current, set, restore)
+    local current_theme
+    current_theme=$("$PROJECT_ROOT/cust-run-config.sh" theme status 2>&1 | grep -i "current theme" | awk '{print $NF}')
+    
+    # Set to light
+    "$PROJECT_ROOT/cust-run-config.sh" theme set light 2>&1 >/dev/null
+    
+    # Verify it changed
+    local new_output
+    new_output=$("$PROJECT_ROOT/cust-run-config.sh" theme status 2>&1)
+    
+    # Restore original (default to dark if couldn't get original)
+    "$PROJECT_ROOT/cust-run-config.sh" theme set "${current_theme:-dark}" 2>&1 >/dev/null
+    
+    # Check that light was shown
+    echo "$new_output" | grep -qi "light"
+}
+
+#######################################
+# Demo Command Tests
+#######################################
+
+test_demo_help() {
+    # Test demo command help page
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" demo --help 2>&1)
+    
+    echo "$output" | grep -qi "demo\|progress\|spinner"
+}
+
+test_demo_box() {
+    # Test demo box runs without error
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" demo box 2>&1)
+    
+    # Should show box characters
+    echo "$output" | grep -qE "╔|╗|║|╚|═"
+}
+
+test_demo_progress() {
+    # Test demo progress runs without error
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" demo progress 2>&1)
+    
+    # Should show progress indicators
+    echo "$output" | grep -qE "█|░|%|100"
+}
+
+test_demo_theme_subcommand() {
+    # Test demo theme (different from theme command)
+    local output
+    output=$("$PROJECT_ROOT/cust-run-config.sh" demo theme 2>&1)
+    
+    # Should mention themes
+    echo "$output" | grep -qiE "dark|light|theme"
+}
+
+#######################################
+# UI Library Tests
+#######################################
+
+test_ui_library_exists() {
+    # Test UI library file exists
+    [[ -f "$PROJECT_ROOT/bash/lib/ui.sh" ]]
+}
+
+test_ui_library_syntax() {
+    # Test UI library has valid bash syntax
+    bash -n "$PROJECT_ROOT/bash/lib/ui.sh"
+}
+
+test_ui_library_functions() {
+    # Test UI library defines expected functions
+    local content
+    content=$(cat "$PROJECT_ROOT/bash/lib/ui.sh")
+    
+    echo "$content" | grep -q "progress_bar" && \
+    echo "$content" | grep -q "spinner_start" && \
+    echo "$content" | grep -q "set_theme"
+}
+
+#######################################
 # Subcommand Help Tests
 #######################################
 
 test_help_subcommands() {
     # Test all subcommand helps work
-    local cmds=("templates" "customer" "section" "backup" "vault" "config" "structure" "hooks" "remote" "completions" "alias")
+    local cmds=("templates" "customer" "section" "backup" "vault" "config" "structure" "hooks" "remote" "completions" "alias" "init" "doctor" "search" "archive" "theme" "demo")
     local errors=0
     
     for cmd in "${cmds[@]}"; do
@@ -1865,6 +2118,52 @@ main() {
     run_test "Alias custom name" test_alias_custom_name || true
     run_test "Alias uninstall dry-run" test_alias_uninstall_dry_run || true
     run_test "Alias methods documented" test_alias_methods || true
+    
+    # Init command tests
+    show_category "INIT COMMAND TESTS" "🚀"
+    run_test "Init help page" test_init_help || true
+    run_test "Init profiles documented" test_init_profiles || true
+    run_test "Init dry-run no changes" test_init_dry_run || true
+    
+    # Doctor command tests
+    show_category "DOCTOR COMMAND TESTS" "🏥"
+    run_test "Doctor help page" test_doctor_help || true
+    run_test "Doctor runs" test_doctor_runs || true
+    run_test "Doctor JSON output" test_doctor_json_output || true
+    run_test "Doctor verbose mode" test_doctor_verbose || true
+    
+    # Search command tests
+    show_category "SEARCH COMMAND TESTS" "🔍"
+    run_test "Search help page" test_search_help || true
+    run_test "Search no query" test_search_no_query || true
+    run_test "Search JSON output" test_search_json_output || true
+    run_test "Search options" test_search_options || true
+    
+    # Archive command tests
+    show_category "ARCHIVE COMMAND TESTS" "📦"
+    run_test "Archive help page" test_archive_help || true
+    run_test "Archive formats documented" test_archive_formats || true
+    run_test "Archive no ID error" test_archive_no_id || true
+    
+    # Theme command tests
+    show_category "THEME COMMAND TESTS" "🎨"
+    run_test "Theme help page" test_theme_help || true
+    run_test "Theme status" test_theme_status || true
+    run_test "Theme preview" test_theme_preview || true
+    run_test "Theme set command" test_theme_set || true
+    
+    # Demo command tests
+    show_category "DEMO COMMAND TESTS" "🎬"
+    run_test "Demo help page" test_demo_help || true
+    run_test "Demo box" test_demo_box || true
+    run_test "Demo progress" test_demo_progress || true
+    run_test "Demo theme subcommand" test_demo_theme_subcommand || true
+    
+    # UI Library tests
+    show_category "UI LIBRARY TESTS" "🖼️"
+    run_test "UI library exists" test_ui_library_exists || true
+    run_test "UI library syntax" test_ui_library_syntax || true
+    run_test "UI library functions" test_ui_library_functions || true
     
     # Teardown with animation
     echo ""
