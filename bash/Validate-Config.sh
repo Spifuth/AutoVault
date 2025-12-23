@@ -168,7 +168,7 @@ validate_field_values() {
   width="$(jq -r '.CustomerIdWidth' "$file")"
   if [[ "$width" -lt 1 ]] || [[ "$width" -gt 10 ]]; then
     log_warn "CustomerIdWidth ($width) should be between 1 and 10"
-    ((warnings++))
+    ((warnings++)) || true
   fi
 
   # CustomerIds should not be empty
@@ -176,7 +176,7 @@ validate_field_values() {
   id_count="$(jq -r '.CustomerIds | length' "$file")"
   if [[ "$id_count" -eq 0 ]]; then
     log_warn "CustomerIds array is empty"
-    ((warnings++))
+    ((warnings++)) || true
   fi
 
   # CustomerIds should not have duplicates
@@ -184,7 +184,7 @@ validate_field_values() {
   unique_count="$(jq -r '.CustomerIds | unique | length' "$file")"
   if [[ "$id_count" -ne "$unique_count" ]]; then
     log_warn "CustomerIds contains duplicate values"
-    ((warnings++))
+    ((warnings++)) || true
   fi
 
   # CustomerIds should be positive
@@ -192,7 +192,7 @@ validate_field_values() {
   negative_ids="$(jq -r '.CustomerIds[] | select(. < 0)' "$file" 2>/dev/null || true)"
   if [[ -n "$negative_ids" ]]; then
     log_warn "CustomerIds contains negative values"
-    ((warnings++))
+    ((warnings++)) || true
   fi
 
   # Sections should not be empty
@@ -200,7 +200,7 @@ validate_field_values() {
   section_count="$(jq -r '.Sections | length' "$file")"
   if [[ "$section_count" -eq 0 ]]; then
     log_warn "Sections array is empty"
-    ((warnings++))
+    ((warnings++)) || true
   fi
 
   # Sections should not have duplicates
@@ -208,7 +208,7 @@ validate_field_values() {
   unique_sections="$(jq -r '.Sections | unique | length' "$file")"
   if [[ "$section_count" -ne "$unique_sections" ]]; then
     log_warn "Sections contains duplicate values"
-    ((warnings++))
+    ((warnings++)) || true
   fi
 
   if [[ $warnings -gt 0 ]]; then

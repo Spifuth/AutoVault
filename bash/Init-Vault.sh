@@ -37,22 +37,27 @@ declare -A PROFILES
 
 PROFILES[minimal]='
 {
-  "vault_root": "{{VAULT_PATH}}",
-  "customer_prefix": "Client",
-  "default_sections": ["Notes", "Tasks"],
-  "options": {
-    "hooks_enabled": false,
-    "backup_path": "backups",
-    "backup_retention": 30,
-    "colors_enabled": true
+  "VaultRoot": "{{VAULT_PATH}}",
+  "CustomerPrefix": "Client",
+  "CustomerIdWidth": 3,
+  "CustomerIds": [],
+  "Sections": ["Notes", "Tasks"],
+  "TemplateRelativeRoot": "_templates/run",
+  "Options": {
+    "HooksEnabled": false,
+    "BackupPath": "backups",
+    "BackupRetention": 30,
+    "ColorsEnabled": true
   }
 }'
 
 PROFILES[pentest]='
 {
-  "vault_root": "{{VAULT_PATH}}",
-  "customer_prefix": "CustRun",
-  "default_sections": [
+  "VaultRoot": "{{VAULT_PATH}}",
+  "CustomerPrefix": "CUST",
+  "CustomerIdWidth": 3,
+  "CustomerIds": [],
+  "Sections": [
     "Recon",
     "Enumeration", 
     "Exploitation",
@@ -60,42 +65,48 @@ PROFILES[pentest]='
     "Pivoting",
     "Reporting"
   ],
-  "options": {
-    "hooks_enabled": true,
-    "hooks_path": "hooks",
-    "backup_path": "backups",
-    "backup_retention": 90,
-    "colors_enabled": true
+  "TemplateRelativeRoot": "_templates/run",
+  "Options": {
+    "HooksEnabled": true,
+    "HooksPath": "hooks",
+    "BackupPath": "backups",
+    "BackupRetention": 90,
+    "ColorsEnabled": true
   }
 }'
 
 PROFILES[audit]='
 {
-  "vault_root": "{{VAULT_PATH}}",
-  "customer_prefix": "Audit",
-  "default_sections": [
+  "VaultRoot": "{{VAULT_PATH}}",
+  "CustomerPrefix": "Audit",
+  "CustomerIdWidth": 3,
+  "CustomerIds": [],
+  "Sections": [
     "Scope",
     "Planning",
-    "Documentation Review",
-    "Technical Assessment",
+    "Documentation-Review",
+    "Technical-Assessment",
     "Evidence",
     "Findings",
     "Recommendations"
   ],
-  "options": {
-    "hooks_enabled": true,
-    "hooks_path": "hooks",
-    "backup_path": "backups",
-    "backup_retention": 365,
-    "colors_enabled": true
+  "TemplateRelativeRoot": "_templates/run",
+  "Options": {
+    "HooksEnabled": true,
+    "HooksPath": "hooks",
+    "BackupPath": "backups",
+    "BackupRetention": 365,
+    "ColorsEnabled": true
   }
 }'
 
 PROFILES[bugbounty]='
 {
-  "vault_root": "{{VAULT_PATH}}",
-  "customer_prefix": "Program",
-  "default_sections": [
+  "VaultRoot": "{{VAULT_PATH}}",
+  "CustomerPrefix": "Program",
+  "CustomerIdWidth": 3,
+  "CustomerIds": [],
+  "Sections": [
     "Recon",
     "Web",
     "API",
@@ -103,12 +114,13 @@ PROFILES[bugbounty]='
     "Findings",
     "Submissions"
   ],
-  "options": {
-    "hooks_enabled": true,
-    "hooks_path": "hooks",
-    "backup_path": "backups",
-    "backup_retention": 180,
-    "colors_enabled": true
+  "TemplateRelativeRoot": "_templates/run",
+  "Options": {
+    "HooksEnabled": true,
+    "HooksPath": "hooks",
+    "BackupPath": "backups",
+    "BackupRetention": 180,
+    "ColorsEnabled": true
   }
 }'
 
