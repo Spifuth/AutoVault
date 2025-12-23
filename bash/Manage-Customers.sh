@@ -499,9 +499,11 @@ clone_customer() {
     return 1
   fi
   
-  # Export to temp file
+  # Export to temp file (cross-platform mktemp)
   local temp_archive
-  temp_archive=$(mktemp --suffix=.tar.gz)
+  temp_archive=$(mktemp -t autovault_clone.XXXXXX)
+  mv "$temp_archive" "${temp_archive}.tar.gz"
+  temp_archive="${temp_archive}.tar.gz"
   
   export_customer "$source_id" "$temp_archive"
   
