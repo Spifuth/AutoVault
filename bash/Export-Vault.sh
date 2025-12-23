@@ -656,6 +656,12 @@ generate_default_report() {
     local customer_id="$1"
     local customer_dir="$2"
     
+    # Pre-compile markdown content to avoid SC2046 in heredoc
+    local compiled_content
+    local -a md_files
+    mapfile -t md_files < <(find "$customer_dir" -name "*.md" -type f | head -20)
+    compiled_content=$(compile_markdown "${md_files[@]}")
+    
     cat << EOF
 ---
 title: "Client Report"
@@ -680,8 +686,7 @@ done)
 
 # Detailed Content
 
-# shellcheck disable=SC2046
-$(compile_markdown $(find "$customer_dir" -name "*.md" -type f | head -20))
+${compiled_content}
 
 ---
 
@@ -692,6 +697,18 @@ EOF
 generate_pentest_report() {
     local customer_id="$1"
     local customer_dir="$2"
+    
+    # Pre-compile findings content to avoid SC2046 in heredoc
+    local findings_content=""
+    if [[ -d "$customer_dir/CUST-${customer_id}-RAISED" ]]; then
+        local -a raised_files
+        mapfile -t raised_files < <(find "$customer_dir/CUST-${customer_id}-RAISED" -name "*.md" -type f 2>/dev/null | head -10)
+        if [[ ${#raised_files[@]} -gt 0 ]]; then
+            findings_content="## Identified Issues
+
+$(compile_markdown "${raised_files[@]}")"
+        fi
+    fi
     
     cat << EOF
 ---
@@ -734,12 +751,7 @@ The assessment followed industry-standard methodologies including:
 
 # 3. Findings
 
-$(if [[ -d "$customer_dir/CUST-${customer_id}-RAISED" ]]; then
-    echo "## Identified Issues"
-    echo
-    # shellcheck disable=SC2046
-    compile_markdown $(find "$customer_dir/CUST-${customer_id}-RAISED" -name "*.md" -type f 2>/dev/null | head -10)
-fi)
+${findings_content}
 
 # 4. Recommendations
 
@@ -775,6 +787,12 @@ generate_audit_report() {
     local customer_id="$1"
     local customer_dir="$2"
     
+    # Pre-compile markdown content to avoid SC2046 in heredoc
+    local compiled_content
+    local -a md_files
+    mapfile -t md_files < <(find "$customer_dir" -name "*.md" -type f | head -10)
+    compiled_content=$(compile_markdown "${md_files[@]}")
+    
     cat << EOF
 ---
 title: "Security Audit Report"
@@ -803,8 +821,7 @@ date: $(date '+%Y-%m-%d')
 
 ## 3. Findings
 
-# shellcheck disable=SC2046
-$(compile_markdown $(find "$customer_dir" -name "*.md" -type f | head -10))
+${compiled_content}
 
 ## 4. Recommendations
 
