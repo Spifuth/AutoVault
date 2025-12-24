@@ -289,7 +289,7 @@ ${YELLOW}COMMANDS${NC}
     help        Show this help
 
 ${YELLOW}ENVIRONMENT${NC}
-    VERSION     Package version (default: 2.5.0)
+    VERSION     Package version (default: 2.8.0)
     RELEASE     Package release (default: 1)
 
 ${YELLOW}EXAMPLES${NC}

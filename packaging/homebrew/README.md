@@ -43,8 +43,8 @@ To publish this formula, create a new GitHub repository named `homebrew-autovaul
 2. Download the release tarball
 3. Calculate SHA256:
    ```bash
-   curl -LO https://github.com/Spifuth/AutoVault/archive/refs/tags/v2.4.0.tar.gz
-   shasum -a 256 v2.4.0.tar.gz
+   curl -LO https://github.com/Spifuth/AutoVault/archive/refs/tags/v2.8.0.tar.gz
+   shasum -a 256 v2.8.0.tar.gz
    ```
 4. Update `url` and `sha256` in the formula
 5. Test: `brew install --build-from-source ./autovault.rb`

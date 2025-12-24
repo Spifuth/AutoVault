@@ -16,7 +16,7 @@
 #                  box         Box/formatting demo
 #
 #  AUTHOR:         AutoVault Project
-#  VERSION:        2.3.0
+#  VERSION:        2.8.0
 #
 #===============================================================================
 

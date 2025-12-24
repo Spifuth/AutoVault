@@ -12,7 +12,7 @@
 #                  --json       Output results as JSON
 #
 #  AUTHOR:         AutoVault Project
-#  VERSION:        2.3.0
+#  VERSION:        2.8.0
 #
 #===============================================================================
 

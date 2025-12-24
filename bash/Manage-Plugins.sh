@@ -14,7 +14,7 @@
 #                  run         Run a plugin command
 #
 #  AUTHOR:         AutoVault Project
-#  VERSION:        2.4.0
+#  VERSION:        2.8.0
 #
 #===============================================================================
 

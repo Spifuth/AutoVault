@@ -13,7 +13,7 @@
 #                  --no-structure     Skip creating initial structure
 #
 #  AUTHOR:         AutoVault Project
-#  VERSION:        2.3.0
+#  VERSION:        2.8.0
 #
 #===============================================================================
 

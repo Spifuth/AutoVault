@@ -47,10 +47,10 @@ sudo pacman -U autovault-*.pkg.tar.zst
 
 ```bash
 # Download release
-curl -LO https://github.com/Spifuth/AutoVault/archive/refs/tags/v2.4.0.tar.gz
+curl -LO https://github.com/Spifuth/AutoVault/archive/refs/tags/v2.8.0.tar.gz
 
 # Generate SHA256
-sha256sum v2.4.0.tar.gz
+sha256sum v2.8.0.tar.gz
 ```
 
 ## Dependencies
