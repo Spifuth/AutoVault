@@ -103,8 +103,11 @@ jobs:
         run: |
           cd release
           for pkg in *.deb *.rpm; do
-            [ -f "$pkg" ] && sha256sum "$pkg" > "$pkg.sha256"
+            if [ -f "$pkg" ]; then
+              sha256sum "$pkg" > "$pkg.sha256"
+            fi
           done
+        continue-on-error: true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
