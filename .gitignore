@@ -29,3 +29,4 @@ tests/tmp/
 # Temporary files
 tmp/
 temp/
+dist/
