@@ -136,7 +136,7 @@ get_builtin_var() {
             fi
             ;;
         VERSION)
-            echo "${AUTOVAULT_VERSION:-2.8.0}"
+            echo "${AUTOVAULT_VERSION:-2.9.0}"
             ;;
         OS)
             uname -s

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=AutoVault
+GenericName=Obsidian Vault Manager
+Comment=CLI tool for managing Obsidian vaults with multi-customer support
+Exec=autovault
+Icon=utilities-terminal
+Terminal=true
+Categories=Utility;Development;
+Keywords=obsidian;vault;notes;documentation;pentest;
+StartupNotify=false

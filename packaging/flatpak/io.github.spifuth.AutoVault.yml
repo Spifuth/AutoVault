@@ -1,0 +1,102 @@
+app-id: io.github.spifuth.AutoVault
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+command: autovault
+
+finish-args:
+  # Full filesystem access for vault management
+  - --filesystem=home
+  - --filesystem=/media
+  - --filesystem=/mnt
+  - --filesystem=/run/media
+  # Network access for git sync and remote features
+  - --share=network
+  # SSH agent access
+  - --socket=ssh-auth
+  # D-Bus for notifications
+  - --talk-name=org.freedesktop.Notifications
+  # Environment variables
+  - --env=AUTOVAULT_FLATPAK=1
+
+modules:
+  # jq dependency
+  - name: jq
+    buildsystem: autotools
+    sources:
+      - type: archive
+        url: https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-1.7.1.tar.gz
+        sha256: 478c9ca129fd2e3443fe27314b455e211e0d8c60bc8ff7df703873deeee580c2
+
+  # age encryption tool
+  - name: age
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 age -t /app/bin/
+      - install -Dm755 age-keygen -t /app/bin/
+    sources:
+      - type: archive
+        url: https://github.com/FiloSottile/age/releases/download/v1.1.1/age-v1.1.1-linux-amd64.tar.gz
+        sha256: 2162c68a6dbe3b14ef2e1b74e3d2e6e5e1f0527a8b8afc648e64c8b8f77d3f5a
+        only-arches:
+          - x86_64
+      - type: archive
+        url: https://github.com/FiloSottile/age/releases/download/v1.1.1/age-v1.1.1-linux-arm64.tar.gz
+        sha256: 0d3e6b0e2744a5d4a5cd0f5e0b8e5b8e5b8e5b8e5b8e5b8e5b8e5b8e5b8e5b8e
+        only-arches:
+          - aarch64
+
+  # Main application
+  - name: autovault
+    buildsystem: simple
+    build-commands:
+      # Install main script
+      - install -Dm755 cust-run-config.sh /app/bin/autovault
+      
+      # Install bash scripts
+      - install -dm755 /app/lib/autovault/bash
+      - install -Dm755 bash/*.sh /app/lib/autovault/bash/
+      - install -dm755 /app/lib/autovault/bash/lib
+      - install -Dm644 bash/lib/*.sh /app/lib/autovault/bash/lib/
+      - chmod +x /app/lib/autovault/bash/lib/*.sh
+      
+      # Install config templates
+      - install -dm755 /app/share/autovault/config
+      - install -Dm644 config/*.json /app/share/autovault/config/
+      
+      # Install hook examples
+      - install -dm755 /app/share/autovault/hooks
+      - install -Dm644 hooks/*.example /app/share/autovault/hooks/ || true
+      - install -Dm644 hooks/README.md /app/share/autovault/hooks/
+      
+      # Install documentation
+      - install -dm755 /app/share/doc/autovault
+      - install -Dm644 README.md /app/share/doc/autovault/
+      - install -Dm644 CHANGELOG.md /app/share/doc/autovault/
+      - install -Dm644 docs/*.md /app/share/doc/autovault/
+      
+      # Install shell completions
+      - install -Dm644 completions/autovault.bash /app/share/bash-completion/completions/autovault
+      - install -Dm644 completions/_autovault /app/share/zsh/site-functions/_autovault
+      
+      # Update script paths for flatpak
+      - sed -i 's|^SCRIPT_DIR=.*|SCRIPT_DIR="/app/lib/autovault"|' /app/bin/autovault
+      
+      # Install desktop entry
+      - install -Dm644 io.github.spifuth.AutoVault.desktop /app/share/applications/
+      
+      # Install metainfo
+      - install -Dm644 io.github.spifuth.AutoVault.metainfo.xml /app/share/metainfo/
+      
+    sources:
+      - type: git
+        url: https://github.com/Spifuth/AutoVault.git
+        tag: v2.9.0
+      
+      # Desktop entry file (inline)
+      - type: file
+        path: io.github.spifuth.AutoVault.desktop
+      
+      # Metainfo file (inline)
+      - type: file
+        path: io.github.spifuth.AutoVault.metainfo.xml

@@ -15,7 +15,7 @@
 #                  --force          Overwrite existing archive
 #
 #  AUTHOR:         AutoVault Project
-#  VERSION:        2.8.0
+#  VERSION:        2.9.0
 #
 #===============================================================================
 

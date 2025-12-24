@@ -15,7 +15,7 @@
 #                  info        Show detailed vault info
 #
 #  AUTHOR:         AutoVault Project
-#  VERSION:        2.8.0
+#  VERSION:        2.9.0
 #
 #===============================================================================
 

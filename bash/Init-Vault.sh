@@ -13,7 +13,7 @@
 #                  --no-structure     Skip creating initial structure
 #
 #  AUTHOR:         AutoVault Project
-#  VERSION:        2.8.0
+#  VERSION:        2.9.0
 #
 #===============================================================================
 
@@ -280,7 +280,7 @@ create_config() {
   # Add metadata
   local timestamp
   timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  local version="${AUTOVAULT_VERSION:-2.8.0}"
+  local version="${AUTOVAULT_VERSION:-2.9.0}"
   config_content=$(echo "$config_content" | jq --arg ts "$timestamp" --arg ver "$version" '. + {metadata: {version: $ver, created: $ts, profile: "'"$PROFILE"'"}}')
 
   # Write config

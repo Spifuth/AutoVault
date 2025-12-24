@@ -14,6 +14,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.9.0] - 2025-12-24 - Phase 4 Complete 🎉
+
+### Added
+- **Snap Package** - Distribution via Snapcraft
+  - Classic confinement for full filesystem access
+  - `snapcraft.yaml` configuration
+  - Instructions for Snap Store publishing
+- **Flatpak Package** - Universal Linux distribution
+  - `io.github.spifuth.AutoVault.yml` manifest
+  - Desktop entry and metainfo.xml for app stores
+  - Full filesystem permissions for vault management
+
+### Changed
+- Packaging README updated with all 7 distribution formats
+- All 4 phases of roadmap now 100% complete
+- Comprehensive audit completed: 752/752 tasks verified
+
+### Summary
+- **Phase 1**: Documentation ✅
+- **Phase 2**: Core Features ✅
+- **Phase 3**: DevOps & Quality ✅
+- **Phase 4**: Extended Features ✅
+- **Overall**: 100% roadmap completion
+
+---
+
 ## [2.8.0] - 2025-12-23 - Phase 4.3 (Burp Suite Integration)
 
 ### Added

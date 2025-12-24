@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="console-application">
+  <id>io.github.spifuth.AutoVault</id>
+  <name>AutoVault</name>
+  <summary>CLI tool for managing Obsidian vaults</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  
+  <description>
+    <p>
+      AutoVault is a powerful command-line tool for managing Obsidian vaults
+      with support for multi-customer folder structures, templates, backups,
+      encryption, and export to PDF/HTML.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Multi-customer vault organization with configurable ID formats</li>
+      <li>Template management and synchronization</li>
+      <li>Backup creation and restoration with rotation</li>
+      <li>Export to PDF, HTML, and Markdown</li>
+      <li>Remote vault synchronization via SSH/rsync</li>
+      <li>Age/GPG encryption support</li>
+      <li>Git auto-sync with cron/systemd timers</li>
+      <li>Nmap scan import and parsing</li>
+      <li>Burp Suite findings import</li>
+      <li>Bash and Zsh shell completions</li>
+    </ul>
+  </description>
+  
+  <url type="homepage">https://github.com/Spifuth/AutoVault</url>
+  <url type="bugtracker">https://github.com/Spifuth/AutoVault/issues</url>
+  <url type="help">https://github.com/Spifuth/AutoVault/wiki</url>
+  
+  <developer_name>Spifuth</developer_name>
+  
+  <provides>
+    <binary>autovault</binary>
+  </provides>
+  
+  <releases>
+    <release version="2.8.0" date="2025-12-23">
+      <description>
+        <p>Phase 4.3 Complete - External Tool Integrations</p>
+        <ul>
+          <li>Burp Suite findings import with severity filtering</li>
+          <li>Nmap scan import (XML and grepable formats)</li>
+          <li>Git auto-sync with cron/systemd support</li>
+          <li>161 tests, 100% passing</li>
+          <li>Shellcheck clean (0 warnings)</li>
+        </ul>
+      </description>
+    </release>
+    <release version="2.7.0" date="2025-12-22">
+      <description>
+        <p>Nmap Integration</p>
+      </description>
+    </release>
+    <release version="2.6.0" date="2025-12-22">
+      <description>
+        <p>Git-Sync Feature</p>
+      </description>
+    </release>
+  </releases>
+  
+  <content_rating type="oars-1.1" />
+  
+  <keywords>
+    <keyword>obsidian</keyword>
+    <keyword>vault</keyword>
+    <keyword>notes</keyword>
+    <keyword>documentation</keyword>
+    <keyword>pentest</keyword>
+    <keyword>security</keyword>
+    <keyword>cli</keyword>
+  </keywords>
+  
+  <categories>
+    <category>Utility</category>
+    <category>Development</category>
+  </categories>
+</component>

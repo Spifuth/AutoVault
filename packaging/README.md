@@ -9,8 +9,10 @@ This directory contains packaging configurations for various platforms.
 | **Universal Installer** | `../install.sh` | ✅ Ready |
 | **Homebrew** (macOS/Linux) | `homebrew/` | ✅ Ready |
 | **AUR** (Arch Linux) | `aur/` | ✅ Ready |
-| **DEB** (Debian/Ubuntu) | `deb/` | 🔄 Planned |
-| **RPM** (Fedora/RHEL) | `rpm/` | 🔄 Planned |
+| **DEB** (Debian/Ubuntu) | `debian/` | ✅ Ready |
+| **RPM** (Fedora/RHEL) | `rpm/` | ✅ Ready |
+| **Snap** (Ubuntu/Linux) | `snap/` | ✅ Ready |
+| **Flatpak** (Universal Linux) | `flatpak/` | ✅ Ready |
 
 ## Quick Install Methods
 
@@ -50,6 +52,29 @@ cd AutoVault
 sudo ./install.sh
 ```
 
+### Snap (Ubuntu/Linux)
+
+```bash
+# From Snap Store (when published)
+sudo snap install autovault --classic
+
+# From local build
+cd packaging/snap
+snapcraft --use-lxd
+sudo snap install autovault_*.snap --classic --dangerous
+```
+
+### Flatpak (Universal Linux)
+
+```bash
+# From Flathub (when published)
+flatpak install flathub io.github.spifuth.AutoVault
+
+# From local build
+cd packaging/flatpak
+flatpak-builder --user --install --force-clean build-dir io.github.spifuth.AutoVault.yml
+```
+
 ## Uninstallation
 
 ```bash
@@ -62,6 +87,12 @@ brew untap Spifuth/autovault
 
 # AUR
 sudo pacman -R autovault
+
+# Snap
+sudo snap remove autovault
+
+# Flatpak
+flatpak uninstall io.github.spifuth.AutoVault
 ```
 
 ## Creating New Releases
@@ -77,4 +108,7 @@ sudo pacman -R autovault
 
 6. Update package files:
    - Homebrew: Update `sha256` in `autovault.rb`
+   - AUR: Update `pkgver` and checksums in `PKGBUILD`
+   - Snap: Update `version` in `snapcraft.yaml`
+   - Flatpak: Update `tag` in manifest and `metainfo.xml`
    - AUR: Update `pkgver` and checksums in `PKGBUILD`

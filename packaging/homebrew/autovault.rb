@@ -5,7 +5,7 @@
 class Autovault < Formula
   desc "CLI tool for managing Obsidian vaults for customer documentation"
   homepage "https://github.com/Spifuth/AutoVault"
-  url "https://github.com/Spifuth/AutoVault/archive/refs/tags/v2.8.0.tar.gz"
+  url "https://github.com/Spifuth/AutoVault/archive/refs/tags/v2.9.0.tar.gz"
   sha256 "PLACEHOLDER_SHA256"
   license "MIT"
   head "https://github.com/Spifuth/AutoVault.git", branch: "main"

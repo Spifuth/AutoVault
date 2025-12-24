@@ -16,7 +16,7 @@
 #                  box         Box/formatting demo
 #
 #  AUTHOR:         AutoVault Project
-#  VERSION:        2.8.0
+#  VERSION:        2.9.0
 #
 #===============================================================================
 
@@ -182,7 +182,7 @@ demo_box() {
   
   echo ""
   echo "Key-value pairs:"
-  print_kv "Version" "${AUTOVAULT_VERSION:-2.8.0}"
+  print_kv "Version" "${AUTOVAULT_VERSION:-2.9.0}"
   print_kv "Theme" "$(get_theme)"
   print_kv "Config" "/path/to/config.json"
   

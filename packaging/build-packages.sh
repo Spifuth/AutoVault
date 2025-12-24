@@ -20,7 +20,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="$PROJECT_ROOT/dist"
-VERSION="${VERSION:-2.8.0}"
+VERSION="${VERSION:-2.9.0}"
 RELEASE="${RELEASE:-1}"
 
 # Colors
@@ -289,7 +289,7 @@ ${YELLOW}COMMANDS${NC}
     help        Show this help
 
 ${YELLOW}ENVIRONMENT${NC}
-    VERSION     Package version (default: 2.8.0)
+    VERSION     Package version (default: 2.9.0)
     RELEASE     Package release (default: 1)
 
 ${YELLOW}EXAMPLES${NC}

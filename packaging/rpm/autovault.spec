@@ -1,5 +1,5 @@
 Name:           autovault
-Version:        2.8.0
+Version:        2.9.0
 Release:        1%{?dist}
 Summary:        CLI tool for managing Obsidian vaults
 
@@ -94,7 +94,12 @@ ln -sf %{_datadir}/%{name}/cust-run-config.sh %{buildroot}%{_bindir}/autovault
 %{_docdir}/%{name}/
 
 %changelog
-* Tue Dec 24 2024 Spifuth <spifuth@protonmail.com> - 2.8.0-1
+* Tue Dec 24 2025 Spifuth <spifuth@protonmail.com> - 2.9.0-1
+- Phase 4 Complete: Snap and Flatpak packaging
+- Roadmap 100% complete
+- 752 audit tasks verified
+
+* Tue Dec 24 2025 Spifuth <spifuth@protonmail.com> - 2.8.0-1
 - Phase 4.3: External Tool Integrations (Git-Sync, Nmap, Burp)
 - 161 tests passing
 - Full Bash and Zsh completions

@@ -1,0 +1,78 @@
+name: autovault
+version: '2.9.0'
+summary: CLI tool for managing Obsidian vaults
+description: |
+  AutoVault is a powerful command-line tool for managing Obsidian vaults
+  with support for multi-customer folder structures, templates, backups,
+  encryption, and export to PDF/HTML.
+
+  Features:
+  - Multi-customer vault organization with configurable ID formats
+  - Template management and synchronization
+  - Backup creation and restoration with rotation
+  - Export to PDF, HTML, and Markdown
+  - Remote vault synchronization via SSH/rsync
+  - Age/GPG encryption support
+  - Git auto-sync with cron/systemd timers
+  - Nmap scan import and parsing
+  - Burp Suite findings import
+  - Bash and Zsh shell completions
+
+grade: stable
+confinement: classic
+base: core22
+license: MIT
+
+architectures:
+  - build-on: amd64
+  - build-on: arm64
+
+apps:
+  autovault:
+    command: bin/autovault
+    completer: share/bash-completion/completions/autovault
+
+parts:
+  autovault:
+    plugin: dump
+    source: https://github.com/Spifuth/AutoVault.git
+    source-tag: v2.9.0
+    organize:
+      cust-run-config.sh: bin/autovault
+      bash: lib/autovault/bash
+      config: share/autovault/config
+      hooks: share/autovault/hooks
+      docs: share/doc/autovault
+      completions/autovault.bash: share/bash-completion/completions/autovault
+      completions/_autovault: share/zsh/site-functions/_autovault
+    override-build: |
+      craftctl default
+      # Update script paths for snap environment
+      sed -i 's|^SCRIPT_DIR=.*|SCRIPT_DIR="$SNAP/lib/autovault"|' $CRAFT_PART_INSTALL/bin/autovault
+      chmod +x $CRAFT_PART_INSTALL/bin/autovault
+      chmod +x $CRAFT_PART_INSTALL/lib/autovault/bash/*.sh
+      chmod +x $CRAFT_PART_INSTALL/lib/autovault/bash/lib/*.sh
+    stage-packages:
+      - bash
+      - jq
+      - coreutils
+      - rsync
+      - git
+    build-packages:
+      - git
+
+  # Optional dependencies as separate part
+  optional-deps:
+    plugin: nil
+    stage-packages:
+      - pandoc
+      - age
+      - gnupg
+
+lint:
+  ignore:
+    - classic
+
+# Environment variables
+environment:
+  AUTOVAULT_SNAP: "1"
