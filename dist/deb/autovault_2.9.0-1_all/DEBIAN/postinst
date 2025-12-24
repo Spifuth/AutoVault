@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+# Create config directory for user
+if [[ -n "${SUDO_USER:-}" ]]; then
+    USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+    if [[ -d "$USER_HOME" ]]; then
+        mkdir -p "$USER_HOME/.config/autovault"
+        chown "$SUDO_USER:$SUDO_USER" "$USER_HOME/.config/autovault"
+    fi
+fi
+
+echo "AutoVault installed successfully!"
+echo "Run 'autovault --help' to get started."

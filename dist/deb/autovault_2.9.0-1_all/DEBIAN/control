@@ -1,0 +1,22 @@
+Package: autovault
+Version: 2.9.0-1
+Section: utils
+Priority: optional
+Architecture: all
+Depends: bash (>= 4.0), jq, coreutils
+Recommends: git, pandoc, age
+Suggests: wkhtmltopdf, gnupg
+Maintainer: Spifuth <spifuth@protonmail.com>
+Homepage: https://github.com/Spifuth/AutoVault
+Description: CLI tool for managing Obsidian vaults
+ AutoVault is a powerful command-line tool for managing Obsidian vaults
+ with support for multi-customer folder structures, templates, backups,
+ encryption, and export to PDF/HTML.
+ .
+ Features:
+  - Multi-customer vault organization
+  - Template management and synchronization
+  - Backup creation and restoration
+  - Export to PDF, HTML, and Markdown
+  - Remote vault synchronization via SSH
+  - Age/GPG encryption support
