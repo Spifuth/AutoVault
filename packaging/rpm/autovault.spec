@@ -94,6 +94,11 @@ ln -sf %{_datadir}/%{name}/cust-run-config.sh %{buildroot}%{_bindir}/autovault
 %{_docdir}/%{name}/
 
 %changelog
+* Tue Dec 24 2024 Spifuth <spifuth@protonmail.com> - 2.8.0-1
+- Phase 4.3: External Tool Integrations (Git-Sync, Nmap, Burp)
+- 161 tests passing
+- Full Bash and Zsh completions
+
 * Mon Dec 23 2024 Spifuth <spifuth@protonmail.com> - 2.5.0-1
 - Phase 4.1: Export & Reporting
 - Phase 4.2: Extended Packaging (DEB/RPM)

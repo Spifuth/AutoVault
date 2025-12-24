@@ -811,19 +811,16 @@ Import Nmap scan results into customer folders. Parses XML and grepable formats 
 
 ```bash
 # Import Nmap XML scan for a customer
-./cust-run-config.sh nmap import scan.xml --customer CUST-001
+./cust-run-config.sh nmap import scan.xml -c CUST-001
 
-# Import grepable format
-./cust-run-config.sh nmap import scan.gnmap -c CUST-002 --format gnmap
+# Alternative: positional syntax
+./cust-run-config.sh nmap import scan.xml CUST-001
 
 # Parse and preview without importing
 ./cust-run-config.sh nmap parse scan.xml
 
 # List available templates
-./cust-run-config.sh nmap templates list
-
-# Custom output directory
-./cust-run-config.sh nmap import scan.xml -c CUST-001 -o /path/to/output
+./cust-run-config.sh nmap templates
 ```
 
 ### Nmap Subcommands

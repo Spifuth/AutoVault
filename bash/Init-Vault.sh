@@ -280,7 +280,8 @@ create_config() {
   # Add metadata
   local timestamp
   timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  config_content=$(echo "$config_content" | jq --arg ts "$timestamp" '. + {metadata: {version: "2.3.0", created: $ts, profile: "'"$PROFILE"'"}}')
+  local version="${AUTOVAULT_VERSION:-2.8.0}"
+  config_content=$(echo "$config_content" | jq --arg ts "$timestamp" --arg ver "$version" '. + {metadata: {version: $ver, created: $ts, profile: "'"$PROFILE"'"}}')
 
   # Write config
   echo "$config_content" | jq '.' > "$config_file"

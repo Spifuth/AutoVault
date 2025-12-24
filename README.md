@@ -49,11 +49,11 @@ sudo ./install.sh
 ## ⚡ Quick Start
 
 ```bash
-# 1. Configure your vault
-autovault config
+# 1. Initialize a new vault (interactive)
+autovault init --profile pentest
 
-# 2. Initialize everything
-autovault init
+# 2. Add your first customer
+autovault customer add 1 --name "Acme Corp"
 
 # 3. Check your setup
 autovault doctor
@@ -67,6 +67,8 @@ That's it! Your vault is ready with:
 - 📝 Templates applied to all index files
 - ⚙️ Obsidian plugins configured (Templater, Dataview)
 - 📊 Dynamic Run-Hub dashboard
+
+> **Note**: Use `autovault init --list-profiles` to see available profiles (minimal, pentest, audit, bugbounty).
 
 ---
 

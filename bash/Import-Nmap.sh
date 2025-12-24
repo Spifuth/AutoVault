@@ -625,6 +625,10 @@ main() {
             # Parse arguments
             while [[ $# -gt 0 ]]; do
                 case "$1" in
+                    -c|--customer)
+                        customer="$2"
+                        shift 2
+                        ;;
                     -s|--section)
                         section="$2"
                         shift 2
@@ -637,7 +641,12 @@ main() {
                         show_help
                         return 0
                         ;;
+                    -*)
+                        log_error "Unknown option: $1"
+                        return 1
+                        ;;
                     *)
+                        # Positional arguments: file then customer
                         if [[ -z "$file" ]]; then
                             file="$1"
                         elif [[ -z "$customer" ]]; then
@@ -650,6 +659,7 @@ main() {
             
             if [[ -z "$file" || -z "$customer" ]]; then
                 log_error "Usage: autovault nmap import <file> <customer>"
+                log_info "       autovault nmap import <file> -c <customer>"
                 return 1
             fi
             
