@@ -94,7 +94,7 @@ ln -sf %{_datadir}/%{name}/cust-run-config.sh %{buildroot}%{_bindir}/autovault
 %{_docdir}/%{name}/
 
 %changelog
-* Tue Dec 24 2025 Spifuth <spifuth@protonmail.com> - 2.9.0-1
+* Tue Dec 24 2024 Spifuth <spifuth@protonmail.com> - 2.9.0-1
 - Phase 4 Complete: Snap and Flatpak packaging
 - Roadmap 100% complete
 - 752 audit tasks verified

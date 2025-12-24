@@ -94,7 +94,7 @@ jobs:
 
       - name: Build RPM package
         run: |
-          sudo apt-get install -y rpm
+          sudo apt-get install -y rpm rpmbuild || sudo apt-get install -y rpm rpm-build || true
           VERSION=${{ steps.version.outputs.version }} ./packaging/build-packages.sh rpm || echo "RPM build skipped (may require Fedora/RHEL)"
           mv dist/*.rpm release/ 2>/dev/null || true
 
