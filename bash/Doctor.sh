@@ -243,7 +243,7 @@ check_configuration() {
     check_fail "Config file" "not found at $config_file" true
     if [[ "$FIX_MODE" == "true" ]]; then
       mkdir -p "$(dirname "$config_file")"
-      echo '{"vault_root": "", "customer_prefix": "CustRun", "default_sections": ["Notes"]}' > "$config_file"
+      echo '{"VaultRoot": "", "CustomerPrefix": "CUST", "CustomerIdWidth": 3, "CustomerIds": [], "Sections": ["Notes"], "TemplateRelativeRoot": "_templates/run"}' > "$config_file"
       check_fixed "Config file" "created default configuration"
     fi
     return
@@ -261,25 +261,25 @@ check_configuration() {
   local vault_root
   vault_root=$(jq -r '.VaultRoot // empty' "$config_file")
   if [[ -n "$vault_root" ]]; then
-    check_pass "vault_root" "configured: $vault_root"
+    check_pass "VaultRoot" "configured: $vault_root"
   else
-    check_fail "vault_root" "not configured" false
+    check_fail "VaultRoot" "not configured" false
   fi
 
   local prefix
   prefix=$(jq -r '.CustomerPrefix // empty' "$config_file")
   if [[ -n "$prefix" ]]; then
-    check_pass "customer_prefix" "configured: $prefix"
+    check_pass "CustomerPrefix" "configured: $prefix"
   else
-    check_warn "customer_prefix" "not set, using default"
+    check_warn "CustomerPrefix" "not set, using default"
   fi
 
   local sections
-  sections=$(jq -r '.Sections | length' "$config_file" 2>/dev/null || echo "0")
+  sections=$(jq -r '.Sections | length' "$config_file")
   if [[ "$sections" -gt 0 ]]; then
-    check_pass "default_sections" "$sections sections defined"
+    check_pass "Sections" "$sections sections defined"
   else
-    check_warn "default_sections" "no sections defined"
+    check_warn "Sections" "no sections defined"
   fi
 
   # Templates config

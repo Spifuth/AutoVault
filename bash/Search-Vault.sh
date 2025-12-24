@@ -198,7 +198,7 @@ get_search_path() {
 
   local search_path="$vault_root"
   local prefix
-  prefix=$(jq -r '.customer_prefix // "CustRun"' "$config_file")
+  prefix=$(jq -r '.CustomerPrefix // "CUST"' "$config_file")
 
   # Filter by customer if specified
   if [[ -n "$CUSTOMER" ]]; then
@@ -299,7 +299,7 @@ search_files() {
 
   local config_file="${CONFIG_JSON:-$SCRIPT_DIR/../config/cust-run-config.json}"
   local prefix
-  prefix=$(jq -r '.customer_prefix // "CustRun"' "$config_file")
+  prefix=$(jq -r '.CustomerPrefix // "CUST"' "$config_file")
 
   # Build find command
   local find_cmd="find \"$search_path\" -type f"
