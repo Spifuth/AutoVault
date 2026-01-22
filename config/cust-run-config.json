@@ -7,10 +7,10 @@
     3
   ],
   "Sections": [
+    "Alertes",
     "FP",
-    "RAISED",
-    "INFORMATIONS",
-    "DIVERS"
+    "Informations",
+    "Notes"
   ],
   "TemplateRelativeRoot": "_templates/run",
   "EnableCleanup": false
