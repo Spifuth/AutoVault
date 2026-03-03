@@ -30,3 +30,7 @@ tests/tmp/
 tmp/
 temp/
 dist/
+
+# Audit temp files
+.audit-todo*.md
+.audit-todo.md
